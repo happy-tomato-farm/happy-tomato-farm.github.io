@@ -1,1 +1,777 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C62828">
+<title>収量記録</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23C62828'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%232E6B33' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+:root{
+  --paper:#FFF; --ink:#12180F; --muted:#5C6857; --rule:#C6CFC0;
+  --tomato:#C62828; --leaf:#2E6B33; --tint:#F4F7F1; --warn:#8A6A1F;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:-apple-system,"Segoe UI","Noto Sans JP",Roboto,sans-serif;
+  font-size:16px; line-height:1.5;
+  padding:0 0 80px; max-width:720px; margin:0 auto;
+}
+header{
+  position:sticky; top:0; z-index:20; background:var(--paper);
+  border-bottom:3px solid var(--tomato); padding:12px 14px 0;
+}
+.hrow{display:flex;align-items:baseline;gap:10px}
+h1{font-size:19px;font-weight:800;margin:0;flex:1}
+#net{font-size:12px;font-weight:700;padding:2px 8px;border:1.5px solid var(--rule);color:var(--muted)}
+#net.on{color:var(--leaf);border-color:var(--leaf)}
+#net.off{color:var(--tomato);border-color:var(--tomato)}
+nav{display:flex;margin-top:10px}
+nav button{
+  flex:1;padding:11px 4px;font-size:15px;font-weight:700;font-family:inherit;
+  background:none;border:none;border-bottom:3px solid transparent;
+  color:var(--muted);cursor:pointer;margin-bottom:-3px;
+}
+nav button.sel{color:var(--tomato);border-bottom-color:var(--tomato)}
+main{padding:16px 14px}
+section{display:none}
+section.sel{display:block}
 
+.card{border:2px solid var(--ink);margin-bottom:16px}
+.card>h2{
+  font-size:16px;margin:0;padding:11px 14px;font-weight:700;
+  background:var(--ink);color:var(--paper);
+}
+.card>.body{padding:14px}
+.card.quiet{border-color:var(--rule)}
+.card.quiet>h2{background:var(--tint);color:var(--ink);border-bottom:1px solid var(--rule)}
+
+label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:4px}
+input[type=date],input[type=text],input[type=number],select{
+  width:100%;padding:11px;font-size:16px;font-family:inherit;
+  border:2px solid var(--rule);background:var(--tint);color:var(--ink);
+}
+input:focus,select:focus{outline:none;border-color:var(--leaf);background:var(--paper)}
+
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid var(--rule);padding:0;text-align:center}
+th{background:var(--tint);font-size:12.5px;font-weight:700;padding:6px 2px;color:var(--muted)}
+th.sz{width:44px}
+td input{
+  width:100%;border:none;background:none;text-align:center;
+  padding:11px 2px;font-size:16px;font-family:ui-monospace,monospace;
+}
+td input:focus{background:#FFF8D8;outline:2px solid var(--leaf);outline-offset:-2px}
+td.tot{background:var(--tint);font-family:ui-monospace,monospace;font-weight:700;padding:9px 2px}
+tr.totrow td{background:var(--tint);font-family:ui-monospace,monospace;font-weight:700;padding:9px 2px}
+tr.totrow th{background:var(--rule)}
+
+.chk{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 12px;margin-top:12px;font-size:14.5px;border-left:5px solid var(--rule);background:var(--tint)}
+.chk.ok{border-left-color:var(--leaf)}
+.chk.ng{border-left-color:var(--tomato)}
+.chk b{font-family:ui-monospace,monospace;font-size:16px}
+.chk.ok b{color:var(--leaf)} .chk.ng b{color:var(--tomato)}
+
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+button.act{
+  display:block;width:100%;padding:16px;margin-top:16px;
+  font-size:16.5px;font-weight:700;font-family:inherit;
+  color:#fff;background:var(--tomato);border:none;cursor:pointer;
+}
+button.act:active{opacity:.85}
+button.act.g{background:var(--ink)}
+button.act:disabled{background:var(--rule);color:var(--muted)}
+button.mini{
+  padding:8px 14px;font-size:13.5px;font-weight:700;font-family:inherit;
+  background:var(--paper);color:var(--ink);border:2px solid var(--ink);cursor:pointer;
+}
+
+.note{font-size:13.5px;color:var(--muted);margin:10px 0 0}
+.warnbox{border-left:5px solid var(--warn);background:var(--tint);padding:11px 12px;font-size:13.5px;margin-top:12px}
+.empty{color:var(--muted);font-size:14.5px;text-align:center;padding:26px 10px}
+
+#toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:13px 22px;font-size:15px;font-weight:600;
+  z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;max-width:92%;
+}
+#toast.show{opacity:1}
+#toast.bad{background:var(--tomato)}
+
+.recrow{display:flex;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--rule);font-size:14.5px}
+.recrow .d{font-family:ui-monospace,monospace;font-weight:700;width:88px;flex:none}
+.recrow .h{flex:1}
+.recrow .n{font-family:ui-monospace,monospace;color:var(--muted)}
+.pill{font-size:11.5px;font-weight:700;padding:2px 7px;border:1.5px solid var(--rule);color:var(--muted)}
+.pill.wait{border-color:var(--warn);color:var(--warn)}
+
+.mtab{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.mtab button{
+  padding:7px 12px;font-size:13.5px;font-weight:700;font-family:inherit;
+  border:2px solid var(--rule);background:var(--paper);color:var(--muted);cursor:pointer;
+}
+.mtab button.sel{border-color:var(--ink);color:var(--ink)}
+canvas{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;margin-top:10px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hrow"><h1>収量記録</h1><span id="net">確認中</span></div>
+  <nav>
+    <button data-tab="in" class="sel">入力</button>
+    <button data-tab="rec">記録</button>
+    <button data-tab="cmp">比較</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ========== 入力 ========== -->
+<section id="in" class="sel">
+  <div class="card quiet"><div class="body" style="padding:12px 14px">
+    <label for="date">荷受日</label>
+    <input type="date" id="date">
+    <div id="spill" class="warnbox" style="display:none"></div>
+  </div></div>
+
+  <div class="card">
+    <h2>宇賀神の伝票（東・西・南）</h2>
+    <div class="body">
+      <div id="g-uga"></div>
+      <div class="grid2" style="margin-top:14px">
+        <div><label>コンテナ数</label><input type="number" inputmode="numeric" id="uga-con"></div>
+        <div><label>伝票の総玉数</label><input type="number" inputmode="numeric" id="uga-chk" placeholder="照合用"></div>
+      </div>
+      <div class="chk" id="uga-verdict"><span>合計</span><b>—</b></div>
+      <p class="note" style="margin-top:14px;font-weight:700;color:var(--ink)">お帰り</p>
+      <div class="grid3">
+        <div><label>手選格外</label><input type="number" inputmode="numeric" id="uga-o1"></div>
+        <div><label>赤青玉</label><input type="number" inputmode="numeric" id="uga-o2"></div>
+        <div><label>小玉</label><input type="number" inputmode="numeric" id="uga-o3"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>コンテナ数の仕分け</h2>
+    <div class="body">
+      <div class="grid3">
+        <div><label>東</label><input type="number" inputmode="numeric" id="c-east"></div>
+        <div><label>西</label><input type="number" inputmode="numeric" id="c-west"></div>
+        <div><label>南</label><input type="number" inputmode="numeric" id="c-south"></div>
+      </div>
+      <div class="chk" id="split-verdict"><span>東＋西＋南</span><b>—</b></div>
+      <p class="note">ハウス別の収量はこの比率で按分されます。伝票のコンテナ数と必ず一致させてください。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>中央の伝票</h2>
+    <div class="body">
+      <div id="g-chu"></div>
+      <div class="grid2" style="margin-top:14px">
+        <div><label>コンテナ数</label><input type="number" inputmode="numeric" id="chu-con"></div>
+        <div><label>伝票の総玉数</label><input type="number" inputmode="numeric" id="chu-chk" placeholder="照合用"></div>
+      </div>
+      <div class="chk" id="chu-verdict"><span>合計</span><b>—</b></div>
+      <p class="note" style="margin-top:14px;font-weight:700;color:var(--ink)">お帰り</p>
+      <div class="grid3">
+        <div><label>手選格外</label><input type="number" inputmode="numeric" id="chu-o1"></div>
+        <div><label>赤青玉</label><input type="number" inputmode="numeric" id="chu-o2"></div>
+        <div><label>小玉</label><input type="number" inputmode="numeric" id="chu-o3"></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="act" id="save">この日の記録を保存</button>
+  <button class="act g" id="clear">この日の入力を消す</button>
+</section>
+
+<!-- ========== 記録 ========== -->
+<section id="rec">
+  <div class="card quiet">
+    <h2>月別の集計</h2>
+    <div class="body" id="monthly"></div>
+  </div>
+  <div class="card quiet">
+    <h2>入力した日</h2>
+    <div class="body" id="reclist"></div>
+  </div>
+  <button class="act g" id="resync">Dropboxと同期する</button>
+</section>
+
+<!-- ========== 比較 ========== -->
+<section id="cmp">
+  <div class="mtab" id="housetab"></div>
+  <div class="card quiet">
+    <h2>月別収量の推移（kg）</h2>
+    <div class="body">
+      <canvas id="chart" width="700" height="420"></canvas>
+      <div class="legend" id="legend"></div>
+      <p class="note">今年度は入力済みの分だけを表示します。過去年度はExcelの実績です。</p>
+    </div>
+  </div>
+</section>
+
+</main>
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ===================== 定数 ===================== */
+var SIZES = ["3L","2L","L","M","S","2S","3S","4S"];
+var GRADES = ["A","B","C","D"];
+/* 1果あたり重量(g)。Excelの平均重量欄と同じ値 */
+var WEIGHT = {"3L":4000/16,"2L":4000/18,"L":4000/20,"M":4000/24,
+              "S":4000/28,"2S":4000/32,"3S":400/4,"4S":400/5};
+var MONTH_ORDER = [10,11,12,1,2,3,4,5,6,7];
+var HIST = {"東":{"months":["10月","11月","12月","1月","2月","3月","4月","5月","6月","7月"],"area":1.74,"years":{"2022年度":[null,3022.1,4558.8,4763.3,4043.8,5396.4,7049.5,7904.3,12225.8,3568.1],"2023年度":[null,3226.5,3207.6,3559.7,4793.2,4382.7,6725.2,8094.0,9942.7,2188.8],"2024年度":[994.1,3648.9,3901.1,3819.1,3505.6,5077.3,7351.0,10800.3,14146.9,2594.4],"2025年度":[1359.2,3018.2,3310.8,4062.7,5306.4,4993.8,7687.0,10318.6,12889.5,3390.0],"2026年度":[1345.5,3568.0,4080.8,3856.0,4626.2,5204.3,7838.0,10229.2,11888.6,2164.9]}},"西":{"months":["11月","12月","1月","2月","3月","4月","5月","6月","7月"],"area":1.7,"years":{"2022年度":[2265.2,3327.2,3405.0,2485.9,2524.5,4555.7,5695.6,4788.2,0.0],"2023年度":[1607.0,3285.7,3082.2,3811.4,3688.3,5935.6,5625.4,6728.8,0.0],"2024年度":[2859.7,3946.7,3200.0,2480.1,3384.6,5629.9,7374.5,8537.9,0.0],"2025年度":[2951.6,3347.6,3535.5,3761.5,4336.3,4806.1,6087.0,6027.4,0.0],"2026年度":[1966.6,4236.7,3060.9,3167.9,3609.8,4759.0,6233.3,8006.7,0.0]}},"南":{"months":["11月","12月","1月","2月","3月","4月","5月","6月","7月"],"area":0.8,"years":{"2022年度":[1040.4,1746.5,1823.1,1144.3,1291.8,2462.9,3233.8,2782.1,0.0],"2023年度":[619.3,1772.6,2058.2,2391.4,1705.4,3714.7,3160.1,4848.1,0.0],"2024年度":[1427.6,1539.0,1924.3,1148.1,1625.7,2868.5,3935.4,3838.7,0.0],"2025年度":[1566.4,1918.0,1990.2,1841.2,2068.1,2750.4,2994.1,3798.9,0.0],"2026年度":[917.3,2073.7,1712.0,1285.6,2095.5,2430.2,2897.4,4419.5,146.1]}},"中央":{"months":["10月","11月","12月","1月","2月","3月","4月","5月","6月","7月"],"area":1.74,"years":{"2022年度":[349.0,4790.9,5101.3,3840.1,4380.5,5755.3,7927.0,9077.4,10783.2,2877.3],"2023年度":[1630.7,4703.8,3038.5,3146.9,4820.8,4874.7,7977.1,9380.7,10744.3,2548.0],"2024年度":[1345.2,3951.3,4138.2,3684.4,3130.7,4807.6,7539.3,10255.9,12405.8,2622.5],"2025年度":[1775.1,3537.2,3380.7,4138.0,5227.5,4951.2,8593.8,9506.6,12439.0,1551.1],"2026年度":[683.2,3213.4,4475.9,4181.5,4336.1,5631.4,7618.6,9427.1,12372.4,2782.6]}}};
+
+var DBX_KEY_LS = "htf_dbx_key";
+var DBX_TOK_LS = "htf_dbx_refresh";
+var DATA_LS    = "htf_shuryo_data";
+var REMOTE_PATH = "/収量入力.json";
+
+/* ===================== 状態 ===================== */
+var state = { records:{}, updatedAt:0, pending:false };
+var token = { value:null, expires:0 };
+
+function key(date,house){ return date + "|" + house; }
+function num(v){ var n = parseInt(v,10); return isNaN(n) ? 0 : n; }
+function el(id){ return document.getElementById(id); }
+
+function toast(msg, bad){
+  var t = el("toast");
+  t.textContent = msg;
+  t.className = "show" + (bad ? " bad" : "");
+  clearTimeout(t._h);
+  t._h = setTimeout(function(){ t.className = ""; }, 3200);
+}
+
+/* ===================== 年度 ===================== */
+function seasonOf(dateStr){
+  var y = +dateStr.slice(0,4), m = +dateStr.slice(5,7);
+  return m >= 10 ? y+1 : y;
+}
+/* 月をまたぐ行（11月・2月・4月・6月の翌月1日）に該当するか */
+function isSpill(dateStr){
+  var m = +dateStr.slice(5,7), d = +dateStr.slice(8,10);
+  return d === 1 && (m === 12 || m === 3 || m === 5 || m === 7);
+}
+function prevMonthName(dateStr){
+  var m = +dateStr.slice(5,7);
+  return ({12:"11月",3:"2月",5:"4月",7:"6月"})[m] || "";
+}
+
+/* ===================== 表の生成 ===================== */
+function buildGrid(host, prefix){
+  var h = '<table><thead><tr><th class="sz"></th>';
+  GRADES.forEach(function(g){ h += "<th>"+g+"</th>"; });
+  h += '<th>計</th></tr></thead><tbody>';
+  SIZES.forEach(function(s){
+    h += '<tr><th class="sz">'+s+'</th>';
+    GRADES.forEach(function(g){
+      h += '<td><input type="number" inputmode="numeric" data-p="'+prefix+
+           '" data-s="'+s+'" data-g="'+g+'"></td>';
+    });
+    h += '<td class="tot" id="'+prefix+'-rt-'+s.replace(/\W/g,"_")+'">0</td></tr>';
+  });
+  h += '<tr class="totrow"><th>計</th>';
+  GRADES.forEach(function(g){ h += '<td id="'+prefix+'-ct-'+g+'">0</td>'; });
+  h += '<td id="'+prefix+'-all">0</td></tr></tbody></table>';
+  host.innerHTML = h;
+}
+
+function readGrid(prefix){
+  var grid = {}, any = false;
+  SIZES.forEach(function(s){
+    var row = {};
+    GRADES.forEach(function(g){
+      var i = document.querySelector('input[data-p="'+prefix+'"][data-s="'+s+'"][data-g="'+g+'"]');
+      var v = num(i.value);
+      if(v){ row[g] = v; any = true; }
+    });
+    if(Object.keys(row).length) grid[s] = row;
+  });
+  return any ? grid : null;
+}
+
+function writeGrid(prefix, grid){
+  SIZES.forEach(function(s){
+    GRADES.forEach(function(g){
+      var i = document.querySelector('input[data-p="'+prefix+'"][data-s="'+s+'"][data-g="'+g+'"]');
+      var v = grid && grid[s] && grid[s][g];
+      i.value = v ? v : "";
+    });
+  });
+}
+
+function refreshGrid(prefix){
+  var colTot = {A:0,B:0,C:0,D:0}, all = 0;
+  SIZES.forEach(function(s){
+    var rt = 0;
+    GRADES.forEach(function(g){
+      var i = document.querySelector('input[data-p="'+prefix+'"][data-s="'+s+'"][data-g="'+g+'"]');
+      var v = num(i.value);
+      rt += v; colTot[g] += v;
+    });
+    el(prefix+"-rt-"+s.replace(/\W/g,"_")).textContent = rt || "";
+    all += rt;
+  });
+  GRADES.forEach(function(g){ el(prefix+"-ct-"+g).textContent = colTot[g] || ""; });
+  el(prefix+"-all").textContent = all || "";
+
+  var want = num(el(prefix+"-chk").value);
+  var v = el(prefix+"-verdict");
+  var b = v.querySelector("b");
+  if(!all && !want){ v.className = "chk"; b.textContent = "—"; }
+  else if(!want){ v.className = "chk"; b.textContent = all + " 個"; }
+  else if(want === all){ v.className = "chk ok"; b.textContent = all + " 個  一致"; }
+  else { v.className = "chk ng"; b.textContent = all + " ／ 伝票 " + want; }
+  return all;
+}
+
+function refreshSplit(){
+  var e = num(el("c-east").value), w = num(el("c-west").value), s = num(el("c-south").value);
+  var sum = e + w + s, want = num(el("uga-con").value);
+  var v = el("split-verdict"), b = v.querySelector("b");
+  if(!sum && !want){ v.className = "chk"; b.textContent = "—"; }
+  else if(want === sum && sum > 0){ v.className = "chk ok"; b.textContent = sum + " 個  一致"; }
+  else { v.className = "chk ng"; b.textContent = sum + " ／ 伝票 " + (want||0); }
+}
+
+/* ===================== 保存・読み出し ===================== */
+function collect(){
+  var date = el("date").value;
+  if(!date) return null;
+  var out = [];
+
+  var ug = readGrid("uga");
+  var ugCon = num(el("uga-con").value);
+  var ugO = num(el("uga-o1").value)+num(el("uga-o2").value)+num(el("uga-o3").value);
+  if(ug || ugCon || ugO){
+    out.push({date:date, house:"宇賀神", container:ugCon||null, okaeri:ugO||null, grid:ug,
+              okaeriParts:[num(el("uga-o1").value),num(el("uga-o2").value),num(el("uga-o3").value)],
+              slipTotal:num(el("uga-chk").value)||null});
+  }
+  [["東","c-east"],["西","c-west"],["南","c-south"]].forEach(function(p){
+    var c = num(el(p[1]).value);
+    if(c) out.push({date:date, house:p[0], container:c});
+  });
+
+  var ch = readGrid("chu");
+  var chCon = num(el("chu-con").value);
+  var chO = num(el("chu-o1").value)+num(el("chu-o2").value)+num(el("chu-o3").value);
+  if(ch || chCon || chO){
+    out.push({date:date, house:"中央", container:chCon||null, okaeri:chO||null, grid:ch,
+              okaeriParts:[num(el("chu-o1").value),num(el("chu-o2").value),num(el("chu-o3").value)],
+              slipTotal:num(el("chu-chk").value)||null});
+  }
+  return out;
+}
+
+function loadDay(date){
+  ["uga","chu"].forEach(function(p){
+    writeGrid(p, null);
+    el(p+"-con").value = ""; el(p+"-chk").value = "";
+    el(p+"-o1").value = ""; el(p+"-o2").value = ""; el(p+"-o3").value = "";
+  });
+  el("c-east").value = ""; el("c-west").value = ""; el("c-south").value = "";
+
+  var m = {"宇賀神":"uga","中央":"chu"};
+  Object.keys(m).forEach(function(house){
+    var r = state.records[key(date,house)];
+    if(!r) return;
+    var p = m[house];
+    writeGrid(p, r.grid);
+    el(p+"-con").value = r.container || "";
+    el(p+"-chk").value = r.slipTotal || "";
+    var op = r.okaeriParts || [r.okaeri||0,0,0];
+    el(p+"-o1").value = op[0] || ""; el(p+"-o2").value = op[1] || ""; el(p+"-o3").value = op[2] || "";
+  });
+  [["東","c-east"],["西","c-west"],["南","c-south"]].forEach(function(p){
+    var r = state.records[key(date,p[0])];
+    el(p[1]).value = r && r.container ? r.container : "";
+  });
+
+  var sp = el("spill");
+  if(isSpill(date)){
+    sp.style.display = "block";
+    sp.textContent = "この日は Excel では " + prevMonthName(date) +
+      "ブロックの末尾に入ります。従来どおりの扱いです。";
+  } else { sp.style.display = "none"; }
+
+  refreshGrid("uga"); refreshGrid("chu"); refreshSplit();
+}
+
+function saveLocal(){
+  state.updatedAt = Date.now();
+  localStorage.setItem(DATA_LS, JSON.stringify(state));
+}
+
+/* ===================== Dropbox ===================== */
+function online(){ return navigator.onLine !== false; }
+
+function setNet(txt, cls){
+  var n = el("net"); n.textContent = txt; n.className = cls || "";
+}
+
+function getToken(){
+  if(token.value && Date.now() < token.expires - 60000) return Promise.resolve(token.value);
+  var appKey = localStorage.getItem(DBX_KEY_LS);
+  var refresh = localStorage.getItem(DBX_TOK_LS);
+  if(!appKey || !refresh) return Promise.reject(new Error("未接続"));
+  return fetch("https://api.dropboxapi.com/oauth2/token", {
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:new URLSearchParams({grant_type:"refresh_token", refresh_token:refresh, client_id:appKey}).toString()
+  }).then(function(r){ return r.json(); }).then(function(j){
+    if(!j.access_token) throw new Error(j.error_description || "認証に失敗しました");
+    token.value = j.access_token;
+    token.expires = Date.now() + (j.expires_in || 14400) * 1000;
+    return token.value;
+  });
+}
+
+function apiArg(o){
+  return JSON.stringify(o).replace(/[\u007f-\uffff]/g, function(c){
+    return "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4);
+  });
+}
+
+function upload(){
+  return getToken().then(function(t){
+    var payload = { version:1, updatedAt:state.updatedAt,
+                    records:Object.keys(state.records).map(function(k){ return state.records[k]; }) };
+    return fetch("https://content.dropboxapi.com/2/files/upload", {
+      method:"POST",
+      headers:{
+        "Authorization":"Bearer "+t,
+        "Dropbox-API-Arg":apiArg({path:REMOTE_PATH, mode:"overwrite", mute:true}),
+        "Content-Type":"application/octet-stream"
+      },
+      body:new Blob([JSON.stringify(payload, null, 1)], {type:"application/octet-stream"})
+    });
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error("HTTP "+r.status+" "+t.slice(0,90)); });
+    state.pending = false; saveLocal(); setNet("同期済", "on");
+  });
+}
+
+function download(){
+  return getToken().then(function(t){
+    return fetch("https://content.dropboxapi.com/2/files/download", {
+      method:"POST",
+      headers:{"Authorization":"Bearer "+t, "Dropbox-API-Arg":apiArg({path:REMOTE_PATH})}
+    });
+  }).then(function(r){
+    if(r.status === 409) return null;          // まだファイルが無い
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    return r.json();
+  });
+}
+
+function sync(){
+  if(!online()){ setNet("オフライン", "off"); return Promise.resolve(); }
+  setNet("同期中");
+  if(state.pending) return upload().catch(function(e){ setNet("未送信","off"); toast("同期できません: "+e.message, true); });
+  return download().then(function(remote){
+    if(remote && remote.updatedAt && remote.updatedAt > state.updatedAt){
+      state.records = {};
+      (remote.records||[]).forEach(function(r){ state.records[key(r.date,r.house)] = r; });
+      state.updatedAt = remote.updatedAt;
+      localStorage.setItem(DATA_LS, JSON.stringify(state));
+      loadDay(el("date").value);
+      renderRec(); renderChart();
+    }
+    setNet("同期済","on");
+  }).catch(function(e){
+    setNet(e.message === "未接続" ? "未接続" : "同期不可", "off");
+  });
+}
+
+/* ===================== 記録画面 ===================== */
+function dayWeight(r){
+  if(!r.grid) return 0;
+  var w = 0;
+  SIZES.forEach(function(s){
+    if(!r.grid[s]) return;
+    GRADES.forEach(function(g){ w += (r.grid[s][g]||0) * WEIGHT[s]; });
+  });
+  return w;
+}
+
+/* ハウス別の重量。東西南は宇賀神をコンテナ比で按分する */
+function houseWeights(date){
+  var out = {"中央":0,"東":0,"西":0,"南":0};
+  var chu = state.records[key(date,"中央")];
+  if(chu) out["中央"] = dayWeight(chu);
+  var uga = state.records[key(date,"宇賀神")];
+  if(uga && uga.container){
+    var per = dayWeight(uga) / uga.container;
+    ["東","西","南"].forEach(function(h){
+      var r = state.records[key(date,h)];
+      if(r && r.container) out[h] = per * r.container;
+    });
+  }
+  return out;
+}
+
+function monthlyTotals(){
+  var acc = {};   // "YYYY-MM" -> {house: kg}
+  var dates = {};
+  Object.keys(state.records).forEach(function(k){ dates[k.split("|")[0]] = 1; });
+  Object.keys(dates).forEach(function(d){
+    /* 月をまたぐ日は前月に含める（Excelと同じ扱い） */
+    var y = +d.slice(0,4), m = +d.slice(5,7);
+    if(isSpill(d)){ m -= 1; if(m === 0){ m = 12; y -= 1; } }
+    var mk = y + "-" + ("0"+m).slice(-2);
+    if(!acc[mk]) acc[mk] = {"中央":0,"東":0,"西":0,"南":0};
+    var w = houseWeights(d);
+    Object.keys(w).forEach(function(h){ acc[mk][h] += w[h]; });
+  });
+  return acc;
+}
+
+function renderRec(){
+  var acc = monthlyTotals();
+  var keys = Object.keys(acc).sort();
+  var host = el("monthly");
+  if(!keys.length){ host.innerHTML = '<div class="empty">まだ記録がありません</div>'; }
+  else {
+    var h = '<table><thead><tr><th style="text-align:left;padding-left:8px">月</th>' +
+            '<th>中央</th><th>東</th><th>西</th><th>南</th><th>合計</th></tr></thead><tbody>';
+    keys.forEach(function(k){
+      var a = acc[k], tot = a["中央"]+a["東"]+a["西"]+a["南"];
+      h += '<tr><td class="tot" style="text-align:left;padding-left:8px">'+k+'</td>';
+      ["中央","東","西","南"].forEach(function(x){
+        h += '<td class="tot">'+(a[x] ? Math.round(a[x]/1000) : "")+'</td>';
+      });
+      h += '<td class="tot">'+(tot ? Math.round(tot/1000) : "")+'</td></tr>';
+    });
+    h += '</tbody></table><p class="note">単位 kg</p>';
+    host.innerHTML = h;
+  }
+
+  var dates = {};
+  Object.keys(state.records).forEach(function(k){ dates[k.split("|")[0]] = 1; });
+  var ds = Object.keys(dates).sort().reverse();
+  var lst = el("reclist");
+  if(!ds.length){ lst.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
+  lst.innerHTML = ds.map(function(d){
+    var uga = state.records[key(d,"宇賀神")], chu = state.records[key(d,"中央")];
+    var n = 0;
+    if(uga) n += Object.keys(uga.grid||{}).reduce(function(a,s){
+      return a + GRADES.reduce(function(b,g){ return b + (uga.grid[s][g]||0); },0); },0);
+    if(chu) n += Object.keys(chu.grid||{}).reduce(function(a,s){
+      return a + GRADES.reduce(function(b,g){ return b + (chu.grid[s][g]||0); },0); },0);
+    return '<div class="recrow" data-d="'+d+'"><span class="d">'+d.slice(5)+'</span>' +
+           '<span class="h">'+(uga?"宇賀神 ":"")+(chu?"中央":"")+'</span>' +
+           '<span class="n">'+n+' 個</span>' +
+           '<button class="mini" data-open="'+d+'">開く</button></div>';
+  }).join("");
+  Array.prototype.forEach.call(lst.querySelectorAll("[data-open]"), function(b){
+    b.addEventListener("click", function(){
+      el("date").value = b.getAttribute("data-open");
+      loadDay(el("date").value);
+      selectTab("in");
+      window.scrollTo(0,0);
+    });
+  });
+}
+
+/* ===================== 比較グラフ ===================== */
+var cmpHouse = "中央";
+var COLORS = ["#C6CFC0","#9AB08E","#6E8F63","#2E6B33","#12180F","#C62828"];
+
+function thisYearMonthly(house){
+  var acc = monthlyTotals();
+  var out = MONTH_ORDER.map(function(){ return null; });
+  Object.keys(acc).forEach(function(k){
+    var m = +k.slice(5,7);
+    var i = MONTH_ORDER.indexOf(m);
+    if(i >= 0 && acc[k][house]) out[i] = acc[k][house]/1000;
+  });
+  return out;
+}
+
+function renderChart(){
+  var hist = HIST[cmpHouse];
+  if(!hist) return;
+  var months = hist.months;
+  var years = Object.keys(hist.years).sort();
+  var series = years.map(function(y,i){
+    return {name:y, data:hist.years[y], color:COLORS[Math.min(i,COLORS.length-2)]};
+  });
+  var mine = thisYearMonthly(cmpHouse);
+  var aligned = months.map(function(mn){
+    var m = parseInt(mn,10);
+    var i = MONTH_ORDER.indexOf(m);
+    return i >= 0 ? mine[i] : null;
+  });
+  if(aligned.some(function(v){ return v; })){
+    series.push({name:"今年度", data:aligned, color:"#C62828", thick:true});
+  }
+
+  var cv = el("chart"), ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height, L = 52, R = 12, T = 14, B = 34;
+  ctx.clearRect(0,0,W,H);
+
+  var max = 0;
+  series.forEach(function(s){ s.data.forEach(function(v){ if(v > max) max = v; }); });
+  max = Math.ceil((max||1000)/2000)*2000;
+
+  var x = function(i){ return L + (W-L-R) * (i/(months.length-1)); };
+  var y = function(v){ return H-B - (H-T-B) * (v/max); };
+
+  ctx.strokeStyle = "#E3E9DE"; ctx.fillStyle = "#5C6857";
+  ctx.font = "11px sans-serif"; ctx.textAlign = "right";
+  for(var v = 0; v <= max; v += max/5){
+    ctx.beginPath(); ctx.moveTo(L, y(v)); ctx.lineTo(W-R, y(v)); ctx.stroke();
+    ctx.fillText(Math.round(v/1000)+"t", L-7, y(v)+4);
+  }
+  ctx.textAlign = "center";
+  months.forEach(function(m,i){ ctx.fillText(m, x(i), H-13); });
+
+  series.forEach(function(s){
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = s.thick ? 3.5 : 1.6;
+    ctx.beginPath();
+    var started = false;
+    s.data.forEach(function(v,i){
+      if(v === null || v === undefined) return;
+      if(!started){ ctx.moveTo(x(i), y(v)); started = true; }
+      else ctx.lineTo(x(i), y(v));
+    });
+    ctx.stroke();
+    if(s.thick){
+      ctx.fillStyle = s.color;
+      s.data.forEach(function(v,i){
+        if(v === null || v === undefined) return;
+        ctx.beginPath(); ctx.arc(x(i), y(v), 4, 0, 7); ctx.fill();
+      });
+    }
+  });
+
+  el("legend").innerHTML = series.map(function(s){
+    return '<span><i style="background:'+s.color+';height:'+(s.thick?4:3)+'px"></i>'+s.name+'</span>';
+  }).join("");
+}
+
+/* ===================== タブ ===================== */
+function selectTab(id){
+  Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b){
+    b.classList.toggle("sel", b.getAttribute("data-tab") === id);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("main section"), function(s){
+    s.classList.toggle("sel", s.id === id);
+  });
+  if(id === "rec") renderRec();
+  if(id === "cmp") renderChart();
+}
+
+/* ===================== 起動 ===================== */
+(function init(){
+  buildGrid(el("g-uga"), "uga");
+  buildGrid(el("g-chu"), "chu");
+
+  try{
+    var raw = localStorage.getItem(DATA_LS);
+    if(raw){ var s = JSON.parse(raw); state.records = s.records||{}; state.updatedAt = s.updatedAt||0; state.pending = !!s.pending; }
+  }catch(e){}
+
+  var today = new Date();
+  el("date").value = today.getFullYear() + "-" +
+    ("0"+(today.getMonth()+1)).slice(-2) + "-" + ("0"+today.getDate()).slice(-2);
+
+  document.addEventListener("input", function(e){
+    var t = e.target;
+    if(t.dataset && t.dataset.p) refreshGrid(t.dataset.p);
+    if(t.id === "uga-chk") refreshGrid("uga");
+    if(t.id === "chu-chk") refreshGrid("chu");
+    if(t.id === "uga-con" || t.id === "c-east" || t.id === "c-west" || t.id === "c-south") refreshSplit();
+  });
+
+  el("date").addEventListener("change", function(){ loadDay(el("date").value); });
+
+  Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b){
+    b.addEventListener("click", function(){ selectTab(b.getAttribute("data-tab")); });
+  });
+
+  el("housetab").innerHTML = ["中央","東","西","南"].map(function(h){
+    return '<button data-h="'+h+'"'+(h===cmpHouse?' class="sel"':'')+'>'+h+'</button>';
+  }).join("");
+  el("housetab").addEventListener("click", function(e){
+    var h = e.target.getAttribute("data-h");
+    if(!h) return;
+    cmpHouse = h;
+    Array.prototype.forEach.call(el("housetab").children, function(b){
+      b.classList.toggle("sel", b.getAttribute("data-h") === h);
+    });
+    renderChart();
+  });
+
+  el("save").addEventListener("click", function(){
+    var date = el("date").value;
+    if(!date){ toast("荷受日を選んでください", true); return; }
+    var recs = collect();
+    if(!recs || !recs.length){ toast("入力がありません", true); return; }
+
+    var ugaCon = num(el("uga-con").value);
+    var split = num(el("c-east").value)+num(el("c-west").value)+num(el("c-south").value);
+    if(ugaCon && split !== ugaCon){
+      if(!confirm("コンテナ数が合っていません。\n伝票 "+ugaCon+" ／ 仕分け "+split+
+                  "\n\nこのまま保存すると按分がずれます。保存しますか？")) return;
+    }
+    var bad = [];
+    [["uga","宇賀神"],["chu","中央"]].forEach(function(p){
+      var want = num(el(p[0]+"-chk").value);
+      var got = num(el(p[0]+"-all").textContent);
+      if(want && want !== got) bad.push(p[1]+"（"+got+" ／ 伝票 "+want+"）");
+    });
+    if(bad.length && !confirm("総玉数が合っていません。\n"+bad.join("\n")+"\n\n保存しますか？")) return;
+
+    ["宇賀神","東","西","南","中央"].forEach(function(h){ delete state.records[key(date,h)]; });
+    recs.forEach(function(r){ state.records[key(r.date,r.house)] = r; });
+    state.pending = true; saveLocal();
+    toast("保存しました");
+    sync();
+  });
+
+  el("clear").addEventListener("click", function(){
+    var date = el("date").value;
+    if(!date) return;
+    if(!confirm(date + " の入力を消します。よろしいですか？")) return;
+    ["宇賀神","東","西","南","中央"].forEach(function(h){ delete state.records[key(date,h)]; });
+    state.pending = true; saveLocal();
+    loadDay(date);
+    toast("消しました");
+    sync();
+  });
+
+  el("resync").addEventListener("click", function(){ sync().then(function(){ renderRec(); }); });
+
+  window.addEventListener("online", function(){ sync(); });
+  window.addEventListener("offline", function(){ setNet("オフライン","off"); });
+
+  loadDay(el("date").value);
+
+  if(!localStorage.getItem(DBX_TOK_LS)){
+    setNet("未接続","off");
+    toast("Dropboxに未接続です。接続設定を先に行ってください", true);
+  } else {
+    sync();
+  }
+})();
+</script>
+</body>
+</html>
