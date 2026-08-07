@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C62828">
+<title>Dropbox接続設定</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23C62828'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%232E6B33' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#12180F; --muted:#5C6857;
+    --rule:#C6CFC0; --tomato:#C62828; --leaf:#2E6B33; --tint:#F4F7F1;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:-apple-system,"Segoe UI","Noto Sans JP","Hiragino Kaku Gothic ProN",Roboto,sans-serif;
+    font-size:16.5px; line-height:1.65;
+    padding:24px 18px 60px; max-width:600px; margin:0 auto;
+  }
+  header{border-bottom:3px solid var(--tomato);padding-bottom:14px;margin-bottom:24px}
+  h1{font-size:22px;font-weight:800;margin:0}
+  header p{margin:5px 0 0;font-size:14px;color:var(--muted)}
+
+  .panel{border:2px solid var(--ink);padding:18px;margin-bottom:16px}
+  .panel h2{font-size:17px;margin:0 0 10px;font-weight:700}
+  .panel p{margin:0 0 14px;font-size:14.5px;color:var(--muted)}
+
+  label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:5px}
+  input[type=text]{
+    width:100%;padding:12px;font-size:16px;
+    font-family:ui-monospace,"Roboto Mono",monospace;
+    border:2px solid var(--rule);background:var(--tint);color:var(--ink);
+  }
+  input[type=text]:focus{outline:none;border-color:var(--leaf)}
+
+  button{
+    display:block;width:100%;margin-top:14px;padding:16px;
+    font-size:16.5px;font-weight:700;font-family:inherit;
+    color:#fff;background:var(--tomato);border:none;cursor:pointer;
+  }
+  button:active{opacity:.8}
+  button:focus-visible{outline:3px solid var(--leaf);outline-offset:3px}
+  button.sub{background:var(--ink);font-size:15px;padding:13px}
+  button:disabled{background:var(--rule);color:var(--muted);cursor:default}
+
+  .log{margin-top:6px}
+  .line{
+    display:flex;gap:9px;align-items:baseline;
+    font-size:14.5px;padding:5px 0;
+  }
+  .mk{font-weight:800;width:1.15em;flex:none;color:var(--muted)}
+  .mk.ok{color:var(--leaf)} .mk.ng{color:var(--tomato)}
+  .line .tx{flex:1}
+  .detail{
+    font-family:ui-monospace,"Roboto Mono",monospace;
+    font-size:12.5px;color:var(--muted);
+    margin:2px 0 0 calc(1.15em + 9px);word-break:break-all;
+  }
+
+  .done{border-left:6px solid var(--leaf);background:var(--tint);border-top:0;border-right:0;border-bottom:0;padding:18px}
+  .bad{border-left:6px solid var(--tomato);background:var(--tint);border-top:0;border-right:0;border-bottom:0;padding:18px}
+
+  .token{
+    font-family:ui-monospace,"Roboto Mono",monospace;
+    font-size:12.5px;background:var(--ink);color:#EDF2E8;
+    padding:12px;word-break:break-all;margin-top:10px;
+  }
+  .warn{font-size:13.5px;color:var(--tomato);font-weight:600;margin-top:12px}
+  .hide{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Dropbox接続設定</h1>
+  <p>収量記録アプリのための1回だけの作業です</p>
+</header>
+
+<div class="panel" id="step1">
+  <h2>接続する</h2>
+  <p>App key を確認して、ボタンを押してください。Dropboxの許可画面に移ります。</p>
+  <label for="key">App key</label>
+  <input type="text" id="key" value="yi9enfrq5fu6c9u" autocomplete="off" spellcheck="false">
+  <button id="go">Dropboxに接続</button>
+</div>
+
+<div class="panel hide" id="step2">
+  <h2>接続中</h2>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="hide" id="ok">
+  <div class="done">
+    <h2 style="margin:0 0 8px;font-size:17px">接続できました</h2>
+    <p style="margin:0;font-size:14.5px;color:var(--muted)">
+      Dropbox内のアプリ専用フォルダに、テストファイルを1つ作成しました。
+      Dropboxで確認できます。
+    </p>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h2>控えておく鍵</h2>
+    <p>端末を変えるときに必要です。パスワード管理と同じ扱いにしてください。</p>
+    <div class="token" id="tk">—</div>
+    <button class="sub" id="copy">鍵をコピー</button>
+    <div id="copied" style="text-align:center;font-size:13.5px;color:var(--leaf);margin-top:8px;min-height:1.3em;font-weight:600"></div>
+    <p class="warn">この鍵を知られると、アプリ専用フォルダの中身を読み書きされます。人に見せないでください。</p>
+  </div>
+</div>
+
+<div class="hide" id="ng">
+  <div class="bad">
+    <h2 style="margin:0 0 8px;font-size:17px">接続できませんでした</h2>
+    <p style="margin:0;font-size:14.5px;color:var(--muted)" id="ngmsg"></p>
+  </div>
+  <button class="sub" id="retry" style="margin-top:16px">最初からやり直す</button>
+</div>
+
+<script>
+(function(){
+  var REDIRECT = location.origin + location.pathname;
+  var LS_KEY = 'htf_dbx_key';
+  var LS_TOK = 'htf_dbx_refresh';
+  var SS_VER = 'htf_pkce_verifier';
+
+  var log = document.getElementById('log');
+  function say(state, text, detail){
+    var d = document.createElement('div');
+    d.className = 'line';
+    d.innerHTML = '<span class="mk ' + state + '">' +
+      (state==='ok'?'○':state==='ng'?'×':'·') + '</span><span class="tx"></span>';
+    d.querySelector('.tx').textContent = text;
+    log.appendChild(d);
+    if(detail){
+      var e = document.createElement('div');
+      e.className = 'detail';
+      e.textContent = detail;
+      log.appendChild(e);
+    }
+    return d;
+  }
+  function show(id){ document.getElementById(id).classList.remove('hide'); }
+  function hide(id){ document.getElementById(id).classList.add('hide'); }
+
+  function fail(msg){
+    hide('step2'); show('ng');
+    document.getElementById('ngmsg').textContent = msg;
+  }
+
+  function b64url(buf){
+    var s = btoa(String.fromCharCode.apply(null, new Uint8Array(buf)));
+    return s.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+  function makeVerifier(){
+    var a = new Uint8Array(64);
+    crypto.getRandomValues(a);
+    return b64url(a.buffer).slice(0,86);
+  }
+
+  // ---- 戻ってきた場合 ----
+  var params = new URLSearchParams(location.search);
+  var code = params.get('code');
+  var err  = params.get('error');
+
+  if(err){
+    hide('step1');
+    fail('Dropbox側で拒否されました（' + err + '）。許可画面で「許可」を押したか確認してください。');
+    return;
+  }
+
+  if(code){
+    hide('step1'); show('step2');
+    exchange(code);
+    return;
+  }
+
+  // ---- 開始 ----
+  document.getElementById('go').addEventListener('click', function(){
+    var key = document.getElementById('key').value.trim();
+    if(!key){ alert('App key を入れてください'); return; }
+    localStorage.setItem(LS_KEY, key);
+
+    var verifier = makeVerifier();
+    sessionStorage.setItem(SS_VER, verifier);
+    localStorage.setItem(SS_VER, verifier);
+
+    crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
+      .then(function(h){
+        var challenge = b64url(h);
+        var u = 'https://www.dropbox.com/oauth2/authorize'
+          + '?client_id=' + encodeURIComponent(key)
+          + '&response_type=code'
+          + '&code_challenge=' + challenge
+          + '&code_challenge_method=S256'
+          + '&token_access_type=offline'
+          + '&redirect_uri=' + encodeURIComponent(REDIRECT);
+        location.href = u;
+      })
+      .catch(function(e){
+        alert('暗号処理に失敗しました: ' + e.message);
+      });
+  });
+
+  document.getElementById('retry').addEventListener('click', function(){
+    location.href = REDIRECT;
+  });
+
+  // ---- コードを鍵に交換 ----
+  function exchange(code){
+    var key = localStorage.getItem(LS_KEY);
+    var verifier = sessionStorage.getItem(SS_VER) || localStorage.getItem(SS_VER);
+
+    if(!key || !verifier){
+      fail('接続の途中経過が失われました。同じブラウザで最初からやり直してください。');
+      return;
+    }
+
+    say('', 'Dropboxから許可を受け取りました');
+    var l1 = say('', '接続用の鍵を取得しています');
+
+    var body = new URLSearchParams({
+      code: code,
+      grant_type: 'authorization_code',
+      client_id: key,
+      code_verifier: verifier,
+      redirect_uri: REDIRECT
+    });
+
+    fetch('https://api.dropboxapi.com/oauth2/token', {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: body.toString()
+    })
+    .then(function(r){ return r.json().then(function(j){ return {s:r.status, j:j}; }); })
+    .then(function(res){
+      if(res.s !== 200 || !res.j.refresh_token){
+        l1.querySelector('.mk').className = 'mk ng';
+        throw new Error(res.j.error_description || res.j.error || ('HTTP ' + res.s));
+      }
+      l1.querySelector('.mk').className = 'mk ok';
+      localStorage.setItem(LS_TOK, res.j.refresh_token);
+      sessionStorage.removeItem(SS_VER);
+      localStorage.removeItem(SS_VER);
+      return testWrite(res.j.access_token, res.j.refresh_token);
+    })
+    .catch(function(e){
+      fail(e.message);
+    });
+  }
+
+  // ---- 書き込みテスト ----
+  function testWrite(access, refresh){
+    var l2 = say('', 'アプリ専用フォルダに書き込みを試しています');
+    var arg = {path:'/接続テスト.txt', mode:'overwrite', mute:true};
+    var text = '収量記録アプリ 接続確認\n'
+             + new Date().toLocaleString('ja-JP') + '\n'
+             + 'このファイルは削除して構いません。\n';
+
+    return fetch('https://content.dropboxapi.com/2/files/upload', {
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer ' + access,
+        'Dropbox-API-Arg': toAscii(JSON.stringify(arg)),
+        'Content-Type':'application/octet-stream'
+      },
+      body: new Blob([text], {type:'text/plain'})
+    })
+    .then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error('書き込み拒否 HTTP ' + r.status + ' ' + t.slice(0,120)); });
+      l2.querySelector('.mk').className = 'mk ok';
+      say('ok', 'すべて完了しました');
+      hide('step2'); show('ok');
+      document.getElementById('tk').textContent = refresh;
+    })
+    .catch(function(e){
+      l2.querySelector('.mk').className = 'mk ng';
+      throw e;
+    });
+  }
+
+  // Dropbox-API-Arg は非ASCIIを \uXXXX に変換して渡す必要がある
+  function toAscii(s){
+    return s.replace(/[\u007f-\uffff]/g, function(c){
+      return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
+    });
+  }
+
+  document.getElementById('copy').addEventListener('click', function(){
+    var t = document.getElementById('tk').textContent;
+    var m = document.getElementById('copied');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){ m.textContent='コピーしました'; })
+        .catch(function(){ m.textContent='コピーできませんでした。手で控えてください'; });
+    }else{
+      m.textContent='コピーできませんでした。手で控えてください';
+    }
+  });
+})();
+</script>
+</body>
+</html>
