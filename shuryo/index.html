@@ -205,6 +205,10 @@ canvas{width:100%;height:auto;display:block}
     <h2>入力した日</h2>
     <div class="body" id="reclist"></div>
   </div>
+  <div class="card quiet" id="seasoncard" style="display:none">
+    <h2>年度の整理</h2>
+    <div class="body" id="seasons"></div>
+  </div>
   <button class="act g" id="resync">Dropboxと同期する</button>
 </section>
 
@@ -262,6 +266,21 @@ function seasonOf(dateStr){
   var y = +dateStr.slice(0,4), m = +dateStr.slice(5,7);
   return m >= 10 ? y+1 : y;
 }
+/* シーズン（10月〜7月）の範囲内か */
+function inSeason(dateStr){
+  var m = +dateStr.slice(5,7);
+  return m >= 10 || m <= 7;
+}
+/* 記録が存在する年度の一覧 */
+function seasonsInUse(extra){
+  var set = {};
+  Object.keys(state.records).forEach(function(k){
+    set[seasonOf(state.records[k].date)] = 1;
+  });
+  if(extra) set[extra] = 1;
+  return Object.keys(set).map(Number).sort();
+}
+
 /* 月をまたぐ行（11月・2月・4月・6月の翌月1日）に該当するか */
 function isSpill(dateStr){
   var m = +dateStr.slice(5,7), d = +dateStr.slice(8,10);
@@ -404,8 +423,13 @@ function loadDay(date){
   });
 
   var sp = el("spill");
-  if(isSpill(date)){
+  if(!inSeason(date)){
     sp.style.display = "block";
+    sp.style.borderLeftColor = "#C62828";
+    sp.textContent = "8月と9月は Excel に行がありません。この日付では保存できません。";
+  } else if(isSpill(date)){
+    sp.style.display = "block";
+    sp.style.borderLeftColor = "#8A6A1F";
     sp.textContent = "この日は Excel では " + prevMonthName(date) +
       "ブロックの末尾に入ります。従来どおりの扱いです。";
   } else { sp.style.display = "none"; }
@@ -563,7 +587,51 @@ function monthlyTotals(){
   return acc;
 }
 
+function renderSeasons(){
+  var byS = {};
+  Object.keys(state.records).forEach(function(k){
+    var r = state.records[k];
+    var y = seasonOf(r.date);
+    if(!byS[y]) byS[y] = {n:0, dates:{}};
+    byS[y].n++;
+    byS[y].dates[r.date] = 1;
+  });
+  var ys = Object.keys(byS).map(Number).sort();
+  var card = el("seasoncard");
+
+  if(ys.length < 2){ card.style.display = "none"; return; }
+  card.style.display = "block";
+
+  el("seasons").innerHTML =
+    '<div class="warnbox" style="margin:0 0 12px">' +
+    '複数の年度が混ざっています。反映スクリプトは1年度ずつしか処理できません。' +
+    '不要な年度を削除してください。</div>' +
+    ys.map(function(y){
+      return '<div class="recrow"><span class="d">' + y + '年度</span>' +
+             '<span class="h">' + Object.keys(byS[y].dates).length + ' 日分</span>' +
+             '<button class="mini" data-delseason="' + y + '">削除</button></div>';
+    }).join("");
+
+  Array.prototype.forEach.call(el("seasons").querySelectorAll("[data-delseason]"), function(b){
+    b.addEventListener("click", function(){
+      var y = +b.getAttribute("data-delseason");
+      if(!confirm(y + "年度の記録をアプリから完全に削除します。\n\n" +
+                  "Excelには何も反映されません。\n" +
+                  "動作確認で入れた分など、不要な記録を消すための操作です。\n\n" +
+                  "よろしいですか？")) return;
+      Object.keys(state.records).forEach(function(k){
+        if(seasonOf(state.records[k].date) === y) delete state.records[k];
+      });
+      state.pending = true; saveLocal();
+      renderRec(); renderChart();
+      toast(y + "年度を削除しました");
+      sync();
+    });
+  });
+}
+
 function renderRec(){
+  renderSeasons();
   var acc = monthlyTotals();
   var keys = Object.keys(acc).sort();
   var host = el("monthly");
@@ -752,6 +820,18 @@ function selectTab(id){
     if(!date){ toast("荷受日を選んでください", true); return; }
     var recs = collect();
     if(!recs || !recs.length){ toast("入力がありません", true); return; }
+
+    if(!inSeason(date)){
+      alert("8月と9月は Excel に行がありません。\n10月から翌年7月までの日付を選んでください。");
+      return;
+    }
+    var ss = seasonsInUse(seasonOf(date));
+    if(ss.length > 1){
+      alert("年度が混ざります。\n\n現在の記録: " + ss.join("年度、") + "年度\n\n" +
+            "反映スクリプトは1年度ずつしか処理できません。\n" +
+            "記録タブで不要な年度の記録を削除してください。");
+      return;
+    }
 
     var ugaCon = num(el("uga-con").value);
     var split = num(el("c-east").value)+num(el("c-west").value)+num(el("c-south").value);
