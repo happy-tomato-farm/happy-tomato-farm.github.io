@@ -390,7 +390,7 @@ function loadDay(date){
   var m = {"宇賀神":"uga","中央":"chu"};
   Object.keys(m).forEach(function(house){
     var r = state.records[key(date,house)];
-    if(!r) return;
+    if(!r || r.cleared) return;
     var p = m[house];
     writeGrid(p, r.grid);
     el(p+"-con").value = r.container || "";
@@ -400,7 +400,7 @@ function loadDay(date){
   });
   [["東","c-east"],["西","c-west"],["南","c-south"]].forEach(function(p){
     var r = state.records[key(date,p[0])];
-    el(p[1]).value = r && r.container ? r.container : "";
+    el(p[1]).value = (r && !r.cleared && r.container) ? r.container : "";
   });
 
   var sp = el("spill");
@@ -411,6 +411,28 @@ function loadDay(date){
   } else { sp.style.display = "none"; }
 
   refreshGrid("uga"); refreshGrid("chu"); refreshSplit();
+}
+
+/* その日の記録を差し替える。
+   入力が無くなったハウスには「空にする」指示を残す。
+   単に消すと、反映スクリプトがその日を知らないままになり、
+   Excelに古い数字が残ってしまう。 */
+function applyDay(date, recs){
+  var byHouse = {};
+  (recs||[]).forEach(function(r){ byHouse[r.house] = r; });
+  ["宇賀神","東","西","南","中央"].forEach(function(h){
+    var k = key(date,h);
+    if(byHouse[h]) state.records[k] = byHouse[h];
+    else if(state.records[k]) state.records[k] = {date:date, house:h, cleared:true};
+  });
+}
+
+function liveDates(){
+  var d = {};
+  Object.keys(state.records).forEach(function(k){
+    if(!state.records[k].cleared) d[k.split("|")[0]] = 1;
+  });
+  return d;
 }
 
 function saveLocal(){
@@ -514,13 +536,13 @@ function dayWeight(r){
 function houseWeights(date){
   var out = {"中央":0,"東":0,"西":0,"南":0};
   var chu = state.records[key(date,"中央")];
-  if(chu) out["中央"] = dayWeight(chu);
+  if(chu && !chu.cleared) out["中央"] = dayWeight(chu);
   var uga = state.records[key(date,"宇賀神")];
-  if(uga && uga.container){
+  if(uga && !uga.cleared && uga.container){
     var per = dayWeight(uga) / uga.container;
     ["東","西","南"].forEach(function(h){
       var r = state.records[key(date,h)];
-      if(r && r.container) out[h] = per * r.container;
+      if(r && !r.cleared && r.container) out[h] = per * r.container;
     });
   }
   return out;
@@ -528,8 +550,7 @@ function houseWeights(date){
 
 function monthlyTotals(){
   var acc = {};   // "YYYY-MM" -> {house: kg}
-  var dates = {};
-  Object.keys(state.records).forEach(function(k){ dates[k.split("|")[0]] = 1; });
+  var dates = liveDates();
   Object.keys(dates).forEach(function(d){
     /* 月をまたぐ日は前月に含める（Excelと同じ扱い） */
     var y = +d.slice(0,4), m = +d.slice(5,7);
@@ -562,13 +583,13 @@ function renderRec(){
     host.innerHTML = h;
   }
 
-  var dates = {};
-  Object.keys(state.records).forEach(function(k){ dates[k.split("|")[0]] = 1; });
-  var ds = Object.keys(dates).sort().reverse();
+  var ds = Object.keys(liveDates()).sort().reverse();
   var lst = el("reclist");
   if(!ds.length){ lst.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
   lst.innerHTML = ds.map(function(d){
     var uga = state.records[key(d,"宇賀神")], chu = state.records[key(d,"中央")];
+    if(uga && uga.cleared) uga = null;
+    if(chu && chu.cleared) chu = null;
     var n = 0;
     if(uga) n += Object.keys(uga.grid||{}).reduce(function(a,s){
       return a + GRADES.reduce(function(b,g){ return b + (uga.grid[s][g]||0); },0); },0);
@@ -740,8 +761,7 @@ function selectTab(id){
     });
     if(bad.length && !confirm("総玉数が合っていません。\n"+bad.join("\n")+"\n\n保存しますか？")) return;
 
-    ["宇賀神","東","西","南","中央"].forEach(function(h){ delete state.records[key(date,h)]; });
-    recs.forEach(function(r){ state.records[key(r.date,r.house)] = r; });
+    applyDay(date, recs);
     state.pending = true; saveLocal();
     toast("保存しました");
     sync();
@@ -750,8 +770,8 @@ function selectTab(id){
   el("clear").addEventListener("click", function(){
     var date = el("date").value;
     if(!date) return;
-    if(!confirm(date + " の入力を消します。よろしいですか？")) return;
-    ["宇賀神","東","西","南","中央"].forEach(function(h){ delete state.records[key(date,h)]; });
+    if(!confirm(date + " の入力を消します。\nExcel側も次回の反映で空になります。\n\nよろしいですか？")) return;
+    applyDay(date, []);
     state.pending = true; saveLocal();
     loadDay(date);
     toast("消しました");
