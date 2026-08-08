@@ -90,6 +90,17 @@ tr.sum td{background:var(--tint);font-weight:800;border-top:2px solid var(--ink)
 .bar.g3 .fill{background:#A9BE96}
 .bar.g4 .fill{background:#D2D9C6}
 
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.scroll table{min-width:430px}
+table td.n{font-size:12.5px}
+.pick{display:flex;gap:6px;padding:0 12px 10px}
+.pick button{
+  flex:1;padding:8px 4px;font-size:13px;font-weight:700;font-family:inherit;
+  border:2px solid var(--rule);background:var(--paper);color:var(--muted);cursor:pointer;
+}
+.pick button.sel{border-color:var(--ink);color:var(--ink);background:var(--tint)}
+.note{font-size:12.5px;color:var(--muted);padding:0 4px;margin:10px 0 0}
+
 footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
 .empty{text-align:center;color:var(--muted);font-size:14px;padding:30px 12px}
 </style>
@@ -162,6 +173,14 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     return (+n).toLocaleString("ja-JP", {minimumFractionDigits:d||0, maximumFractionDigits:d||0});
   }
 
+  /* 実績のある最新の年度。今年度がまだ空でも表示できるようにする。 */
+  function latestWithData(){
+    for(var k = seasons.length-1; k >= 0; k--){
+      if(sum((seasons[k].houses[cur] || {}).kg || []) > 0) return seasons[k];
+    }
+    return last;
+  }
+
   function ratioTag(now, before){
     if(!before) return '<div class="cmp flat">前年 —</div>';
     var r = now / before * 100;
@@ -170,10 +189,10 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     return '<div class="cmp '+cls+'">前年比 '+sign+fmt(r-100,1)+'%</div>';
   }
 
-  /* ---------- 折れ線グラフ ---------- */
-  function lineChart(cv, series, unit, digits){
+  /* ---------- 棒グラフ ---------- */
+  function barChart(cv, series){
     var ctx = cv.getContext("2d");
-    var W = cv.width, H = cv.height, L = 46, R = 10, T = 12, B = 30;
+    var W = cv.width, H = cv.height, L = 48, R = 10, T = 12, B = 30;
     ctx.clearRect(0,0,W,H);
 
     var max = 0;
@@ -184,11 +203,112 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     max = Math.ceil(max/step)*step;
 
     var n = D.months.length;
-    var x = function(i){ return L + (W-L-R) * (i/(n-1)); };
+    var slot = (W-L-R) / n;
+    var gap = slot * 0.22;
+    var bw = (slot - gap) / series.length;
     var y = function(v){ return H-B - (H-T-B) * (v/max); };
 
     ctx.font = "10.5px sans-serif"; ctx.textAlign = "right";
     for(var v = 0; v <= max + 1e-9; v += step){
+      ctx.strokeStyle = "#E8EDE3";
+      ctx.beginPath(); ctx.moveTo(L, y(v)); ctx.lineTo(W-R, y(v)); ctx.stroke();
+      ctx.fillStyle = "#5C6857";
+      ctx.fillText(fmt(v, 0), L-6, y(v)+3.5);
+    }
+
+    series.forEach(function(s, si){
+      ctx.fillStyle = s.color;
+      s.data.forEach(function(v, i){
+        if(!v) return;
+        var x0 = L + slot*i + gap/2 + bw*si;
+        ctx.fillRect(x0, y(v), bw-1, (H-B) - y(v));
+      });
+    });
+
+    ctx.fillStyle = "#5C6857"; ctx.textAlign = "center";
+    D.months.forEach(function(m,i){
+      ctx.fillText(m.replace("月",""), L + slot*i + slot/2, H-11);
+    });
+  }
+
+  /* ---------- 構成比の推移（積み上げ） ---------- */
+  function stackChart(cv, keys, byMonth, labels, palette){
+    var ctx = cv.getContext("2d");
+    var W = cv.width, H = cv.height, L = 40, R = 10, T = 12, B = 30;
+    ctx.clearRect(0,0,W,H);
+
+    var n = D.months.length;
+    var tot = [];
+    for(var i=0;i<n;i++){
+      var t = 0;
+      keys.forEach(function(k){ t += (byMonth[k]||[])[i] || 0; });
+      tot.push(t);
+    }
+    var slot = (W-L-R)/n, gap = slot*0.2, bw = slot-gap;
+    var y = function(p){ return H-B - (H-T-B)*(p/100); };
+
+    ctx.font = "10.5px sans-serif"; ctx.textAlign = "right";
+    [0,25,50,75,100].forEach(function(p){
+      ctx.strokeStyle = "#E8EDE3";
+      ctx.beginPath(); ctx.moveTo(L, y(p)); ctx.lineTo(W-R, y(p)); ctx.stroke();
+      ctx.fillStyle = "#5C6857";
+      ctx.fillText(p+"%", L-6, y(p)+3.5);
+    });
+
+    for(var i=0;i<n;i++){
+      if(!tot[i]) continue;
+      var acc = 0;
+      for(var j=0;j<keys.length;j++){
+        var v = (byMonth[keys[j]]||[])[i] || 0;
+        if(!v) continue;
+        var p = v/tot[i]*100;
+        ctx.fillStyle = palette[j % palette.length];
+        var yTop = y(acc+p), yBot = y(acc);
+        ctx.fillRect(L + slot*i + gap/2, yTop, bw, yBot-yTop);
+        acc += p;
+      }
+    }
+
+    ctx.fillStyle = "#5C6857"; ctx.textAlign = "center";
+    D.months.forEach(function(m,i){
+      ctx.fillText(m.replace("月",""), L + slot*i + slot/2, H-11);
+    });
+  }
+
+  /* ---------- 折れ線グラフ ---------- */
+  function lineChart(cv, series, unit, digits, floor, tick){
+    var ctx = cv.getContext("2d");
+    var W = cv.width, H = cv.height, L = 46, R = 10, T = 12, B = 30;
+    ctx.clearRect(0,0,W,H);
+
+    var max = 0, min = Infinity;
+    series.forEach(function(s){ s.data.forEach(function(v){
+      if(!v) return;
+      if(v > max) max = v;
+      if(v < min) min = v;
+    }); });
+    if(max <= 0) max = 1;
+    if(min === Infinity) min = 0;
+
+    var base = 0, step;
+    if(floor !== undefined){
+      /* 変動を読み取りやすくするため、下限を切り上げて拡大表示する */
+      step = tick || 10;
+      base = Math.max(floor, Math.floor(min/step)*step - step);
+      max = Math.ceil(max/step)*step;
+      if(max <= base) max = base + step;
+    } else {
+      step = Math.pow(10, Math.floor(Math.log(max)/Math.LN10));
+      if(max/step < 2) step /= 2; else if(max/step > 5) step *= 2;
+      max = Math.ceil(max/step)*step;
+    }
+
+    var n = D.months.length;
+    var x = function(i){ return L + (W-L-R) * (i/(n-1)); };
+    var y = function(v){ return H-B - (H-T-B) * ((v-base)/(max-base)); };
+
+    ctx.font = "10.5px sans-serif"; ctx.textAlign = "right";
+    for(var v = base; v <= max + 1e-9; v += step){
       ctx.strokeStyle = "#E8EDE3";
       ctx.beginPath(); ctx.moveTo(L, y(v)); ctx.lineTo(W-R, y(v)); ctx.stroke();
       ctx.fillStyle = "#5C6857";
@@ -216,7 +336,8 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     });
   }
 
-  function chartCard(title, field, unit, digits){
+  function chartCard(title, field, opt){
+    opt = opt || {};
     var series = seasons.map(function(s,i){
       return {
         name: s.label,
@@ -230,22 +351,66 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
 
     var id = "cv_" + field;
     var legend = series.map(function(s){
-      return '<span><i style="background:'+s.color+'"></i>'+s.name+'</span>';
+      return '<span><i style="background:'+s.color+
+             ';height:'+(opt.bar?10:(s.thick?4:3))+'px"></i>'+s.name+'</span>';
     }).join("");
 
     setTimeout(function(){
       var cv = document.getElementById(id);
-      if(cv) lineChart(cv, series, unit, digits);
+      if(!cv) return;
+      if(opt.bar) barChart(cv, series);
+      else lineChart(cv, series, "", opt.digits, opt.floor, opt.tick);
     }, 0);
 
     return '<div class="card"><h2>'+title+'</h2><div class="body">' +
            '<canvas id="'+id+'" width="660" height="330"></canvas>' +
+           '<div class="legend">'+legend+'</div>' +
+           (opt.note ? '<p class="note">'+opt.note+'</p>' : '') +
+           '</div></div>';
+  }
+
+  /* ---------- 構成比の推移カード ---------- */
+  var SIZE_PALETTE  = ["#7A2E2E","#B14A3A","#D98C4A","#E8C170","#A9BE96","#6E9A5E","#3F7A4A","#2A5240"];
+  var GRADE_PALETTE = ["#2E6B33","#7FA070","#C9A227","#B14A3A"];
+  var stackYear = null;
+
+  function stackCard(title, key, keys, palette, labelFn){
+    var yr = stackYear || latestWithData().label;
+    var season = seasons.filter(function(s){ return s.label === yr; })[0] || last;
+    var h = season.houses[cur];
+    if(!h || !h[key]) return "";
+
+    var byMonth = h[key];
+    var any = keys.some(function(k){ return sum(byMonth[k]||[]) > 0; });
+    if(!any) return "";
+
+    var id = "cv_" + key;
+    setTimeout(function(){
+      var cv = document.getElementById(id);
+      if(cv) stackChart(cv, keys, byMonth, keys, palette);
+    }, 0);
+
+    var picker = seasons.map(function(s){
+      var on = s.label === yr;
+      return '<button data-year="'+s.label+'"'+(on?' class="sel"':'')+'>'+s.label+'</button>';
+    }).join("");
+
+    var legend = keys.map(function(k,i){
+      return '<span><i style="background:'+palette[i%palette.length]+';height:10px"></i>' +
+             labelFn(k) + '</span>';
+    }).join("");
+
+    return '<div class="card"><h2>'+title+'</h2>' +
+           '<div class="pick">'+picker+'</div>' +
+           '<div class="body" style="padding-top:0">' +
+           '<canvas id="'+id+'" width="660" height="300"></canvas>' +
            '<div class="legend">'+legend+'</div></div></div>';
   }
 
   /* ---------- 構成比 ---------- */
   function breakdown(title, key, labels, cls){
-    var h = last.houses[cur];
+    var season = latestWithData();
+    var h = season.houses[cur];
     if(!h) return "";
     var obj = h[key] || {};
     var keys = labels ? labels : Object.keys(obj);
@@ -253,7 +418,9 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     if(!tot) return "";
     var max = Math.max.apply(null, keys.map(function(k){ return obj[k]||0; }));
 
-    var pobj = prev && prev.houses[cur] ? (prev.houses[cur][key] || {}) : null;
+    var pi = seasons.indexOf(season) - 1;
+    var pseason = pi >= 0 ? seasons[pi] : null;
+    var pobj = pseason && pseason.houses[cur] ? (pseason.houses[cur][key] || {}) : null;
     var ptot = pobj ? keys.reduce(function(a,k){ return a + (pobj[k]||0); }, 0) : 0;
 
     var rows = keys.map(function(k,i){
@@ -275,22 +442,42 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
   function monthTable(){
     var h = last.houses[cur];
     var ph = prev ? prev.houses[cur] : null;
-    if(!h || !sum(h.kg)) return "";
+    var season = last;
+    if(!h || !sum(h.kg)){
+      season = latestWithData();
+      var k = seasons.indexOf(season);
+      h = season.houses[cur];
+      ph = k > 0 ? seasons[k-1].houses[cur] : null;
+      if(!h || !sum(h.kg)) return "";
+    }
+
     var rows = D.months.map(function(m,i){
       var v = h.kg[i], pv = ph ? ph.kg[i] : 0;
       var r = (pv && v) ? (v/pv*100) : null;
       var cls = r === null ? "flat" : (r >= 102 ? "up" : (r <= 98 ? "down" : "flat"));
-      return '<tr><td>'+m+'</td><td>'+(v?fmt(v):"")+'</td>' +
+      return '<tr><td>'+m+'</td>' +
+             '<td>'+(v?fmt(v):"")+'</td>' +
              '<td>'+(h.kg10a[i]?fmt(h.kg10a[i]):"")+'</td>' +
-             '<td class="'+cls+'">'+(r===null?"":fmt(r,0)+"%")+'</td></tr>';
+             '<td class="'+cls+'">'+(r===null?"":fmt(r,0)+"%")+'</td>' +
+             '<td class="n">'+(h.count[i]?fmt(h.count[i]):"")+'</td>' +
+             '<td>'+(h.gpf[i]?fmt(h.gpf[i],1):"")+'</td></tr>';
     }).join("");
+
     var tot = sum(h.kg), ptot = ph ? sum(ph.kg) : 0;
     var tr = ptot ? fmt(tot/ptot*100,0)+"%" : "";
-    return '<div class="card"><h2>月別の収量</h2><table>' +
-           '<tr><th>月</th><th>収量 kg</th><th>10a換算</th><th>前年比</th></tr>' +
+    var cnt = sum(h.count);
+    var avg = cnt ? sum(h.kg)*1000/cnt : 0;
+
+    return '<div class="card"><h2>月別の収量（'+season.label+'）</h2>' +
+           '<div class="scroll"><table>' +
+           '<tr><th>月</th><th>収量<br>kg</th><th>10a換算<br>kg</th>' +
+           '<th>前年比</th><th>個数</th><th>平均果重<br>g</th></tr>' +
            rows +
            '<tr class="sum"><td>合計</td><td>'+fmt(tot)+'</td>' +
-           '<td>'+fmt(sum(h.kg10a))+'</td><td>'+tr+'</td></tr></table></div>';
+           '<td>'+fmt(sum(h.kg10a))+'</td><td>'+tr+'</td>' +
+           '<td class="n">'+fmt(cnt)+'</td><td>'+fmt(avg,1)+'</td></tr>' +
+           '</table></div>' +
+           '<p class="note" style="padding:0 12px 12px">横にスクロールできます</p></div>';
   }
 
   /* ---------- 見出しの数字 ---------- */
@@ -322,13 +509,29 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     var area = (last.houses[cur] || {}).area;
     host.innerHTML =
       summary() +
-      chartCard("月別の収量（kg）", "kg", "kg", 0) +
-      chartCard("10aあたりの収量（kg）", "kg10a", "kg", 0) +
-      chartCard("一果実あたりの重量（g）", "gpf", "g", 0) +
+      chartCard("月別の収量（kg）", "kg", {bar:true}) +
+      chartCard("10aあたりの収量（kg）", "kg10a", {bar:true}) +
+      chartCard("一果実あたりの重量（g）", "gpf",
+                {floor:100, tick:10, digits:0,
+                 note:"変化を見やすくするため、縦軸は100gから始めています。"}) +
       monthTable() +
-      breakdown("サイズの構成（"+last.label+"）", "sizes", D.sizes, "") +
-      breakdown("等級の構成（"+last.label+"）", "grades", D.grades, "g") +
+      stackCard("等級の構成の推移", "gradesByMonth", D.grades, GRADE_PALETTE,
+                function(k){ return k; }) +
+      stackCard("サイズの構成の推移", "sizesByMonth", D.sizes, SIZE_PALETTE,
+                function(k){ return D.sizeLabel[k] || k; }) +
+      breakdown("サイズの構成（"+latestWithData().label+" 年間）", "sizes", D.sizes, "") +
+      breakdown("等級の構成（"+latestWithData().label+" 年間）", "grades", D.grades, "g") +
       (area ? '<footer style="padding-top:4px">'+cur+'　'+fmt(area*10,0)+'a</footer>' : "");
+
+    /* 構成比の年度切り替え */
+    var picks = document.querySelectorAll ? document.querySelectorAll("[data-year]") : [];
+    Array.prototype.forEach.call(picks, function(b){
+      b.addEventListener("click", function(){
+        stackYear = b.getAttribute("data-year");
+        render();
+        window.scrollTo(0, b.getBoundingClientRect().top + window.pageYOffset - 120);
+      });
+    });
   }
 
   render();
