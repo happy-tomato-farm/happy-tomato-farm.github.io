@@ -417,13 +417,13 @@ function loadDay(date){
    入力が無くなったハウスには「空にする」指示を残す。
    単に消すと、反映スクリプトがその日を知らないままになり、
    Excelに古い数字が残ってしまう。 */
-function applyDay(date, recs){
+function applyDay(date, recs, force){
   var byHouse = {};
   (recs||[]).forEach(function(r){ byHouse[r.house] = r; });
   ["宇賀神","東","西","南","中央"].forEach(function(h){
     var k = key(date,h);
     if(byHouse[h]) state.records[k] = byHouse[h];
-    else if(state.records[k]) state.records[k] = {date:date, house:h, cleared:true};
+    else if(force || state.records[k]) state.records[k] = {date:date, house:h, cleared:true};
   });
 }
 
@@ -583,7 +583,9 @@ function renderRec(){
     host.innerHTML = h;
   }
 
-  var ds = Object.keys(liveDates()).sort().reverse();
+  var allDates = {};
+  Object.keys(state.records).forEach(function(k){ allDates[k.split("|")[0]] = 1; });
+  var ds = Object.keys(allDates).sort().reverse();
   var lst = el("reclist");
   if(!ds.length){ lst.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
   lst.innerHTML = ds.map(function(d){
@@ -595,10 +597,14 @@ function renderRec(){
       return a + GRADES.reduce(function(b,g){ return b + (uga.grid[s][g]||0); },0); },0);
     if(chu) n += Object.keys(chu.grid||{}).reduce(function(a,s){
       return a + GRADES.reduce(function(b,g){ return b + (chu.grid[s][g]||0); },0); },0);
+    var live = !!(uga || chu) || ["東","西","南"].some(function(h){
+      var r = state.records[key(d,h)]; return r && !r.cleared;
+    });
+    var mid = live
+      ? '<span class="h">'+(uga?"宇賀神 ":"")+(chu?"中央":"")+'</span><span class="n">'+n+' 個</span>'
+      : '<span class="h"><span class="pill wait">消去</span></span><span class="n"></span>';
     return '<div class="recrow" data-d="'+d+'"><span class="d">'+d.slice(5)+'</span>' +
-           '<span class="h">'+(uga?"宇賀神 ":"")+(chu?"中央":"")+'</span>' +
-           '<span class="n">'+n+' 個</span>' +
-           '<button class="mini" data-open="'+d+'">開く</button></div>';
+           mid + '<button class="mini" data-open="'+d+'">開く</button></div>';
   }).join("");
   Array.prototype.forEach.call(lst.querySelectorAll("[data-open]"), function(b){
     b.addEventListener("click", function(){
@@ -770,8 +776,8 @@ function selectTab(id){
   el("clear").addEventListener("click", function(){
     var date = el("date").value;
     if(!date) return;
-    if(!confirm(date + " の入力を消します。\nExcel側も次回の反映で空になります。\n\nよろしいですか？")) return;
-    applyDay(date, []);
+    if(!confirm(date + " を空にします。\nExcelに直接入力した分があっても消えます。\n\nよろしいですか？")) return;
+    applyDay(date, [], true);
     state.pending = true; saveLocal();
     loadDay(date);
     toast("消しました");
