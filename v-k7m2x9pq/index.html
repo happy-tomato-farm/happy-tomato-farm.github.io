@@ -101,7 +101,19 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
   var D = window.DATA;
   var host = document.getElementById("main");
   if(!D || !D.seasons || !D.seasons.length){
-    host.innerHTML = '<div class="empty">データがまだありません</div>';
+    var why = !D
+      ? "data.js を読み込めませんでした。"
+      : "data.js の中身が空です。";
+    host.innerHTML =
+      '<div class="card"><h2>表示できません</h2><div class="body">' +
+      '<p style="margin:0 0 12px;font-size:14.5px">' + why + '</p>' +
+      '<p style="margin:0 0 8px;font-size:13.5px;color:#5C6857">' +
+      'このページと同じフォルダに data.js があるか確認してください。' +
+      '次のアドレスを開いて中身が表示されれば、ファイルは届いています。</p>' +
+      '<p style="margin:0;font-family:ui-monospace,monospace;font-size:12.5px;' +
+      'background:#F5F8F2;border:1px solid #DCE3D7;padding:9px;word-break:break-all">' +
+      location.href.replace(/[^/]*$/, "") + 'data.js</p>' +
+      '</div></div>';
     return;
   }
 
