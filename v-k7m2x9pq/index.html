@@ -23,7 +23,7 @@ window.onerror = function(msg, src, line, col){
 :root{
   --paper:#FFF; --ink:#12180F; --muted:#5C6857; --rule:#DCE3D7;
   --tomato:#C62828; --leaf:#2E6B33; --tint:#F5F8F2;
-  --y0:#C9D2C3; --y1:#7FA070; --y2:#C62828;
+  --y0:#3F7CAC; --y1:#E09B2D; --y2:#C62828;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
@@ -90,9 +90,15 @@ tr.sum td{background:var(--tint);font-weight:800;border-top:2px solid var(--ink)
 .bar.g3 .fill{background:#A9BE96}
 .bar.g4 .fill{background:#D2D9C6}
 
-.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.scroll table{min-width:430px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.scroll::-webkit-scrollbar{height:9px}
+.scroll::-webkit-scrollbar-thumb{background:var(--rule);border-radius:5px}
+.scroll table{min-width:400px}
 table td.n{font-size:12.5px}
+table.pct th:first-child,table.pct td:first-child{width:52px}
+table.pct th,table.pct td{padding:6px 2px;font-size:12px}
+table.pct td.hi{background:var(--tint);font-weight:800}
+.swatch{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:baseline}
 .pick{display:flex;gap:6px;padding:0 12px 10px}
 .pick button{
   flex:1;padding:8px 4px;font-size:13px;font-weight:700;font-family:inherit;
@@ -100,6 +106,8 @@ table td.n{font-size:12.5px}
 }
 .pick button.sel{border-color:var(--ink);color:var(--ink);background:var(--tint)}
 .note{font-size:12.5px;color:var(--muted);padding:0 4px;margin:10px 0 0}
+.only-narrow{display:none}
+@media (max-width:520px){ .only-narrow{display:block} }
 
 footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
 .empty{text-align:center;color:var(--muted);font-size:14px;padding:30px 12px}
@@ -370,19 +378,39 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
   }
 
   /* ---------- 構成比の推移カード ---------- */
-  var SIZE_PALETTE  = ["#7A2E2E","#B14A3A","#D98C4A","#E8C170","#A9BE96","#6E9A5E","#3F7A4A","#2A5240"];
-  var GRADE_PALETTE = ["#2E6B33","#7FA070","#C9A227","#B14A3A"];
+  /* 隣り合う区分ほど色相を離し、スマホでも見分けられるようにする */
+  var SIZE_PALETTE  = ["#8E2F8E","#3F5BC4","#2E9BD6","#3FA857",
+                       "#B7C233","#E8A33D","#DB6A2B","#B32424"];
+  var GRADE_PALETTE = ["#2E9BD6","#3FA857","#E8A33D","#C62828"];
   var stackYear = null;
 
   function stackCard(title, key, keys, palette, labelFn){
     var yr = stackYear || latestWithData().label;
     var season = seasons.filter(function(s){ return s.label === yr; })[0] || last;
     var h = season.houses[cur];
-    if(!h || !h[key]) return "";
+
+    /* 古い data.js には月別内訳が入っていない */
+    if(!h || !h[key]){
+      return '<div class="card"><h2>'+title+'</h2><div class="body">' +
+             '<p style="margin:0;font-size:14px">月別の内訳がデータに含まれていません。</p>' +
+             '<p class="note">PCで書き出しをやり直し、新しい data.js に' +
+             '差し替えてください。</p></div></div>';
+    }
 
     var byMonth = h[key];
     var any = keys.some(function(k){ return sum(byMonth[k]||[]) > 0; });
-    if(!any) return "";
+
+    var picker = seasons.map(function(s){
+      var on = s.label === yr;
+      return '<button data-year="'+s.label+'"'+(on?' class="sel"':'')+'>'+s.label+'</button>';
+    }).join("");
+
+    if(!any){
+      return '<div class="card"><h2>'+title+'</h2>' +
+             '<div class="pick">'+picker+'</div>' +
+             '<div class="body" style="padding-top:0"><p style="margin:0;font-size:14px">' +
+             yr+'は記録がありません。</p></div></div>';
+    }
 
     var id = "cv_" + key;
     setTimeout(function(){
@@ -390,21 +418,46 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
       if(cv) stackChart(cv, keys, byMonth, keys, palette);
     }, 0);
 
-    var picker = seasons.map(function(s){
-      var on = s.label === yr;
-      return '<button data-year="'+s.label+'"'+(on?' class="sel"':'')+'>'+s.label+'</button>';
-    }).join("");
-
     var legend = keys.map(function(k,i){
       return '<span><i style="background:'+palette[i%palette.length]+';height:10px"></i>' +
              labelFn(k) + '</span>';
+    }).join("");
+
+    /* 月ごとの比率を数値でも見られるようにする */
+    var n = D.months.length;
+    var tot = [];
+    for(var i=0;i<n;i++){
+      var t = 0;
+      keys.forEach(function(k){ t += (byMonth[k]||[])[i] || 0; });
+      tot.push(t);
+    }
+    var head = '<tr><th></th>' + D.months.map(function(m){
+      return '<th>'+m.replace("月","")+'</th>'; }).join("") + '</tr>';
+    var body = keys.map(function(k,ki){
+      var best = 0;
+      for(var i=0;i<n;i++){
+        var p = tot[i] ? ((byMonth[k]||[])[i]||0)/tot[i]*100 : 0;
+        if(p > best) best = p;
+      }
+      var cells = "";
+      for(var i=0;i<n;i++){
+        var p = tot[i] ? ((byMonth[k]||[])[i]||0)/tot[i]*100 : 0;
+        cells += '<td'+(p>0 && p===best?' class="hi"':'')+'>' +
+                 (tot[i] ? fmt(p,1) : "") + '</td>';
+      }
+      return '<tr><td><span class="swatch" style="background:' +
+             palette[ki%palette.length]+'"></span>'+labelFn(k)+'</td>'+cells+'</tr>';
     }).join("");
 
     return '<div class="card"><h2>'+title+'</h2>' +
            '<div class="pick">'+picker+'</div>' +
            '<div class="body" style="padding-top:0">' +
            '<canvas id="'+id+'" width="660" height="300"></canvas>' +
-           '<div class="legend">'+legend+'</div></div></div>';
+           '<div class="legend">'+legend+'</div>' +
+           '<div class="scroll" style="margin-top:14px"><table class="pct">' +
+           head + body + '</table></div>' +
+           '<p class="note">単位 %。各区分でもっとも高い月に色を付けています。</p>' +
+           '</div></div>';
   }
 
   /* ---------- 構成比 ---------- */
@@ -477,7 +530,8 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
            '<td>'+fmt(sum(h.kg10a))+'</td><td>'+tr+'</td>' +
            '<td class="n">'+fmt(cnt)+'</td><td>'+fmt(avg,1)+'</td></tr>' +
            '</table></div>' +
-           '<p class="note" style="padding:0 12px 12px">横にスクロールできます</p></div>';
+           '<p class="note only-narrow" style="padding:0 12px 12px">' +
+           '横にスクロールできます</p></div>';
   }
 
   /* ---------- 見出しの数字 ---------- */
