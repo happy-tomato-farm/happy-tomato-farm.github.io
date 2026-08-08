@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C62828">
+<title>ハッピートマトファーム</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23C62828'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%232E6B33' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --paper:#FFFFFF;
+    --ink:#12180F;
+    --muted:#5C6857;
+    --rule:#C6CFC0;
+    --tomato:#C62828;
+    --leaf:#2E6B33;
+    --tint:#F4F7F1;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,"Segoe UI","Noto Sans JP","Hiragino Kaku Gothic ProN",Roboto,sans-serif;
+    font-size:17px;
+    line-height:1.6;
+    padding:24px 18px 60px;
+    max-width:600px;
+    margin:0 auto;
+  }
+
+  header{
+    border-bottom:3px solid var(--tomato);
+    padding-bottom:16px;
+    margin-bottom:26px;
+  }
+  h1{
+    font-size:25px;
+    font-weight:800;
+    margin:0;
+    letter-spacing:.02em;
+  }
+  header p{
+    margin:6px 0 0;
+    font-size:14px;
+    color:var(--muted);
+  }
+
+  h2{
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.14em;
+    color:var(--muted);
+    margin:32px 0 12px;
+  }
+
+  a.tool{
+    display:block;
+    border:2px solid var(--ink);
+    padding:18px 18px;
+    margin-bottom:12px;
+    text-decoration:none;
+    color:var(--ink);
+    background:var(--paper);
+  }
+  a.tool:active{background:var(--tint)}
+  a.tool:focus-visible{outline:3px solid var(--tomato);outline-offset:3px}
+  .tool .t{font-size:19px;font-weight:700;display:block}
+  .tool .d{font-size:14px;color:var(--muted);display:block;margin-top:3px}
+
+  .tool.soon{
+    border-style:dashed;
+    border-color:var(--rule);
+    color:var(--muted);
+    pointer-events:none;
+  }
+  .tool.soon .t{font-weight:600}
+  .badge{
+    float:right;
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:.08em;
+    border:1.5px solid var(--rule);
+    padding:2px 8px;
+    color:var(--muted);
+  }
+
+  .status{
+    background:var(--tint);
+    border-left:5px solid var(--leaf);
+    padding:16px 16px;
+    margin-top:34px;
+  }
+  .status h3{
+    font-size:14px;
+    margin:0 0 10px;
+    font-weight:700;
+  }
+  .status dl{margin:0;font-size:14px}
+  .status dt{
+    color:var(--muted);
+    font-size:12.5px;
+    margin-top:8px;
+  }
+  .status dt:first-child{margin-top:0}
+  .status dd{
+    margin:1px 0 0;
+    font-family:ui-monospace,"Roboto Mono",monospace;
+    font-size:13px;
+    word-break:break-all;
+  }
+  .ok{color:var(--leaf);font-weight:700}
+  .ng{color:var(--tomato);font-weight:700}
+
+  .hint{
+    margin-top:22px;
+    font-size:14px;
+    color:var(--muted);
+    border-top:1px solid var(--rule);
+    padding-top:16px;
+  }
+  .hint b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ハッピートマトファーム</h1>
+  <p>栽培管理ツール</p>
+</header>
+
+<h2>記録</h2>
+
+<a class="tool" href="shuryo/">
+  <span class="t">収量記録</span>
+  <span class="d">出荷伝票から入力してExcelへ反映</span>
+</a>
+
+<a class="tool" href="dropbox-setup.html">
+  <span class="t">Dropbox接続設定</span>
+  <span class="d">端末を変えたときだけ使います</span>
+</a>
+
+<a class="tool" href="v-k7m2x9pq/">
+  <span class="t">実績（共有用）</span>
+  <span class="d">パートさん向けの収量実績ページ</span>
+</a>
+
+<h2>計算</h2>
+
+<a class="tool soon" href="#">
+  <span class="badge">移行予定</span>
+  <span class="t">光合成・蒸散</span>
+  <span class="d">葉面エネルギー収支から算出</span>
+</a>
+
+<a class="tool soon" href="#">
+  <span class="badge">移行予定</span>
+  <span class="t">湿度計算</span>
+  <span class="d">飽差・相対湿度・露点温度</span>
+</a>
+
+<a class="tool soon" href="#">
+  <span class="badge">移行予定</span>
+  <span class="t">日射量予測</span>
+  <span class="d">快晴時日射量の24時間推移</span>
+</a>
+
+<a class="tool soon" href="#">
+  <span class="badge">移行予定</span>
+  <span class="t">栽培シミュレーター</span>
+  <span class="d">摘果判断と収益の試算</span>
+</a>
+
+<div class="status">
+  <h3>動作確認</h3>
+  <dl>
+    <dt>公開状態</dt>
+    <dd id="s-proto">確認中…</dd>
+    <dt>データ保持</dt>
+    <dd id="s-store">確認中…</dd>
+    <dt>Dropboxとの通信</dt>
+    <dd id="s-api">確認中…</dd>
+    <dt>アドレス</dt>
+    <dd id="s-url">—</dd>
+  </dl>
+</div>
+
+<p class="hint">
+  <b>ホーム画面に置くには</b><br>
+  Chromeでこのページを開き、右上の点3つ →「ホーム画面に追加」。
+  以降はアイコンから直接起動できます。
+</p>
+
+<script>
+(function(){
+  var https = location.protocol === 'https:';
+  var e = document.getElementById('s-proto');
+  e.innerHTML = https
+    ? '<span class="ok">OK</span> — https で公開されています'
+    : '<span class="ng">未</span> — ' + location.protocol;
+
+  document.getElementById('s-url').textContent = location.href;
+
+  var st = document.getElementById('s-store');
+  try{
+    var K='__htf__', now=new Date().toLocaleString('ja-JP');
+    var prev = localStorage.getItem(K);
+    localStorage.setItem(K, now);
+    if(localStorage.getItem(K) !== now) throw new Error('不一致');
+    st.innerHTML = '<span class="ok">OK</span> — '
+      + (prev ? '前回起動 ' + prev : '初回起動');
+  }catch(err){
+    st.innerHTML = '<span class="ng">不可</span> — ' + err.message;
+  }
+
+  var ap = document.getElementById('s-api');
+  fetch('https://api.dropboxapi.com/2/users/get_current_account', {
+    method:'POST',
+    headers:{'Authorization':'Bearer connectivity-check'}
+  }).then(function(r){
+    ap.innerHTML = '<span class="ok">OK</span> — 応答 HTTP ' + r.status;
+  }).catch(function(err){
+    ap.innerHTML = '<span class="ng">不可</span> — ' + err.message;
+  });
+})();
+</script>
+</body>
+</html>
