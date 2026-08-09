@@ -98,7 +98,7 @@ table td.n{font-size:12.5px}
 table.pct th:first-child,table.pct td:first-child{width:52px}
 table.pct th,table.pct td{padding:6px 2px;font-size:12px}
 table.pct td.hi{background:var(--tint);font-weight:800}
-.swatch{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:baseline}
+.swatch{display:inline-block;width:11px;height:11px;margin-right:6px;vertical-align:-1px}
 .pick{display:flex;gap:6px;padding:0 12px 10px}
 .pick button{
   flex:1;padding:8px 4px;font-size:13px;font-weight:700;font-family:inherit;
@@ -153,7 +153,12 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
   var seasons = D.seasons;
   var last = seasons[seasons.length-1];
   var prev = seasons.length > 1 ? seasons[seasons.length-2] : null;
-  var COLORS = ["--y0","--y1","--y2"];
+  /* 年度ごとの棒・線の色。
+     以前はCSSの変数（--y0 など）から読み取っていたが、
+     ブラウザによっては値を取得できず、全部が同じ色で描かれることがあった。
+     ここで直接指定して、確実に色が分かれるようにしている。
+     隣り合う年度どうしで色味がはっきり離れるよう並べてある。 */
+  var YEAR_COLORS = ["#2F6FB2", "#E8863C", "#7B4EA8", "#1E9E76", "#B5306B"];
 
   document.getElementById("sub").textContent =
     last.label + "　最終更新 " + (D.generated || "").slice(0,10);
@@ -175,8 +180,17 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     window.scrollTo(0,0);
   });
 
-  function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
   function sum(a){ return a.reduce(function(x,y){ return x + (y||0); }, 0); }
+
+  /* 背景色に対して読みやすい文字色（黒か白）を返す。
+     明るい色の上に白文字を置くと読めなくなるのを防ぐ。
+     0.299/0.587/0.114 は、人の目の感度に合わせた明るさの重み付け。 */
+  function onColor(hex){
+    var r = parseInt(hex.substr(1,2),16),
+        g = parseInt(hex.substr(3,2),16),
+        b = parseInt(hex.substr(5,2),16);
+    return (r*299 + g*587 + b*114) / 1000 > 150 ? "#12180F" : "#FFFFFF";
+  }
   function fmt(n, d){
     return (+n).toLocaleString("ja-JP", {minimumFractionDigits:d||0, maximumFractionDigits:d||0});
   }
@@ -350,7 +364,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
       return {
         name: s.label,
         data: (s.houses[cur] || {})[field] || [],
-        color: css(COLORS[Math.min(i, COLORS.length-1)]),
+        color: YEAR_COLORS[i % YEAR_COLORS.length],
         thick: i === seasons.length-1
       };
     }).filter(function(s){ return sum(s.data) > 0; });
@@ -460,35 +474,104 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
            '</div></div>';
   }
 
-  /* ---------- 構成比 ---------- */
-  function breakdown(title, key, labels, cls){
+  /* ---------- 円グラフ ---------- */
+  /* items は {name, value, color} の配列。値の大きさに応じて扇形を描く。 */
+  function pieChart(cv, items){
+    var ctx = cv.getContext("2d");
+    var W = cv.width, H = cv.height;
+    ctx.clearRect(0,0,W,H);
+
+    var tot = items.reduce(function(a,it){ return a + it.value; }, 0);
+    if(tot <= 0) return;
+
+    var cx = W/2, cy = H/2;                    /* 円の中心 */
+    var r  = Math.min(W,H)/2 - 26;             /* 半径。端に余白を残す */
+    var a  = -Math.PI/2;                       /* 12時の位置から時計回りに描き始める */
+
+    /* 1周目: 扇形を塗る */
+    items.forEach(function(it){
+      if(it.value <= 0) return;
+      var ang = it.value / tot * Math.PI * 2;  /* 割合を角度（ラジアン）に換算 */
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, a, a + ang);
+      ctx.closePath();
+      ctx.fillStyle = it.color;
+      ctx.fill();
+      ctx.strokeStyle = "#FFFFFF";             /* 白い線で区切ると境目が分かりやすい */
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      a += ang;
+    });
+
+    /* 2周目: 面積の広い区分だけ、扇形の中に名前と割合を書く
+       （狭い扇形に書くとはみ出して読めないため、下の表にゆずる） */
+    a = -Math.PI/2;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    items.forEach(function(it){
+      if(it.value <= 0) return;
+      var ang = it.value / tot * Math.PI * 2;
+      var p = it.value / tot * 100;
+      if(p >= 7){
+        var mid = a + ang/2;                   /* 扇形の中央の向き */
+        var lx = cx + Math.cos(mid) * r * 0.62;
+        var ly = cy + Math.sin(mid) * r * 0.62;
+        ctx.fillStyle = onColor(it.color);
+        ctx.font = "bold 25px sans-serif";
+        ctx.fillText(it.name, lx, ly - 14);
+        ctx.font = "bold 23px monospace";
+        ctx.fillText(fmt(p,1) + "%", lx, ly + 14);
+      }
+      a += ang;
+    });
+  }
+
+  /* ---------- 年間の構成（円グラフ＋数値の表） ---------- */
+  function pieCard(title, key, keys, palette, labelFn){
     var season = latestWithData();
     var h = season.houses[cur];
     if(!h) return "";
     var obj = h[key] || {};
-    var keys = labels ? labels : Object.keys(obj);
     var tot = keys.reduce(function(a,k){ return a + (obj[k]||0); }, 0);
     if(!tot) return "";
-    var max = Math.max.apply(null, keys.map(function(k){ return obj[k]||0; }));
 
+    /* 前年の同じ区分。割合を並べて比べられるようにする */
     var pi = seasons.indexOf(season) - 1;
     var pseason = pi >= 0 ? seasons[pi] : null;
     var pobj = pseason && pseason.houses[cur] ? (pseason.houses[cur][key] || {}) : null;
     var ptot = pobj ? keys.reduce(function(a,k){ return a + (pobj[k]||0); }, 0) : 0;
 
-    var rows = keys.map(function(k,i){
-      var v = obj[k] || 0;
-      var pct = v/tot*100;
-      var name = (D.sizeLabel && D.sizeLabel[k]) ? D.sizeLabel[k] : k;
-      var ppct = ptot ? (pobj[k]||0)/ptot*100 : null;
-      var diff = ppct === null ? "" :
-        '<span style="color:#5C6857;font-weight:400"> （前年 '+fmt(ppct,1)+'%）</span>';
-      return '<div class="bar '+(cls?cls+(i%4+1):"")+'">' +
-             '<div class="top"><span>'+name+diff+'</span><b>'+fmt(pct,1)+'%</b></div>' +
-             '<div class="track"><div class="fill" style="width:'+(v/max*100)+'%"></div></div></div>';
+    /* 色は月別の積み上げグラフと同じ並びを使う。
+       ページ全体で「同じ区分＝同じ色」になり、見比べやすい。 */
+    var items = keys.map(function(k,i){
+      return { name: labelFn(k), value: obj[k] || 0, color: palette[i % palette.length] };
+    });
+
+    var id = "pie_" + key;
+    setTimeout(function(){
+      var cv = document.getElementById(id);
+      if(cv) pieChart(cv, items);
+    }, 0);
+
+    var rows = items.map(function(it,i){
+      var pct  = it.value / tot * 100;
+      var ppct = ptot ? (pobj[keys[i]]||0) / ptot * 100 : null;
+      return '<tr><td><span class="swatch" style="background:'+it.color+'"></span>' +
+             it.name + '</td>' +
+             '<td>'+fmt(pct,1)+'%</td>' +
+             '<td class="n">'+(ppct === null ? "" : fmt(ppct,1)+"%")+'</td>' +
+             '<td class="n">'+fmt(it.value)+'</td></tr>';
     }).join("");
 
-    return '<div class="card"><h2>'+title+'</h2><div class="bars body">'+rows+'</div></div>';
+    return '<div class="card"><h2>'+title+'</h2><div class="body">' +
+           '<canvas id="'+id+'" width="660" height="470"></canvas>' +
+           '<table style="margin-top:12px">' +
+           '<tr><th>区分</th><th>割合</th><th>前年</th><th>個数</th></tr>' +
+           rows + '</table>' +
+           '<p class="note">割合は個数にもとづく数値です。' +
+           '円の中には7%以上の区分だけ表示しています。</p>' +
+           '</div></div>';
   }
 
   /* ---------- 月別表 ---------- */
@@ -573,8 +656,10 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
                 function(k){ return k; }) +
       stackCard("サイズの構成の推移", "sizesByMonth", D.sizes, SIZE_PALETTE,
                 function(k){ return D.sizeLabel[k] || k; }) +
-      breakdown("サイズの構成（"+latestWithData().label+" 年間）", "sizes", D.sizes, "") +
-      breakdown("等級の構成（"+latestWithData().label+" 年間）", "grades", D.grades, "g") +
+      pieCard("サイズの構成（"+latestWithData().label+" 年間）", "sizes", D.sizes, SIZE_PALETTE,
+              function(k){ return D.sizeLabel[k] || k; }) +
+      pieCard("等級の構成（"+latestWithData().label+" 年間）", "grades", D.grades, GRADE_PALETTE,
+              function(k){ return k; }) +
       (area ? '<footer style="padding-top:4px">'+cur+'　'+fmt(area*10,0)+'a</footer>' : "");
 
     /* 構成比の年度切り替え */
