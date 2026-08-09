@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#F1F4EC">
+<title>光合成・蒸散 計算（葉温版）</title>
+<style>
+:root{
+  --paper:#F1F4EC; --card:#FFFFFF;
+  --ink:#16261B; --ink2:#5D6C60; --ink3:#8B978D; --line:#DCE1D5;
+  --leaf:#3E6B47; --leaf-soft:#E3EFE2;
+  --water:#22687F; --water-soft:#DDECF1;
+  --sun:#C07316; --sun-soft:#F7EBDC;
+  --shade:#4C5F74; --shade-soft:#E5E9EE;
+  --rust:#A9601A; --bark:#7A5A33;
+  --warn:#8C3B12; --warn-bg:#FBEDE4;
+  --mono:"SFMono-Regular",Menlo,Consolas,"Roboto Mono","DejaVu Sans Mono",monospace;
+  --gothic:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic Medium","Yu Gothic","Noto Sans JP","Meiryo",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--gothic);
+     font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%;padding-bottom:48px}
+.wrap{max-width:760px;margin:0 auto;padding:0 14px}
+
+/* ===== sticky panel ===== */
+.panel{position:sticky;top:0;z-index:30;background:var(--paper);
+  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top);
+  box-shadow:0 1px 0 rgba(22,38,27,.04),0 8px 18px -14px rgba(22,38,27,.35)}
+.panel .wrap{padding-top:9px;padding-bottom:9px}
+.patsel{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:9px}
+.patsel button{padding:6px 3px 5px;font-size:12.5px;font-family:var(--gothic);font-weight:600;
+  border:1px solid var(--line);background:var(--card);color:var(--ink2);border-radius:8px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.25}
+.patsel button b{font-weight:700}
+.patsel button small{font-size:9.5px;font-weight:400;opacity:.7;letter-spacing:.02em}
+.patsel button[aria-pressed=true][data-p=sun]{background:var(--sun);border-color:var(--sun);color:#fff}
+.patsel button[aria-pressed=true][data-p=shade]{background:var(--shade);border-color:var(--shade);color:#fff}
+.patsel button[aria-pressed=true][data-p=air]{background:var(--ink);border-color:var(--ink);color:#fff}
+.readouts{display:grid;grid-template-columns:0.85fr 1fr 1fr;gap:7px}
+.ro{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:8px 9px 9px;position:relative;overflow:hidden}
+.ro::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
+.ro.temp::before{background:var(--sun)} .ro.water::before{background:var(--water)} .ro.leaf::before{background:var(--leaf)}
+.ro h2{margin:0 0 2px;font-size:11px;font-weight:700;color:var(--ink2)}
+.ro .num{font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:-.02em;
+         line-height:1.05;font-variant-numeric:tabular-nums}
+.ro.temp .num{color:var(--sun)} .ro.water .num{color:var(--water)} .ro.leaf .num{color:var(--leaf)}
+.ro .unit{font-size:10px;color:var(--ink2);font-family:var(--mono);margin-top:3px}
+.ro .alt{font-size:10px;color:var(--ink3);font-family:var(--mono)}
+
+/* ===== sections ===== */
+section{margin-top:22px}
+.sec-head{display:flex;align-items:baseline;gap:9px;margin-bottom:9px;flex-wrap:wrap}
+.sec-head h3{margin:0;font-size:13.5px;font-weight:700}
+.sec-head .note{font-size:11px;color:var(--ink3)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+
+/* ===== tables ===== */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:10px;color:var(--ink3);font-weight:600;border-bottom:1px solid var(--ink3)}
+tbody td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tbody td:first-child{font-family:var(--gothic)}
+tbody tr:last-child td{border-bottom:none}
+td .sym{font-family:var(--mono);color:var(--ink3);font-size:10px;margin-left:5px}
+tr.hl td{background:var(--leaf-soft)}
+tr.hl td:first-child{font-weight:700}
+tr.cur td{background:#F4F6F1;font-weight:600}
+.dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* ===== budget bars ===== */
+.bar{display:flex;height:30px;border-radius:7px;overflow:hidden;border:1px solid var(--line);background:#fff}
+.bar div{transition:width .18s ease;min-width:0}
+.legend{display:grid;grid-template-columns:1fr auto auto;gap:2px 10px;margin-top:10px;font-size:12.5px}
+.legend .k{display:flex;align-items:center;gap:7px;color:var(--ink2)}
+.legend .sw{width:11px;height:11px;border-radius:3px;flex:none}
+.legend .v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.legend .p{font-family:var(--mono);color:var(--ink3);text-align:right;font-size:11px}
+.legend .row-total{border-top:1px solid var(--line);margin-top:5px;padding-top:6px}
+.legend .row-total .k{color:var(--ink);font-weight:700}
+.unitline{font-size:11px;color:var(--ink3);font-family:var(--mono);margin-top:9px}
+
+/* ===== inputs ===== */
+.ip{padding:10px 0;border-bottom:1px solid var(--line)}
+.ip:last-child{border-bottom:none;padding-bottom:2px}
+.ip:first-child{padding-top:2px}
+.ip-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ip label{font-size:13px;font-weight:600}
+.ip .sym{font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-left:5px;font-weight:400}
+.ip .val{display:flex;align-items:baseline;gap:5px}
+.ip input[type=number]{width:84px;padding:5px 7px;text-align:right;font-family:var(--mono);
+  font-size:15px;font-variant-numeric:tabular-nums;border:1px solid var(--line);
+  border-radius:7px;background:var(--paper);color:var(--ink)}
+.ip .u{font-size:11px;color:var(--ink3);font-family:var(--mono);width:46px}
+input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--leaf);height:22px}
+.hint{font-size:11px;color:var(--ink3);margin-top:5px}
+.derived{display:flex;justify-content:space-between;align-items:center;background:var(--leaf-soft);
+  border-radius:7px;padding:7px 10px;margin-top:9px;font-size:12px}
+.derived b{font-family:var(--mono);font-size:14px;font-weight:600}
+.modes{display:flex;gap:6px;margin-top:8px}
+.modes button{flex:1;padding:6px 8px;font-size:12px;font-family:var(--gothic);
+  border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:7px;cursor:pointer}
+.modes button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chk{display:flex;align-items:center;gap:9px;padding:10px 0;font-size:13px;font-weight:600}
+.chk input{width:19px;height:19px;accent-color:var(--leaf)}
+
+/* ===== tabs ===== */
+.tabs{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--line);
+      -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;padding:9px 13px;font-size:12.5px;font-family:var(--gothic);font-weight:600;
+  border:none;background:none;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--leaf)}
+.tabpane{display:none;padding-top:13px}
+.tabpane[data-on=true]{display:block}
+.eq{font-family:var(--mono);font-size:11.5px;line-height:1.85;background:var(--paper);
+    border-left:3px solid var(--line);padding:9px 11px;border-radius:0 7px 7px 0;
+    margin:0 0 12px;overflow-x:auto;white-space:pre;color:var(--ink2)}
+.eq b{color:var(--ink);font-weight:600}
+.sublabel{font-size:11px;color:var(--ink3);font-weight:600;letter-spacing:.04em;margin:15px 0 5px}
+.sublabel:first-child{margin-top:0}
+
+/* ===== chart ===== */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px}
+.chips button{padding:5px 11px;font-size:12px;font-family:var(--gothic);border:1px solid var(--line);
+  background:var(--paper);color:var(--ink2);border-radius:999px;cursor:pointer}
+.chips button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+canvas{width:100%;display:block;touch-action:pan-y}
+#cv{height:220px} #cvt{height:150px} #cvc{height:240px}
+.optline{background:var(--sun-soft);border-left:3px solid var(--sun);padding:9px 11px;
+  border-radius:0 7px 7px 0;font-size:12.5px;margin-top:11px;line-height:1.7}
+.optline b{font-family:var(--mono);font-size:15px;color:var(--sun)}
+.diag{display:grid;grid-template-columns:1fr auto auto;gap:3px 10px;margin-top:11px;
+  padding-top:10px;border-top:1px solid var(--line);font-size:12px}
+.diag .k{color:var(--ink2)}
+.diag .v{font-family:var(--mono);font-weight:600;text-align:right}
+.diag .r{font-family:var(--mono);color:var(--ink3);font-size:11px;text-align:right}
+.ok{color:var(--leaf)} .ng{color:var(--warn)}
+.badge{margin-top:10px;padding:7px 10px;border-radius:7px;font-size:11.5px;font-weight:600}
+.badge.exact{background:var(--water-soft);color:var(--water)}
+.badge.cal{background:var(--sun-soft);color:var(--sun)}
+.notebox{margin-top:14px;padding:12px 13px;background:var(--paper);border:1px solid var(--line);
+  border-radius:9px;font-size:12px;line-height:1.8;color:var(--ink2)}
+.notebox + .notebox{margin-top:9px}
+.notebox h4{margin:0 0 7px;font-size:12px;font-weight:700;color:var(--ink);
+  display:flex;align-items:center;gap:7px}
+.notebox h4::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--leaf);flex:none}
+.notebox.amber h4::before{background:var(--sun)}
+.notebox p{margin:0 0 9px}
+.notebox p:last-child{margin-bottom:0}
+.notebox b{color:var(--ink);font-weight:600}
+.notebox code{font-family:var(--mono);font-size:11px;background:var(--card);
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.notebox ul{margin:0 0 9px;padding-left:17px}
+.notebox li{margin-bottom:4px}
+.notebox table{margin:7px 0 0;font-size:11.5px}
+.notebox table td,.notebox table th{padding:4px 3px}
+.ckey{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0 2px;font-size:11px;color:var(--ink2)}
+.ckey span{display:flex;align-items:center;gap:6px}
+.ckey i{width:15px;height:2.5px;border-radius:2px;display:inline-block}
+
+/* ===== misc ===== */
+details{margin-top:14px}
+summary{cursor:pointer;font-size:13px;font-weight:600;padding:9px 0;list-style:none;
+        display:flex;align-items:center;gap:7px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸";color:var(--ink3);transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg)}
+.warn{background:var(--warn-bg);border-left:3px solid var(--warn);color:var(--warn);
+      padding:9px 11px;border-radius:0 7px 7px 0;font-size:12.5px;margin-top:11px}
+.copy{width:100%;margin-top:12px;padding:11px;font-size:13px;font-family:var(--gothic);font-weight:600;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;cursor:pointer}
+.copy:active{background:var(--leaf-soft)}
+footer{margin-top:26px;font-size:11px;color:var(--ink3);line-height:1.8}
+:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:420px){
+  .ro .num{font-size:19px}
+  .readouts{gap:5px} .ro{padding:7px 7px 8px}
+  .ip input[type=number]{width:76px}
+}
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="wrap">
+    <div class="patsel" id="patsel">
+      <button type="button" data-p="sun"   aria-pressed="false"><b>① ひなた</b><small>群落上部</small></button>
+      <button type="button" data-p="shade" aria-pressed="false"><b>② 日陰</b><small>群落下部</small></button>
+      <button type="button" data-p="air"   aria-pressed="true"><b>③ 葉温＝気温</b><small>Excel原式</small></button>
+    </div>
+    <div class="readouts">
+      <div class="ro temp">
+        <h2>葉温</h2>
+        <div class="num" id="o-tl">—</div>
+        <div class="unit">℃</div>
+        <div class="alt" id="o-dt">—</div>
+      </div>
+      <div class="ro water">
+        <h2>蒸散速度</h2>
+        <div class="num" id="o-tr">—</div>
+        <div class="unit">mg H₂O/m²·s</div>
+        <div class="alt" id="o-tr2">—</div>
+      </div>
+      <div class="ro leaf">
+        <h2>純光合成速度</h2>
+        <div class="num" id="o-pn">—</div>
+        <div class="unit">mg CO₂/m²·s</div>
+        <div class="alt" id="o-pn2">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <div class="sec-head"><h3>入力</h3></div>
+    <div class="card">
+      <div class="ip"><div class="ip-top"><label for="i-ta">気温<span class="sym">Ta</span></label>
+        <div class="val"><input type="number" id="i-ta" step="0.1"><span class="u">℃</span></div></div>
+        <input type="range" id="r-ta" min="0" max="45" step="0.1" aria-label="気温"></div>
+
+      <div class="ip"><div class="ip-top"><label for="i-hr">相対湿度<span class="sym">hr</span></label>
+        <div class="val"><input type="number" id="i-hr" step="1"><span class="u">%</span></div></div>
+        <input type="range" id="r-hr" min="10" max="100" step="1" aria-label="相対湿度"></div>
+
+      <div class="ip"><div class="ip-top"><label for="i-st">日射（群落上）<span class="sym">St</span></label>
+        <div class="val"><input type="number" id="i-st" step="10"><span class="u">W/m²</span></div></div>
+        <input type="range" id="r-st" min="0" max="1000" step="5" aria-label="日射"></div>
+
+      <div class="ip"><div class="ip-top"><label for="i-co2">大気CO₂濃度<span class="sym">Cca</span></label>
+        <div class="val"><input type="number" id="i-co2" step="10"><span class="u">ppm</span></div></div>
+        <input type="range" id="r-co2" min="200" max="1500" step="10" aria-label="CO2濃度"></div>
+
+      <div class="ip"><div class="ip-top"><label for="i-u">風速<span class="sym">u</span></label>
+        <div class="val"><input type="number" id="i-u" step="0.05"><span class="u">m/s</span></div></div>
+        <input type="range" id="r-u" min="0.05" max="3" step="0.05" aria-label="風速"></div>
+
+      <div class="ip"><div class="ip-top"><label for="i-w">葉幅<span class="sym">w</span></label>
+        <div class="val"><input type="number" id="i-w" step="0.5"><span class="u">cm</span></div></div>
+        <input type="range" id="r-w" min="1" max="30" step="0.5" aria-label="葉幅">
+        <p class="hint">特性長 d = 葉幅 × 0.72</p></div>
+
+      <div class="ip"><div class="ip-top"><label for="i-tm">光合成最適温度<span class="sym">Tm</span></label>
+        <div class="val"><input type="number" id="i-tm" step="0.5"><span class="u">℃</span></div></div>
+        <input type="range" id="r-tm" min="15" max="35" step="0.5" aria-label="最適温度"></div>
+
+      <div class="ip"><div class="ip-top"><label for="i-alt">標高<span class="sym">z</span></label>
+        <div class="val"><input type="number" id="i-alt" step="10"><span class="u">m</span></div></div>
+        <input type="range" id="r-alt" min="0" max="1500" step="10" aria-label="標高">
+        <div class="modes">
+          <button type="button" id="m-alt" aria-pressed="true">標高から求める</button>
+          <button type="button" id="m-pa" aria-pressed="false">大気圧を直接入れる</button>
+        </div>
+        <div class="derived"><span>大気圧 <span class="sym">Pa</span></span>
+          <span><input type="number" id="i-pa" step="0.1" style="display:none"><b id="d-pa">—</b> kPa</span></div>
+      </div>
+    </div>
+
+    <details>
+      <summary>放射・熱収支の設定</summary>
+      <div class="card">
+        <div class="ip"><div class="ip-top"><label for="i-alpha">葉の日射吸収率<span class="sym">αs</span></label>
+          <div class="val"><input type="number" id="i-alpha" step="0.01"><span class="u">—</span></div></div>
+          <input type="range" id="r-alpha" min="0.3" max="0.8" step="0.01" aria-label="日射吸収率">
+          <p class="hint">緑葉は近赤外をよく反射・透過するので、全日射では0.5前後。</p></div>
+
+        <div class="ip"><div class="ip-top"><label for="i-fsun">① ひなたの受光比<span class="sym">fsun</span></label>
+          <div class="val"><input type="number" id="i-fsun" step="0.05"><span class="u">—</span></div></div>
+          <input type="range" id="r-fsun" min="0.3" max="1.5" step="0.05" aria-label="受光比">
+          <p class="hint">水平面日射に対する葉面の受光量比。葉が寝ていれば1.0前後、太陽に正対すると1.0超。</p></div>
+
+        <div class="ip"><div class="ip-top"><label for="i-taus">② 日陰の全日射透過率<span class="sym">τs</span></label>
+          <div class="val"><input type="number" id="i-taus" step="0.01"><span class="u">—</span></div></div>
+          <input type="range" id="r-taus" min="0.02" max="0.6" step="0.01" aria-label="全日射透過率">
+          <p class="hint">0.25 は葉1枚分の遮蔽に相当します。群落下部（LAI 3〜4 の下）なら 0.05〜0.15 が目安です。この値が小さいほど葉温は気温に近づき、日射800 W/m² では τs ≈ 0.04 より小さいと気温を下回ります。</p></div>
+
+        <div class="ip"><div class="ip-top"><label for="i-taup">② 日陰のPAR透過率<span class="sym">τpar</span></label>
+          <div class="val"><input type="number" id="i-taup" step="0.01"><span class="u">—</span></div></div>
+          <input type="range" id="r-taup" min="0.01" max="0.5" step="0.01" aria-label="PAR透過率">
+          <p class="hint">葉はPARを強く吸収し近赤外は通すので、日陰ではPARの方がよく減ります（τpar &lt; τs）。だから日陰の葉は「暗いわりに暖まる」。</p></div>
+
+        <div class="ip"><div class="ip-top"><label for="i-dtsky">上方の実効放射温度差<span class="sym">ΔTsky</span></label>
+          <div class="val"><input type="number" id="i-dtsky" step="1"><span class="u">K</span></div></div>
+          <input type="range" id="r-dtsky" min="-25" max="5" step="1" aria-label="放射温度差">
+          <p class="hint">上向きの面が見る被覆材や天空の温度が気温より何K低いか。晴天夜に−15K程度にすると放射冷却で葉温が下がります（①のみに効きます）。</p></div>
+
+        <div class="ip">
+          <div class="ip-top"><label for="i-dtsur">② 周囲の実効放射温度差<span class="sym">ΔTsur</span></label>
+            <div class="val"><input type="number" id="i-dtsur" step="0.5"><span class="u">K</span></div></div>
+          <input type="range" id="r-dtsur" min="-10" max="5" step="0.5" aria-label="日陰の周囲放射温度差">
+          <p class="hint">日陰の葉が上下とも見ている周囲（他の葉・床面・培地）の温度が気温より何K低いか。潅水直後の湿った床面や培地は気化熱で気温より低くなります（②のみに効きます）。</p></div>
+
+        <div class="ip"><div class="ip-top"><label for="i-eps">葉の長波放射率<span class="sym">εs</span></label>
+          <div class="val"><input type="number" id="i-eps" step="0.01"><span class="u">—</span></div></div>
+          <input type="range" id="r-eps" min="0.9" max="1" step="0.01" aria-label="放射率"></div>
+
+        <label class="chk"><input type="checkbox" id="i-two" checked>顕熱と長波を葉の両面で交換する</label>
+
+        <div class="ip" style="border-top:1px solid var(--line);padding-top:12px">
+          <div class="ip-top"><label for="i-turb">乱流補正係数<span class="sym">turb</span></label>
+            <div class="val"><input type="number" id="i-turb" step="0.05"><span class="u">倍</span></div></div>
+          <input type="range" id="r-turb" min="1" max="2" step="0.05" aria-label="乱流補正係数">
+          <p class="hint">Excelの Q10 は 0.147√(u/d)（層流平板の値）です。1.0 以外にすると Q10 の式を書き換えることになります。実葉は乱流とはためきで交換が速く Campbell &amp; Norman は約1.4倍を推奨しますが、既定は Excel どおりの 1.0 です。</p></div>
+
+        <div class="ip">
+          <div class="ip-top"><label for="i-fst">気孔の有効面数<span class="sym">fst</span></label>
+            <div class="val"><input type="number" id="i-fst" step="0.1"><span class="u">面</span></div></div>
+          <input type="range" id="r-fst" min="1" max="2" step="0.1" aria-label="気孔の有効面数">
+          <p class="hint">Excelの P10（＝N10−O10）と Q10 をそのまま葉全体の値とみなすなら 1.0 です。トマトが両面気孔である点を反映させたい場合のみ 2.0 にしてください。gvs・gva・gcs・gca に掛かり、蒸散量と光合成量が Excel と変わります。</p></div>
+
+        <div class="modes">
+          <button type="button" id="p-excel">Excel式どおり（1.0 / 1.0）</button>
+          <button type="button" id="p-tomato">感度確認用（1.4 / 2.0）</button>
+        </div>
+        <div id="calmode"></div>
+      </div>
+    </details>
+
+    <button class="copy" id="btn-copy">条件と結果をコピー</button>
+  </section>
+  <section>
+    <div class="sec-head"><h3>3パターン比較</h3><span class="note">同じ気象条件で葉の置かれ方だけを変えた場合</span></div>
+    <div class="card">
+      <table>
+        <thead><tr><th>パターン</th><th>葉面日射<br>W/m²</th><th>葉温<br>℃</th><th>葉温−気温<br>K</th><th>蒸散<br>mg/m²·s</th><th>純光合成<br>mg/m²·s</th></tr></thead>
+        <tbody id="cmp"></tbody>
+      </table>
+
+      <div class="notebox">
+        <h4>日陰の葉が気温を下回る条件</h4>
+        <p>葉温が気温を下回るのは、葉温＝気温と置いたときの熱収支の残差が負になるとき、つまり<br>
+        <code>正味放射 Rni &lt; 潜熱 λ·gv·D</code> のときだけです。</p>
+        <p>日陰では気孔コンダクタンス gvs が日射で駆動されるため暗時の下限近くまで落ち、<b>冷却能力 λ·gv·D は条件によらず 15〜23 W/m² 程度で頭打ち</b>になります。一方 Rni は群落透過率 τs に比例するので、交差点はおよそ Rni ≈ 16 W/m²。日射800 W/m² なら <b>τs ≈ 0.04 が境目</b>です。</p>
+        <p>既定の <b>τs = 0.25 は葉1枚分の遮蔽</b>に相当し、群落下部としては明るすぎます。LAI 3〜4 の下なら 0.05〜0.15 を目安に下げてください。あわせて「放射・熱収支の設定」の <b>ΔTsur</b> を −3〜−5 K にすると（潅水直後の湿った床面や培地は気化熱で気温より低くなります）、葉温は気温を下回ります。</p>
+      </div>
+
+      <div class="notebox amber">
+        <h4>実測と比べるときの注意</h4>
+        <p>放射温度計の精度より、基準にする<b>「気温」の測定位置</b>の影響の方が大きい場合があります。ハウス内の鉛直温度勾配は 2〜4 K 出ることがあり、温度センサーが群落上部や中位にあると、群落下部の実際の空気は測定値より低くなります。その場合、葉は<b>局所の気温とほぼ同じでも、表示気温より低く見えます</b>。</p>
+        <p>下部の葉が気温より低く測れるときは、次の3つが重なっている可能性があります。</p>
+        <ul>
+          <li>群落下部の局所気温が測定気温より低い（鉛直勾配）</li>
+          <li>τs が 0.25 より小さい（Rni が小さい）</li>
+          <li>床面・培地が気化熱で気温より低い（ΔTsur が負）</li>
+        </ul>
+        <p>放射温度計の値に合うよう τs と ΔTsur を追い込めば、下部の葉の状態を実態に近く推定できます。</p>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="sec-head"><h3>応答カーブ</h3><span class="note">縦の点線が今の条件</span></div>
+    <div class="card">
+      <div class="chips" id="chips">
+        <button type="button" data-k="ta" aria-pressed="true">気温</button>
+        <button type="button" data-k="st" aria-pressed="false">日射</button>
+        <button type="button" data-k="co2" aria-pressed="false">CO₂濃度</button>
+        <button type="button" data-k="hr" aria-pressed="false">相対湿度</button>
+        <button type="button" data-k="u" aria-pressed="false">風速</button>
+      </div>
+      <canvas id="cv"></canvas>
+      <div class="ckey">
+        <span><i style="background:var(--water)"></i>蒸散速度（左軸）</span>
+        <span><i style="background:var(--leaf)"></i>純光合成速度（右軸）</span>
+        <span style="color:var(--ink3)">選択中のパターン</span>
+      </div>
+      <div class="sublabel">葉温（3パターン同時）</div>
+      <canvas id="cvt"></canvas>
+      <div class="ckey">
+        <span><i style="background:var(--sun)"></i>ひなた</span>
+        <span><i style="background:var(--shade)"></i>日陰</span>
+        <span><i style="background:var(--ink3)"></i>気温</span>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="sec-head"><h3>熱収支</h3><span class="note" id="eb-note">正味放射をどう捨てているか</span></div>
+    <div class="card">
+      <div class="bar" id="ebar">
+        <div id="eb-le" style="width:33%;background:var(--water)"></div>
+        <div id="eb-h"  style="width:34%;background:var(--sun)"></div>
+        <div id="eb-l"  style="width:33%;background:var(--shade)"></div>
+      </div>
+      <div class="legend">
+        <div class="k"><span class="sw" style="background:var(--water)"></span>潜熱（蒸散）<span class="sym">λE</span></div>
+        <div class="v" id="e-le">—</div><div class="p" id="ep-le">—</div>
+        <div class="k"><span class="sw" style="background:var(--sun)"></span>顕熱（空気へ）<span class="sym">H</span></div>
+        <div class="v" id="e-h">—</div><div class="p" id="ep-h">—</div>
+        <div class="k"><span class="sw" style="background:var(--shade)"></span>長波放射の増分<span class="sym">ΔL</span></div>
+        <div class="v" id="e-l">—</div><div class="p" id="ep-l">—</div>
+        <div class="k row-total">正味放射（等温）<span class="sym">Rni</span></div>
+        <div class="v row-total" id="e-rni">—</div><div class="p row-total">100%</div>
+      </div>
+      <div class="unitline">単位 W/m²（葉の片面あたり面積基準）</div>
+      <div id="ebdiag"></div>
+      <div id="ebwarn"></div>
+
+      <div class="notebox">
+        <h4>ボーエン比の読み方</h4>
+        <p><code>H/λE</code> は顕熱と潜熱の比です。灌水が十分な作物では潜熱が優勢になり、ボーエン比 0.1〜0.4、λE/Rni 0.7〜1.0 が目安です。これを大きく外れる場合は風速・葉幅・気孔コンダクタンスの設定を見直してください。</p>
+        <p>「放射・熱収支の設定」の <b>turb</b>（乱流補正）と <b>fst</b>（気孔の有効面数）で感度を確認できますが、<b>1.0 以外にすると添付ファイルの P10・Q10 の式から逸脱し、蒸散量と光合成量が Excel と一致しなくなります</b>。日射が小さいときはこの判定は行いません。</p>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="sec-head"><h3>炭素収支</h3><span class="note">光合成でつくった分から呼吸で失う分を引く</span></div>
+    <div class="card">
+      <div class="bar" id="bar">
+        <div class="seg-pn" id="seg-pn" style="width:70%;background:var(--leaf)"></div>
+        <div class="seg-rp" id="seg-rp" style="width:15%;background:var(--rust)"></div>
+        <div class="seg-rd" id="seg-rd" style="width:15%;background:var(--bark)"></div>
+      </div>
+      <div class="legend">
+        <div class="k"><span class="sw" style="background:var(--leaf)"></span>純光合成 <span class="sym">Pn</span></div>
+        <div class="v" id="l-pn">—</div><div class="p" id="p-pn">—</div>
+        <div class="k"><span class="sw" style="background:var(--rust)"></span>光呼吸 <span class="sym">Rp</span></div>
+        <div class="v" id="l-rp">—</div><div class="p" id="p-rp">—</div>
+        <div class="k"><span class="sw" style="background:var(--bark)"></span>暗呼吸 <span class="sym">Rd</span></div>
+        <div class="v" id="l-rd">—</div><div class="p" id="p-rd">—</div>
+        <div class="k row-total">光合成速度（総）<span class="sym">P</span></div>
+        <div class="v row-total" id="l-p">—</div><div class="p row-total">100%</div>
+      </div>
+      <div class="unitline">単位 mg CO₂/m²·s（AJ10と同じ）</div>
+      <div id="warnbox"></div>
+    </div>
+  </section>
+  <section>
+    <div class="sec-head"><h3>炭素収支の温度応答</h3><span class="note" id="opt-note">—</span></div>
+    <div class="card">
+      <p class="hint" style="margin:0 0 10px">気温以外の条件は入力値のまま固定し、気温だけを動かしたときの収支です。CO&#8322;固定量は生成エンタルピー469 kJ/mol CO&#8322;でW/m&#178;に換算しています。</p>
+      <canvas id="cvc"></canvas>
+      <div class="ckey">
+        <span><i style="background:var(--leaf);opacity:.4"></i>総光合成 P</span>
+        <span><i style="background:var(--rust)"></i>呼吸 Rp+Rd</span>
+        <span><i style="background:var(--leaf);height:3.5px"></i>純光合成 Pn</span>
+        <span><i style="background:var(--sun)"></i>純光合成の最適</span>
+        <span><i style="background:var(--leaf);opacity:.55"></i>総光合成の最適(=Tm)</span>
+      </div>
+      <div id="optbox"></div>
+
+      <div class="notebox">
+        <h4>Tm は「総光合成」の最適温度です</h4>
+        <p>光合成最適温度 Tm は温度関数 <code>h(Tl)</code> の頂点で、<b>総光合成 P が最大になる葉温</b>です。純光合成 Pn の最大はそれより低温側に来ます。純光合成が最大になる温度が Tm と一致するわけではありません。</p>
+        <p><b>ずらしているのは暗呼吸 Rd だけ</b>です。</p>
+        <ul>
+          <li>光呼吸 <code>Rp = Rpmax(1−Cca/Ccp)×P</code> は P に比例するため <code>P−Rp</code> も Tm ちょうどで最大。<b>光呼吸は最適温度をずらしません</b>。</li>
+          <li>暗呼吸 <code>Rd = Rd20×2^((Tl−20)/10)</code> は単調増加で頭打ちになりません。P が Tm で頭打ちになった後も増え続けるため、その手前で差 Pn が最大になります。</li>
+        </ul>
+        <p>ずれ幅は <b>Rd/P 比</b>で決まります（Tm 28℃・葉温＝気温・風速0.3での計算例）。</p>
+        <table><thead><tr><th>条件</th><th>Tmでの Rd/P</th><th>Pn最大</th><th>ずれ</th></tr></thead><tbody>
+          <tr><td>日射200 / CO₂600</td><td>0.241</td><td>24.9℃</td><td>−3.1 K</td></tr>
+          <tr><td>日射800 / CO₂400</td><td>0.169</td><td>25.4℃</td><td>−2.6 K</td></tr>
+          <tr><td>日射1000 / CO₂1000</td><td>0.102</td><td>26.9℃</td><td>−1.1 K</td></tr>
+        </tbody></table>
+        <p style="margin-top:9px"><b>強い日射と CO₂ 施用は最適温度を Tm に近づけます。</b>CO₂施用時に高めの温度で管理するのが理にかなう、という説明にもなります。</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h3>計算過程</h3><span class="note" id="proc-note">—</span></div>
+    <div class="card">
+      <div class="tabs" id="tabs" role="tablist">
+        <button type="button" role="tab" data-t="rad"  aria-selected="true">放射収支</button>
+        <button type="button" role="tab" data-t="heat" aria-selected="false">熱収支と葉温</button>
+        <button type="button" role="tab" data-t="cond" aria-selected="false">コンダクタンス</button>
+        <button type="button" role="tab" data-t="vap"  aria-selected="false">水蒸気と蒸散</button>
+        <button type="button" role="tab" data-t="ps"   aria-selected="false">光合成</button>
+        <button type="button" role="tab" data-t="xl"   aria-selected="false">Excel照合</button>
+        <button type="button" role="tab" data-t="con"  aria-selected="false">定数</button>
+      </div>
+      <div class="tabpane" data-p="rad"  data-on="true"><div id="pane-rad"></div></div>
+      <div class="tabpane" data-p="heat"><div id="pane-heat"></div></div>
+      <div class="tabpane" data-p="cond"><div id="pane-cond"></div></div>
+      <div class="tabpane" data-p="vap"><div id="pane-vap"></div></div>
+      <div class="tabpane" data-p="ps"><div id="pane-ps"></div></div>
+      <div class="tabpane" data-p="xl"><div id="pane-xl"></div></div>
+      <div class="tabpane" data-p="con"><div id="pane-con"></div></div>
+    </div>
+  </section>
+
+  <footer>
+    光合成・蒸散の計算式は「光合成.xlsx」10行目の実装そのままです。葉温は Campbell &amp; Norman 方式のエネルギー収支<br>
+    Rabs − εsσTl⁴ − λE − H = 0 をニュートン法で厳密に解いています。Excelの定数 γ = 6.66×10⁻⁴ K⁻¹ は cp/λ = 29.3/44000 のことで、この熱収支式で使う定数です。<br>
+    <b>蒸散量と光合成量は添付ファイルの式のままです。</b>既定は turb 1.0 / fst 1.0 ・パターン③なので、起動直後の値は Excel の10行目と完全に一致します（「計算過程 → Excel照合」タブで24セル分を自動照合しています）。<br>
+    turb と fst は感度確認用の任意パラメータです。1.0 以外にすると Excel の P10・Q10 を書き換えることになり、蒸散量と光合成量が添付ファイルと一致しなくなります。変更中は警告バッジが出ます。
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* ===== 定数 ===== */
+const K = {a:0.611,b:17.502,c:240.97, Mw:18, R:8.3143,
+           KL:150,KC:250,aT:5,Pmax:0.04545,
+           Rpmax:0.3,Ccp:1200,Rd20:1.48e-6*1000,Q10K:2, P0:101.3};
+const CP=29.3, LAM=44000, SIG=5.67e-8, GAMMA=CP/LAM;   // γ = 6.659e-4 K^-1
+const DH=469;            // CO2固定の生成エンタルピー kJ/mol → mmol/m²·s に掛けると W/m²
+const GVS_FLOOR=1e-3;
+const PAT = {sun:{ja:"① ひなた（群落上部）",c:"--sun"}, shade:{ja:"② 日陰（群落下部）",c:"--shade"}, air:{ja:"③ 葉温＝気温",c:"--ink3"}};
+
+const es  = T => K.a*Math.exp(K.b*T/(T+K.c));
+const des = T => es(T)*K.b*K.c/Math.pow(T+K.c,2);      // des/dT  kPa/K
+
+/* ===== 放射：パターンごとの葉面日射 ===== */
+function radiation(v,p){
+  // dTup: 上向き面が見る面の実効放射温度差, dTdn: 下向き面が見る面の実効放射温度差
+  if(p==="sun")   return {Sleaf:v.fsun*v.St, Stp:0.5*v.fsun*v.St, dTup:v.dTsky, dTdn:0};
+  if(p==="shade") return {Sleaf:v.tauS*v.St, Stp:0.5*v.tauP*v.St, dTup:v.dTsur, dTdn:v.dTsur};
+  return                 {Sleaf:0,           Stp:0.5*v.St,        dTup:0,       dTdn:0};
+}
+
+/* ===== 葉温：エネルギー収支をニュートン法で解く ===== */
+function solveTl(v,Sleaf,dTup,dTdn,gv,ea){
+  const nS = v.two?2:1;
+  const d  = v.w*0.72;
+  const gHa = nS*v.turb*0.135*Math.sqrt(v.u/d);
+  const TaK = v.Ta+273.15;
+  const gr  = nS*4*v.eps*SIG*Math.pow(TaK,3)/CP;
+  const gHr = gHa+gr;
+
+  const Sabs = v.alpha*Sleaf;
+  const Labs = (nS===2) ? v.eps*SIG*(Math.pow(TaK+dTup,4)+Math.pow(TaK+dTdn,4))
+                        : v.eps*SIG*Math.pow(TaK+dTup,4);
+  const Lout0 = nS*v.eps*SIG*Math.pow(TaK,4);
+  const Rabs = Sabs+Labs;
+  const Rni  = Rabs-Lout0;
+
+  const D = (es(v.Ta)-ea)/v.Pa;
+  const s = des(v.Ta)/v.Pa;
+  const gStar = GAMMA*gHr/gv;
+  const dTlin = gStar/(s+gStar)*Rni/(CP*gHr) - D/(s+gStar);   // 線形近似
+
+  const res = Tl => Rabs - nS*v.eps*SIG*Math.pow(Tl+273.15,4)
+                    - LAM*gv*(es(Tl)-ea)/v.Pa - CP*gHa*(Tl-v.Ta);
+
+  let Tl = v.Ta+dTlin, log=[];
+  for(let i=0;i<20;i++){
+    const f = res(Tl);
+    log.push({i:i+1,Tl,f});
+    const dfd = (res(Tl+1e-4)-f)/1e-4;
+    const Tn = Tl - f/dfd;
+    if(!isFinite(Tn)) break;
+    if(Math.abs(Tn-Tl)<1e-9){ Tl=Tn; break; }
+    Tl = Tn;
+  }
+  const lamE = LAM*gv*(es(Tl)-ea)/v.Pa;
+  const H    = CP*gHa*(Tl-v.Ta);
+  const dL   = nS*v.eps*SIG*(Math.pow(Tl+273.15,4)-Math.pow(TaK,4));
+  return {Tl,dTlin,nS,gHa,gr,gHr,Sabs,Labs,Lout0,Rabs,Rni,D,s,gStar,dTup,dTdn,
+          lamE,H,dL,resid:res(Tl),log,
+          bowen:(lamE!==0? H/lamE : NaN), frac:(Rni>0? lamE/Rni : NaN)};
+}
+
+/* ===== 本体 ===== */
+function compute(v,p){
+  const warn=[];
+  const rad = radiation(v,p);
+  const Stp = rad.Stp, d = v.w*0.72;
+
+  const esTa = es(v.Ta), ea = esTa*v.hr, Cva = ea/v.Pa;
+
+  const gvs1 = Math.min(Math.max(0.000103333*Stp+0.0345, 0.001035*Stp), 0.207);
+  const gvs2 = Math.max(0.00005*v.Cca-0.01, 0);
+  let   gvs1f = gvs1-gvs2;                       // 片面あたり
+  if(gvs1f<GVS_FLOOR){ gvs1f=GVS_FLOOR;
+    warn.push("弱日射かつ高CO₂で気孔コンダクタンスの実験式が0以下になりました。下限 "+GVS_FLOOR+" mol/m²·s で計算しています。"); }
+  const gvs = gvs1f*v.fst;                       // 有効面数を掛けた葉全体
+  const gva = v.turb*0.147*Math.sqrt(v.u/d)*v.fst;
+  const gv  = 1/(1/gvs+1/gva);
+
+  let Tl, eb=null;
+  if(p==="air"){ Tl = v.Ta; }
+  else { eb = solveTl(v,rad.Sleaf,rad.dTup,rad.dTdn,gv,ea); Tl = eb.Tl; }
+
+  const esTl = es(Tl), Cvs = esTl/v.Pa;
+  const Fv = gv*(Cvs-Cva), Fv_mg = Fv*K.Mw*1000;
+  if(Fv<0) warn.push("蒸散がマイナスです。葉温が露点を下回り、蒸散ではなく結露が起きる状態を示しています。");
+
+  const gcs = gvs*0.66, gca = gva*0.75, gc = 1/(1/gcs+1/gca);
+
+  const f = Stp/(Stp+K.KL);
+  let h = (2*Math.pow(Tl+K.aT,2)*Math.pow(v.Tm+K.aT,2)-Math.pow(Tl+K.aT,4))/Math.pow(v.Tm+K.aT,4);
+  const hRaw = h;
+  if(h<0){ h=0; warn.push("葉温が最適温度から離れすぎて温度関数 h(Tl) が負になりました（モデル適用範囲外）。0として扱っています。"); }
+  const Pm = K.Pmax*f*h/1000;
+
+  const cca=v.Cca/1e6, kc=K.KC/1e6;
+  const A = cca+kc+Pm/gc;
+  const P = gc*((A-Math.sqrt(Math.max(A*A-4*cca*(Pm/gc),0)))/2);
+  const Ccc = (cca-P/gc)*1e6;
+  const g = Ccc/(Ccc+K.KC);
+
+  const P_mmol = P*1000;
+  const Rp = K.Rpmax*(1-v.Cca/K.Ccp)*P_mmol;
+  const Rd = K.Rd20*Math.pow(K.Q10K,(Tl-20)/10);
+  const Pn = P_mmol-Rp-Rd;
+
+  return {pattern:p,Sleaf:rad.Sleaf,Stp,d,Tl,dT:Tl-v.Ta,eb,esTa,ea,esTl,Cva,Cvs,
+          gvs1,gvs2,gvs1f,gvs,gva,gv,gcs,gca,gc,Fv,Fv_mg,f,g,h,hRaw,Pm,P,Ccc,
+          P_mmol,Rp,Rd,Pn,Pn_mg:Pn*44,warn};
+}
+
+const paFromAlt = z => K.P0*Math.pow(1-2.25577e-5*z,5.25588);
+
+/* ===== 表示ヘルパ ===== */
+const el = id => document.getElementById(id);
+function fmt(x,dp){ return isFinite(x)? x.toFixed(dp) : "—"; }
+function auto(x){
+  if(!isFinite(x)) return "—";
+  const a=Math.abs(x);
+  if(a===0) return "0";
+  if(a>=100) return x.toFixed(1);
+  if(a>=10)  return x.toFixed(2);
+  if(a>=1)   return x.toFixed(3);
+  if(a>=0.01)return x.toFixed(4);
+  return x.toPrecision(3);
+}
+function rows(list){
+  return '<table><tbody>'+list.map(m=>{
+    if(m.length===1) return '<tr><td colspan="3" style="font-weight:700;background:var(--paper)">'+m[0]+'</td></tr>';
+    return '<tr><td>'+m[0]+(m[1]?'<span class="sym">'+m[1]+'</span>':'')+'</td><td>'+
+           (typeof m[2]==="number"?auto(m[2]):m[2])+
+           '</td><td style="color:var(--ink3);font-size:10.5px;width:80px">'+(m[3]||"")+'</td></tr>';
+  }).join('')+'</tbody></table>';
+}
+
+/* ===== 入力 ===== */
+const DEF={Ta:17,hr:60,St:200,Cca:600,u:0.2,w:7,Tm:28,alt:0,Pa:101.3,
+           alpha:0.50,fsun:1.00,tauS:0.25,tauP:0.10,dTsky:0,dTsur:0,eps:0.97,
+           turb:1.00,fst:1.00};
+let usePa=false, pattern="air", axisKey="ta", tab="rad";
+
+const pairs=[["i-ta","r-ta",DEF.Ta],["i-hr","r-hr",DEF.hr],["i-st","r-st",DEF.St],
+  ["i-co2","r-co2",DEF.Cca],["i-u","r-u",DEF.u],["i-w","r-w",DEF.w],["i-tm","r-tm",DEF.Tm],
+  ["i-alt","r-alt",DEF.alt],["i-alpha","r-alpha",DEF.alpha],["i-fsun","r-fsun",DEF.fsun],
+  ["i-taus","r-taus",DEF.tauS],["i-taup","r-taup",DEF.tauP],["i-dtsky","r-dtsky",DEF.dTsky],
+  ["i-eps","r-eps",DEF.eps],["i-turb","r-turb",DEF.turb],["i-fst","r-fst",DEF.fst],
+  ["i-dtsur","r-dtsur",DEF.dTsur]];
+pairs.forEach(([n,r,d])=>{ el(n).value=d; el(r).value=d; });
+el("i-pa").value=DEF.Pa;
+
+function readInputs(){
+  const alt=+el("i-alt").value;
+  return {Ta:+el("i-ta").value, hr:(+el("i-hr").value)/100, St:+el("i-st").value,
+    Cca:+el("i-co2").value, u:+el("i-u").value, w:(+el("i-w").value)/100,
+    Tm:+el("i-tm").value, Pa: usePa? +el("i-pa").value : paFromAlt(alt), alt,
+    alpha:+el("i-alpha").value, fsun:+el("i-fsun").value,
+    tauS:+el("i-taus").value, tauP:+el("i-taup").value,
+    dTsky:+el("i-dtsky").value, dTsur:+el("i-dtsur").value,
+    eps:+el("i-eps").value, two:el("i-two").checked,
+    turb:+el("i-turb").value, fst:+el("i-fst").value};
+}
+
+/* ===== 描画 ===== */
+let cur=null;
+
+function render(){
+  const v = cur = readInputs();
+  el("d-pa").textContent = fmt(v.Pa,1);
+
+  const all = {sun:compute(v,"sun"), shade:compute(v,"shade"), air:compute(v,"air")};
+  const r = all[pattern];
+
+  /* 読み取り */
+  el("o-tl").textContent = fmt(r.Tl,1);
+  el("o-dt").textContent = (r.dT>=0?"+":"")+fmt(r.dT,2)+" K vs 気温";
+  el("o-tr").textContent = auto(r.Fv_mg);
+  el("o-tr2").textContent = auto(r.Fv_mg*3.6)+" g/m²·h";
+  el("o-pn").textContent = auto(r.Pn_mg);
+  el("o-pn2").textContent = auto(r.Pn_mg*3.6)+" g/m²·h";
+  document.querySelector('.ro.temp').style.setProperty('--x','');
+  el("o-tl").style.color = "var("+PAT[pattern].c+")";
+
+  /* 3パターン比較 */
+  el("cmp").innerHTML = ["sun","shade","air"].map(p=>{
+    const x=all[p];
+    return '<tr class="'+(p===pattern?"cur":"")+'"><td><span class="dot" style="background:var('+PAT[p].c+')"></span>'+PAT[p].ja+'</td>'+
+      '<td>'+(p==="air"?"—":auto(x.Sleaf))+'</td><td>'+fmt(x.Tl,1)+'</td><td>'+
+      (p==="air"?"0":(x.dT>=0?"+":"")+fmt(x.dT,2))+'</td><td>'+auto(x.Fv_mg)+'</td><td>'+auto(x.Pn_mg)+'</td></tr>';
+  }).join("");
+
+  /* 熱収支バー */
+  if(r.eb){
+    const t=[["e-le","ep-le","eb-le",r.eb.lamE],["e-h","ep-h","eb-h",r.eb.H],["e-l","ep-l","eb-l",r.eb.dL]];
+    const posSum = t.reduce((s,x)=>s+Math.max(x[3],0),0)||1e-9;
+    t.forEach(([vid,pid,bid,val])=>{
+      el(vid).textContent = auto(val);
+      el(pid).textContent = val<0 ? "受熱側" : Math.round(val/posSum*100)+"%";
+      el(bid).style.width = (Math.max(val,0)/posSum*100)+"%";
+    });
+    el("e-rni").textContent = auto(r.eb.Rni);
+    el("ebwarn").innerHTML = Math.abs(r.eb.resid)>1e-6
+      ? '<div class="warn">熱収支が閉じていません（残差 '+r.eb.resid.toExponential(2)+' W/m²）。</div>' : "";
+    el("eb-note").textContent = "残差 "+r.eb.resid.toExponential(1)+" W/m²（"+r.eb.log.length+"回反復）";
+    const jd=(x,lo,hi)=>(x>=lo&&x<=hi)?"ok":"ng";
+    el("ebdiag").innerHTML = (r.eb.Rni>20)
+      ? '<div class="diag">'+
+        '<span class="k">ボーエン比 H/λE</span><span class="v '+jd(r.eb.bowen,0.1,0.4)+'">'+
+          (isFinite(r.eb.bowen)?r.eb.bowen.toFixed(2):"—")+'</span><span class="r">実測 0.1–0.4</span>'+
+        '<span class="k">潜熱の割合 λE/Rni</span><span class="v '+jd(r.eb.frac,0.7,1.0)+'">'+
+          (isFinite(r.eb.frac)?r.eb.frac.toFixed(2):"—")+'</span><span class="r">実測 0.7–1.0</span>'+
+        '</div>'
+      : '<div class="diag"><span class="k" style="grid-column:1/-1">日射が小さいため、ボーエン比の判定は行いません。</span></div>';
+  }else{
+    ["e-le","e-h","e-l","e-rni"].forEach(i=>el(i).textContent="—");
+    ["ep-le","ep-h","ep-l"].forEach(i=>el(i).textContent="—");
+    ["eb-le","eb-h","eb-l"].forEach(i=>el(i).style.width="0%");
+    el("ebwarn").innerHTML='<div class="warn">パターン③は葉温を気温に固定するので、熱収支は解いていません。</div>';
+    el("eb-note").textContent = "葉温固定のため計算なし";
+    el("ebdiag").innerHTML="";
+  }
+
+  /* 炭素収支 */
+  const Pmg=r.P_mmol*44, Rpmg=r.Rp*44, Rdmg=r.Rd*44, Pnmg=r.Pn_mg;
+  const tot=Math.max(Pmg,1e-12), pc=x=>Math.max(0,Math.min(100,x/tot*100));
+  el("seg-pn").style.width=pc(Pnmg)+"%"; el("seg-rp").style.width=pc(Rpmg)+"%"; el("seg-rd").style.width=pc(Rdmg)+"%";
+  el("l-pn").textContent=auto(Pnmg); el("p-pn").textContent=Math.round(Pnmg/tot*100)+"%";
+  el("l-rp").textContent=auto(Rpmg); el("p-rp").textContent=Math.round(Rpmg/tot*100)+"%";
+  el("l-rd").textContent=auto(Rdmg); el("p-rd").textContent=Math.round(Rdmg/tot*100)+"%";
+  el("l-p").textContent=auto(Pmg);
+  el("warnbox").innerHTML = r.warn.map(w=>'<div class="warn">'+w+'</div>').join("");
+
+  const exact = (Math.abs(v.turb-1)<1e-9 && Math.abs(v.fst-1)<1e-9);
+  el("calmode").innerHTML = exact
+    ? '<div class="badge exact">Excel式どおり（turb 1.0 / fst 1.0）：P10・Q10 は添付ファイルの式そのままです</div>'
+    : '<div class="badge cal">⚠ Excel式から逸脱中（turb '+v.turb.toFixed(2)+' / fst '+v.fst.toFixed(1)+'）：P10・Q10 を書き換えているため、蒸散量と光合成量が添付ファイルと一致しません</div>';
+
+  el("proc-note").textContent = PAT[pattern].ja+" の場合";
+  renderPanes(v,r);
+  drawMain(); drawTemp(); drawCarbon();
+}
+
+/* ===== 計算過程タブ ===== */
+function renderPanes(v,r){
+  const b=r.eb;
+
+  /* 放射収支 */
+  const radEq = pattern==="sun"
+    ? '葉面日射  <b>Sleaf = fsun × St</b> = '+fmt(v.fsun,2)+' × '+v.St+' = '+auto(r.Sleaf)+' W/m²\n'+
+      '光合成有効日射  <b>Stp = 0.5 × Sleaf</b> = '+auto(r.Stp)+' W/m²'
+    : pattern==="shade"
+    ? '葉面日射  <b>Sleaf = τs × St</b> = '+fmt(v.tauS,2)+' × '+v.St+' = '+auto(r.Sleaf)+' W/m²\n'+
+      '光合成有効日射  <b>Stp = 0.5 × τpar × St</b> = 0.5 × '+fmt(v.tauP,2)+' × '+v.St+' = '+auto(r.Stp)+' W/m²'
+    : '葉温を気温に固定するので放射は解きません。\n光合成有効日射のみ <b>Stp = St / 2</b> = '+auto(r.Stp)+' W/m²（Excel原式）';
+  let html = '<div class="eq">'+radEq+'</div>';
+  if(b){
+    html += rows([
+      ["短波の吸収"],
+      ["葉面が受ける全日射","Sleaf",r.Sleaf,"W/m²"],
+      ["日射吸収率","αs",v.alpha,"—"],
+      ["吸収した短波","αs·Sleaf",b.Sabs,"W/m²"],
+      ["長波の交換（面数 "+b.nS+"）"],
+      ["上向き面が見る温度","",v.Ta+b.dTup,"℃"],
+      ["下向き面が見る温度","",v.Ta+b.dTdn,"℃"],
+      ["吸収した長波","Labs",b.Labs,"W/m²"],
+      ["気温で射出した場合","εsσTa⁴×"+b.nS,b.Lout0,"W/m²"],
+      ["まとめ"],
+      ["吸収放射の合計","Rabs",b.Rabs,"W/m²"],
+      ["正味放射（等温）","Rni",b.Rni,"W/m²"]
+    ]);
+  }
+  el("pane-rad").innerHTML = html;
+
+  /* 熱収支と葉温 */
+  if(!b){
+    el("pane-heat").innerHTML='<div class="eq">パターン③は <b>Tl = Ta</b> と置くだけなので、熱収支は解いていません。\n①か②を選ぶとこのタブに求解の過程が出ます。</div>';
+  }else{
+    let h2 = '<div class="eq">'+
+      '解く式（残差がゼロになる Tl を探す）\n'+
+      '  <b>Rabs − '+b.nS+'εsσ(Tl+273.15)⁴ − λ·gv·(es(Tl)−ea)/Pa − cp·gHa·(Tl−Ta) = 0</b>\n\n'+
+      '線形近似（Campbell &amp; Norman 式14.6・検算用）\n'+
+      '  s  = (des/dT)/Pa                    = '+b.s.toExponential(3)+' K⁻¹\n'+
+      '  γ  = cp/λ = 29.3/44000              = '+GAMMA.toExponential(3)+' K⁻¹\n'+
+      '  γ* = γ·gHr/gv                       = '+b.gStar.toExponential(3)+' K⁻¹\n'+
+      '  D  = (es(Ta)−ea)/Pa                 = '+b.D.toFixed(5)+' mol/mol\n'+
+      '  <b>ΔT = γ*/(s+γ*)·Rni/(cp·gHr) − D/(s+γ*)</b> = '+(b.dTlin>=0?"+":"")+b.dTlin.toFixed(3)+' K'+
+      '</div>';
+    h2 += '<div class="sublabel">ニュートン法の収束</div>';
+    h2 += '<table><thead><tr><th>回</th><th>葉温 ℃</th><th>残差 W/m²</th></tr></thead><tbody>'+
+      b.log.map(l=>'<tr><td>'+l.i+'</td><td>'+l.Tl.toFixed(5)+'</td><td>'+
+        (Math.abs(l.f)<1e-6? l.f.toExponential(2) : l.f.toFixed(4))+'</td></tr>').join("")+
+      '</tbody></table>';
+    h2 += '<div class="sublabel">解いた葉温での各項</div>';
+    h2 += rows([
+      ["葉温","Tl",b.Tl,"℃"],
+      ["葉温 − 気温","ΔT",b.Tl-v.Ta,"K"],
+      ["線形近似との差","",b.Tl-v.Ta-b.dTlin,"K"],
+      ["正味放射（等温）","Rni",b.Rni,"W/m²"],
+      ["潜熱（蒸散）","λE",b.lamE,"W/m²"],
+      ["顕熱（空気へ）","H",b.H,"W/m²"],
+      ["長波放射の増分","ΔL",b.dL,"W/m²"],
+      ["収支の残差","",b.resid.toExponential(2),"W/m²"]
+    ]);
+    el("pane-heat").innerHTML=h2;
+  }
+
+  /* コンダクタンス */
+  const d=v.w*0.72;
+  el("pane-cond").innerHTML =
+    '<div class="eq">'+
+    '境界層  <b>gva = turb·0.147·√(u/d)·fst</b>,  d = 葉幅×0.72 = '+d.toFixed(4)+' m\n'+
+    '熱      <b>gHa = '+(b?b.nS:1)+' × turb · 0.135·√(u/d)</b>（fstは掛けない）\n'+
+    '放射    <b>gr  = '+(b?b.nS:1)+' × 4εsσTa³/cp</b>\n'+
+    '気孔    <b>gvs = (gvs′ − gvs″) × fst</b>（日射で開き、CO₂で閉じる実験式）\n'+
+    '合成    <b>1/gv = 1/gvs + 1/gva</b>,  CO₂側は gcs=0.66gvs, gca=0.75gva\n'+
+    '校正    turb = '+v.turb.toFixed(2)+' ,  fst = '+v.fst.toFixed(1)+
+    '</div>'+
+    rows([
+      ["水蒸気"],
+      ["日射による気孔開度","gvs′",r.gvs1,"mol/m²·s"],
+      ["CO₂による低下分","gvs″",r.gvs2,"mol/m²·s"],
+      ["気孔コンダクタンス（片面）","",r.gvs1f,"mol/m²·s"],
+      ["気孔コンダクタンス（葉全体）","gvs",r.gvs,"mol/m²·s"],
+      ["境界層コンダクタンス","gva",r.gva,"mol/m²·s"],
+      ["総コンダクタンス","gv",r.gv,"mol/m²·s"],
+      ["CO₂"],
+      ["気孔","gcs",r.gcs,"mol/m²·s"],
+      ["境界層","gca",r.gca,"mol/m²·s"],
+      ["総","gc",r.gc,"mol/m²·s"]
+    ].concat(b?[
+      ["熱・放射"],
+      ["境界層（顕熱）","gHa",b.gHa,"mol/m²·s"],
+      ["放射コンダクタンス","gr",b.gr,"mol/m²·s"],
+      ["合計","gHr",b.gHr,"mol/m²·s"]
+    ]:[]));
+
+  /* 水蒸気と蒸散 */
+  el("pane-vap").innerHTML =
+    '<div class="eq">'+
+    '<b>es(T) = 0.611·exp(17.502T/(T+240.97))</b>   (式3.8)\n'+
+    '<b>ea = hr·es(Ta)</b> (式3.11),  <b>Cv = e/Pa</b> (式3.5)\n'+
+    '<b>Fv = gv·(Cvs − Cva)</b> (式6.7),  mg換算は ×18×1000'+
+    '</div>'+
+    rows([
+      ["気温の飽和水蒸気圧","es(Ta)",r.esTa,"kPa"],
+      ["大気水蒸気圧","ea",r.ea,"kPa"],
+      ["葉温の飽和水蒸気圧","es(Tl)",r.esTl,"kPa"],
+      ["葉内−大気の差","",r.esTl-r.ea,"kPa"],
+      ["大気水蒸気モル分率","Cva",r.Cva,"mol/mol"],
+      ["葉内水蒸気モル分率","Cvs",r.Cvs,"mol/mol"],
+      ["蒸散速度","Fv",r.Fv,"mol/m²·s"],
+      ["蒸散速度","Fv",r.Fv_mg,"mg/m²·s"],
+      ["蒸散速度","Fv",r.Fv_mg*3.6,"g/m²·h"]
+    ]);
+
+  /* 光合成 */
+  el("pane-ps").innerHTML =
+    '<div class="eq">'+
+    '<b>f(Stp) = Stp/(Stp+KL)</b>,  <b>g(Ccc) = Ccc/(Ccc+KC)</b>\n'+
+    '<b>h(Tl)  = 1 − ((Tl+a)² − (Tm+a)²)²/(Tm+a)⁴</b>\n'+
+    '輸送式 <b>P = gc(Cca − Ccc)</b> と需要式 <b>P = Pm·Ccc/(Ccc+KC)</b> を連立し\n'+
+    '  A = cca + kc + Pm/gc\n'+
+    '  <b>P = gc·(A − √(A² − 4·cca·Pm/gc))/2</b>   ← Excel AE10 と同じ解析解\n'+
+    '<b>Rp = Rpmax(1 − Cca/Ccp)·P</b>,  <b>Rd = Rd20·Q10^((Tl−20)/10)</b>\n'+
+    '<b>Pn = P − Rp − Rd</b>,  mg換算は ×44'+
+    '</div>'+
+    rows([
+      ["光合成有効日射","Stp",r.Stp,"W/m²"],
+      ["光関数","f(Stp)",r.f,"0–1"],
+      ["温度関数","h(Tl)",r.hRaw,"0–1"],
+      ["CO₂最大時光合成速度","Pm",r.Pm,"mol/m²·s"],
+      ["葉緑体CO₂濃度（解）","Ccc",r.Ccc,"μmol/mol"],
+      ["CO₂関数","g(Ccc)",r.g,"0–1"],
+      ["結果"],
+      ["光合成速度","P",r.P_mmol*44,"mg/m²·s"],
+      ["光呼吸","Rp",r.Rp*44,"mg/m²·s"],
+      ["暗呼吸","Rd",r.Rd*44,"mg/m²·s"],
+      ["純光合成速度","Pn",r.Pn_mg,"mg/m²·s"],
+      ["純光合成速度","Pn",r.Pn,"mmol/m²·s"],
+      ["純光合成速度","Pn",r.Pn_mg*3.6,"g/m²·h"]
+    ]);
+
+  renderXL(v);
+
+  /* 定数 */
+  el("pane-con").innerHTML = rows([
+    ["Excel 5行目の定数"],
+    ["飽和水蒸気圧 a","a",K.a,"kPa"],["同 b","b",K.b,"—"],["同 c","c",K.c,"℃"],
+    ["熱収支の定数 γ","γ",GAMMA,"K⁻¹"],
+    ["水の分子量","Mw",K.Mw,"g/mol"],["気体定数","R",K.R,"J/mol·K"],
+    ["光合成光係数","KL",K.KL,"W/m²"],["光合成CO₂係数","KC",K.KC,"ppm"],
+    ["光合成温度係数","a",K.aT,"℃"],["最大光合成速度","Pmax",K.Pmax,"mmol/m²·s"],
+    ["最大呼吸率@Cca=0","Rpmax",K.Rpmax,"—"],["光呼吸が消えるCO₂","Ccp",K.Ccp,"μmol/mol"],
+    ["20℃の暗呼吸","Rd20",K.Rd20,"mmol/m²·s"],["呼吸のQ₁₀","Q10K",K.Q10K,"—"],
+    ["熱収支で追加した定数"],
+    ["空気のモル比熱","cp",CP,"J/mol·K"],
+    ["水の気化潜熱","λ",LAM,"J/mol"],
+    ["ステファン・ボルツマン","σ",SIG,"W/m²K⁴"],
+    ["cp/λ（Excel γ と一致）","",CP/LAM,"K⁻¹"],
+    ["CO₂固定の生成エンタルピー","ΔH",DH,"kJ/mol"],
+    ["校正パラメータ"],
+    ["乱流補正係数","turb",cur.turb,"倍"],
+    ["気孔の有効面数","fst",cur.fst,"面"]
+  ]);
+}
+
+/* ===== Excel照合：添付ファイルの10行目と1セルずつ突き合わせる ===== */
+const XLCOND={Ta:17,hr:0.6,St:200,Cca:600,u:0.2,w:0.07,Tm:28,Pa:101.3,
+              alpha:0.50,fsun:1,tauS:0.25,tauP:0.10,dTsky:0,dTsur:0,eps:0.97,two:true,turb:1,fst:1};
+const XLREF=[
+ ["I10","気温の飽和水蒸気圧 es(Ta)",1.9361633314854947, r=>r.esTa],
+ ["J10","大気水蒸気圧 ea",          1.1616979988912968, r=>r.ea],
+ ["K10","葉温の飽和水蒸気圧 es(Tl)",1.9361633314854947, r=>r.esTl],
+ ["L10","大気水蒸気モル分率 Cva",   0.011467897323704805, r=>r.Cva],
+ ["M10","葉内水蒸気モル分率 Cvs",   0.019113162206174678, r=>r.Cvs],
+ ["N10","日射による気孔開度 gvs′",  0.1035,             r=>r.gvs1],
+ ["O10","CO₂による低下分 gvs″",     0.020000000000000004, r=>r.gvs2],
+ ["P10","気孔コンダクタンス gvs",   0.08349999999999999, r=>r.gvs],
+ ["Q10","境界層コンダクタンス gva", 0.2928310092869264, r=>r.gva],
+ ["R10","総コンダクタンス gv",      0.06497309196440906, r=>r.gv],
+ ["S10","蒸散速度 Fv (mol)",        0.0004967364983009821, r=>r.Fv],
+ ["T10","蒸散速度 Fv (mg)",         8.941256969417678,  r=>r.Fv_mg],
+ ["U10","気孔 CO₂ gcs",             0.05511,            r=>r.gcs],
+ ["V10","境界層 CO₂ gca",           0.2196232569651948, r=>r.gca],
+ ["W10","総 CO₂ gc",                0.04405523315615639, r=>r.gc],
+ ["Y10","光関数 f(Stp)",            0.4,                r=>r.f],
+ ["AA10","温度関数 h(Tl)",          0.691358024691358,  r=>r.hRaw],
+ ["AD10","CO₂最大時光合成 Pm",      1.2568888888888887e-05, r=>r.Pm],
+ ["AE10","光合成速度 P (mol)",      7.885979650700354e-06, r=>r.P],
+ ["AF10","光合成速度 P (mmol)",     0.007885979650700354, r=>r.P_mmol],
+ ["AG10","光呼吸 Rp",               0.0011828969476050531, r=>r.Rp],
+ ["AH10","暗呼吸 Rd",               0.0012021335466072284, r=>r.Rd],
+ ["AI10","純光合成 Pn (mmol)",      0.005500949156488073, r=>r.Pn],
+ ["AJ10","純光合成 Pn (mg)",        0.24204176288547521, r=>r.Pn_mg]
+];
+function renderXL(v){
+  const r=compute(XLCOND,"air");
+  let ng=0;
+  const body=XLREF.map(([cell,name,ref,get])=>{
+    const got=get(r);
+    const rel=Math.abs(ref)>0? Math.abs(got-ref)/Math.abs(ref) : Math.abs(got);
+    const ok=rel<1e-9; if(!ok) ng++;
+    return '<tr><td>'+cell+'</td><td style="font-family:var(--gothic);font-size:11.5px">'+name+'</td>'+
+      '<td>'+ref.toPrecision(9)+'</td><td>'+got.toPrecision(9)+'</td>'+
+      '<td class="'+(ok?"ok":"ng")+'" style="font-weight:700">'+(ok?"一致":"不一致")+'</td></tr>';
+  }).join("");
+  const exact=(Math.abs(v.turb-1)<1e-9 && Math.abs(v.fst-1)<1e-9);
+  el("pane-xl").innerHTML =
+    '<div class="eq">添付ファイル「光合成.xlsx」10行目の条件\n'+
+    '  <b>気温17℃ / 相対湿度60% / 日射200 W/m² / CO₂600 ppm / 風速0.2 m/s / 葉幅7 cm / 最適温度28℃ / 大気圧101.3 kPa</b>\n'+
+    'をアプリ側で計算し、Excelのセル値と1つずつ突き合わせた結果です。\n'+
+    'この照合は画面の入力値とは無関係に、常に上記の固定条件・パターン③・turb 1.0・fst 1.0 で実行します。</div>'+
+    (ng===0
+      ? '<div class="badge exact" style="margin:0 0 12px">全'+XLREF.length+'セル一致（相対誤差 1e-9 未満）</div>'
+      : '<div class="warn" style="margin:0 0 12px">'+ng+' セルが不一致です。計算式が壊れています。</div>')+
+    '<table><thead><tr><th>セル</th><th>項目</th><th>Excel</th><th>アプリ</th><th>判定</th></tr></thead><tbody>'+body+'</tbody></table>'+
+    (exact
+      ? '<div class="badge exact" style="margin-top:12px">現在の設定（turb 1.0 / fst 1.0）もExcel式どおりです。パターン③を選べば上の値がそのまま出ます。</div>'
+      : '<div class="warn" style="margin-top:12px">ただし現在の画面設定は turb '+v.turb.toFixed(2)+' / fst '+v.fst.toFixed(1)+
+        ' になっており、P10・Q10 を書き換えています。添付ファイルと同じ値を出すには「Excel式どおり（1.0 / 1.0）」を押してください。</div>');
+}
+
+/* ===== グラフ ===== */
+const AXES={
+  ta :{label:"気温 (℃)",     min:0,max:45,   key:"Ta", get:v=>v.Ta},
+  st :{label:"日射 (W/m²)",  min:0,max:1000, key:"St", get:v=>v.St},
+  co2:{label:"CO₂濃度 (ppm)",min:200,max:1500,key:"Cca",get:v=>v.Cca},
+  hr :{label:"相対湿度 (%)", min:10,max:100, key:"hr", get:v=>v.hr*100, set:(v,x)=>v.hr=x/100},
+  u  :{label:"風速 (m/s)",   min:0.05,max:3, key:"u",  get:v=>v.u}
+};
+const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function sample(pat){
+  const ax=AXES[axisKey], N=100, out={xs:[],a:[],b:[]};
+  for(let i=0;i<=N;i++){
+    const x=ax.min+(ax.max-ax.min)*i/N;
+    const v=Object.assign({},cur);
+    if(ax.set) ax.set(v,x); else v[ax.key]=x;
+    const r=compute(v,pat);
+    out.xs.push(x); out.a.push(r.Fv_mg); out.b.push(r.Pn_mg);
+    (out.tl=out.tl||[]).push(r.Tl);
+  }
+  return out;
+}
+
+function frame(cv,pad){
+  const ctx=cv.getContext("2d"), dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth,H=cv.clientHeight;
+  cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  return {ctx,W,H,L:pad[0],R:pad[1],T:pad[2],B:pad[3],pw:W-pad[0]-pad[1],ph:H-pad[2]-pad[3]};
+}
+function grid(F,ax,ticksL,ticksR,colL,colR,unitL,unitR){
+  const {ctx,L,T,pw,ph}=F;
+  ctx.strokeStyle=cssv("--line"); ctx.lineWidth=1; ctx.font="10px ui-monospace,Menlo,monospace";
+  for(let i=0;i<=4;i++){
+    const y=T+ph*i/4;
+    ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+pw,y); ctx.stroke();
+    ctx.textBaseline="middle";
+    if(ticksL){ ctx.textAlign="right"; ctx.fillStyle=colL; ctx.fillText(ticksL(i),L-5,y); }
+    if(ticksR){ ctx.textAlign="left";  ctx.fillStyle=colR; ctx.fillText(ticksR(i),L+pw+5,y); }
+  }
+  if(unitL||unitR){
+    ctx.font="9.5px ui-monospace,Menlo,monospace"; ctx.textBaseline="alphabetic";
+    if(unitL){ ctx.textAlign="left";  ctx.fillStyle=colL; ctx.fillText(unitL,1,T-7); }
+    if(unitR){ ctx.textAlign="right"; ctx.fillStyle=colR; ctx.fillText(unitR,F.W-1,T-7); }
+  }
+  ctx.fillStyle=cssv("--ink3"); ctx.textAlign="center"; ctx.textBaseline="top";
+  ctx.font="10px ui-monospace,Menlo,monospace";
+  for(let i=0;i<=4;i++){
+    const x=ax.min+(ax.max-ax.min)*i/4;
+    ctx.fillText(auto(x),L+(x-ax.min)/(ax.max-ax.min)*pw,T+ph+5);
+  }
+  ctx.font="10px "+cssv("--gothic");
+  ctx.fillText(ax.label,L+pw/2,T+ph+17);
+}
+function nice(arr,zero){
+  let lo=Math.min(...arr), hi=Math.max(...arr);
+  if(zero) lo=Math.min(0,lo);
+  if(hi<=lo) hi=lo+1;
+  const p=(hi-lo)*0.09; return [lo-p,hi+p];
+}
+function poly(F,xs,ys,ax,y0,y1,color,dash){
+  const {ctx,L,T,pw,ph}=F;
+  ctx.strokeStyle=color; ctx.lineWidth=2; ctx.lineJoin="round";
+  ctx.setLineDash(dash||[]); ctx.beginPath();
+  xs.forEach((x,i)=>{
+    const px=L+(x-ax.min)/(ax.max-ax.min)*pw, py=T+ph-(ys[i]-y0)/(y1-y0)*ph;
+    i?ctx.lineTo(px,py):ctx.moveTo(px,py);
+  });
+  ctx.stroke(); ctx.setLineDash([]);
+}
+
+function drawMain(){
+  const F=frame(el("cv"),[44,44,24,30]), ax=AXES[axisKey];
+  const s=sample(pattern);
+  const [t0,t1]=nice(s.a,true), [p0,p1]=nice(s.b,true);
+  const cW=cssv("--water"), cL=cssv("--leaf");
+  grid(F,ax,i=>auto(t1-(t1-t0)*i/4),i=>auto(p1-(p1-p0)*i/4),cW,cL,
+       "mg H\u2082O/m\u00B2\u00B7s","mg CO\u2082/m\u00B2\u00B7s");
+  if(p0<0&&p1>0){ F.ctx.strokeStyle=cssv("--line"); F.ctx.setLineDash([3,3]);
+    const y=F.T+F.ph-(0-p0)/(p1-p0)*F.ph;
+    F.ctx.beginPath(); F.ctx.moveTo(F.L,y); F.ctx.lineTo(F.L+F.pw,y); F.ctx.stroke(); F.ctx.setLineDash([]); }
+  poly(F,s.xs,s.a,ax,t0,t1,cW);
+  poly(F,s.xs,s.b,ax,p0,p1,cL);
+  const xc=ax.get(cur);
+  if(xc>=ax.min&&xc<=ax.max){
+    const r=compute(cur,pattern), px=F.L+(xc-ax.min)/(ax.max-ax.min)*F.pw;
+    F.ctx.strokeStyle=cssv("--ink"); F.ctx.globalAlpha=.32; F.ctx.setLineDash([4,4]);
+    F.ctx.beginPath(); F.ctx.moveTo(px,F.T); F.ctx.lineTo(px,F.T+F.ph); F.ctx.stroke();
+    F.ctx.setLineDash([]); F.ctx.globalAlpha=1;
+    [[F.T+F.ph-(r.Fv_mg-t0)/(t1-t0)*F.ph,cW],[F.T+F.ph-(r.Pn_mg-p0)/(p1-p0)*F.ph,cL]].forEach(([y,c])=>{
+      F.ctx.fillStyle="#fff"; F.ctx.beginPath(); F.ctx.arc(px,y,4.5,0,7); F.ctx.fill();
+      F.ctx.fillStyle=c; F.ctx.beginPath(); F.ctx.arc(px,y,3,0,7); F.ctx.fill();
+    });
+  }
+}
+
+function drawTemp(){
+  const F=frame(el("cvt"),[44,10,24,30]), ax=AXES[axisKey];
+  const S=sample("sun"), Sh=sample("shade"), Ai=sample("air");
+  const allv=S.tl.concat(Sh.tl,Ai.tl);
+  const [y0,y1]=nice(allv,false);
+  grid(F,ax,i=>auto(y1-(y1-y0)*i/4),null,cssv("--ink3"),null,"\u8449\u6e29 \u2103",null);
+  poly(F,Ai.xs,Ai.tl,ax,y0,y1,cssv("--ink3"),[4,3]);
+  poly(F,Sh.xs,Sh.tl,ax,y0,y1,cssv("--shade"));
+  poly(F,S.xs,S.tl,ax,y0,y1,cssv("--sun"));
+  const xc=ax.get(cur);
+  if(xc>=ax.min&&xc<=ax.max){
+    const px=F.L+(xc-ax.min)/(ax.max-ax.min)*F.pw;
+    F.ctx.strokeStyle=cssv("--ink"); F.ctx.globalAlpha=.32; F.ctx.setLineDash([4,4]);
+    F.ctx.beginPath(); F.ctx.moveTo(px,F.T); F.ctx.lineTo(px,F.T+F.ph); F.ctx.stroke();
+    F.ctx.setLineDash([]); F.ctx.globalAlpha=1;
+  }
+}
+
+/* ===== 炭素収支の温度応答（気温だけを動かす） ===== */
+function drawCarbon(){
+  const F=frame(el("cvc"),[46,12,24,30]);
+  const ax={label:"気温 (℃)",min:0,max:45};
+  const N=150, xs=[],gP=[],gR=[],gN=[];
+  const at = t => compute(Object.assign({},cur,{Ta:t}),pattern);
+  let bi=0, pi=0;
+  for(let i=0;i<=N;i++){
+    const t=ax.min+(ax.max-ax.min)*i/N, r=at(t);
+    xs.push(t); gP.push(r.P_mmol*DH); gR.push((r.Rp+r.Rd)*DH); gN.push(r.Pn*DH);
+    if(gN[i]>gN[bi]) bi=i;
+    if(gP[i]>gP[pi]) pi=i;
+  }
+  /* 最適点をグリッド周辺で細かく詰める */
+  const step=(ax.max-ax.min)/N;
+  const refine=(i,val)=>{ let bt=xs[i], bv=val(at(xs[i]));
+    for(let t=Math.max(ax.min,bt-step); t<=Math.min(ax.max,bt+step); t+=step/60){
+      const x=val(at(t)); if(x>bv){ bv=x; bt=t; } }
+    return [bt,bv]; };
+  const [bt,bv]   = refine(bi, r=>r.Pn*DH);      // 純光合成の最大
+  const [pt,pv]   = refine(pi, r=>r.P_mmol*DH);  // 総光合成の最大
+  const bestR=at(bt), bestP=at(pt);
+
+  const [y0,y1]=nice(gP.concat(gR,gN),true);
+  const cLeaf=cssv("--leaf"), cRust=cssv("--rust"), cSun=cssv("--sun");
+  grid(F,ax,i=>auto(y1-(y1-y0)*i/4),null,cssv("--ink3"),null,"W/m\u00B2",null);
+
+  const {ctx,L,T,pw,ph}=F;
+  const PX = t => L+(t-ax.min)/(ax.max-ax.min)*pw;
+  const PY = y => T+ph-(y-y0)/(y1-y0)*ph;
+
+  /* 総光合成と呼吸のあいだ＝純光合成 を塗る */
+  ctx.fillStyle=cssv("--leaf-soft"); ctx.beginPath();
+  let open=false;
+  for(let i=0;i<=N;i++){
+    if(gP[i]>gR[i]){
+      if(!open){ ctx.moveTo(PX(xs[i]),PY(gR[i])); open=true; }
+      ctx.lineTo(PX(xs[i]),PY(gP[i]));
+    }
+  }
+  for(let i=N;i>=0;i--) if(gP[i]>gR[i]) ctx.lineTo(PX(xs[i]),PY(gR[i]));
+  ctx.closePath(); ctx.fill();
+
+  /* 0線 */
+  if(y0<0&&y1>0){ ctx.strokeStyle=cssv("--line"); ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(L,PY(0)); ctx.lineTo(L+pw,PY(0)); ctx.stroke(); ctx.setLineDash([]); }
+
+  const path=(ys,color,wd,dash)=>{
+    ctx.strokeStyle=color; ctx.lineWidth=wd; ctx.lineJoin="round";
+    ctx.setLineDash(dash||[]); ctx.beginPath();
+    xs.forEach((t,i)=>{ i?ctx.lineTo(PX(t),PY(ys[i])):ctx.moveTo(PX(t),PY(ys[i])); });
+    ctx.stroke(); ctx.setLineDash([]);
+  };
+  ctx.globalAlpha=.45; path(gP,cLeaf,1.5); ctx.globalAlpha=1;
+  path(gR,cRust,1.5);
+  path(gN,cLeaf,2.8);
+
+  /* 総光合成が最大になる気温（＝葉温が Tm になる点） */
+  if(pv>0){
+    ctx.strokeStyle=cLeaf; ctx.globalAlpha=.55; ctx.lineWidth=1.5; ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(PX(pt),T); ctx.lineTo(PX(pt),T+ph); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha=1;
+    ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(PX(pt),PY(pv),5,0,7); ctx.fill();
+    ctx.globalAlpha=.6; ctx.fillStyle=cLeaf; ctx.beginPath(); ctx.arc(PX(pt),PY(pv),3.2,0,7); ctx.fill();
+    ctx.globalAlpha=1;
+  }
+  /* 最適気温 */
+  if(bv>0){
+    ctx.strokeStyle=cSun; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
+    ctx.beginPath(); ctx.moveTo(PX(bt),T); ctx.lineTo(PX(bt),T+ph); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(PX(bt),PY(bv),5,0,7); ctx.fill();
+    ctx.fillStyle=cSun; ctx.beginPath(); ctx.arc(PX(bt),PY(bv),3.2,0,7); ctx.fill();
+    ctx.font="10px ui-monospace,Menlo,monospace"; ctx.fillStyle=cSun;
+    ctx.textBaseline="top"; ctx.textAlign = PX(bt)>L+pw*0.72 ? "right":"left";
+    ctx.fillText("最適 "+bt.toFixed(1)+"℃", PX(bt)+(ctx.textAlign==="right"?-5:5), T+2);
+  }
+  /* 現在の気温 */
+  if(cur.Ta>=ax.min&&cur.Ta<=ax.max){
+    ctx.strokeStyle=cssv("--ink"); ctx.globalAlpha=.3; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(PX(cur.Ta),T); ctx.lineTo(PX(cur.Ta),T+ph); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha=1;
+  }
+
+  /* 見出しと注記 */
+  const now=compute(cur,pattern);
+  if(bv>0){
+    el("opt-note").textContent = PAT[pattern].ja+" ／ 純光合成の最適気温 "+bt.toFixed(1)+" ℃";
+    el("optbox").innerHTML =
+      '<div class="optline">純光合成 Pn が最大になる気温 <b>'+bt.toFixed(1)+' ℃</b>'+
+      '（そのときの葉温 <b>'+bestR.Tl.toFixed(1)+' ℃</b>、Pn <b>'+bv.toFixed(2)+'</b> W/m²）<br>'+
+      '<span style="color:var(--ink2)">今の気温 '+cur.Ta.toFixed(1)+' ℃ では '+(now.Pn*DH).toFixed(2)+' W/m²。'+
+      (Math.abs(cur.Ta-bt)<0.3 ? 'ほぼ最適です。'
+        : '気温を'+(bt>cur.Ta?'上げる':'下げる')+'と最大 '+((bv-now.Pn*DH)).toFixed(2)+' W/m² 増える計算です。')+'</span></div>'+
+      (pv>0 ? '<div class="optline" style="background:var(--leaf-soft);border-left-color:var(--leaf)">'+
+        '総光合成 P が最大になる気温 <b style="color:var(--leaf)">'+pt.toFixed(1)+' ℃</b>'+
+        '（そのときの葉温 <b style="color:var(--leaf)">'+bestP.Tl.toFixed(1)+' ℃</b> ＝ 設定した光合成最適温度 Tm '+cur.Tm.toFixed(1)+' ℃）<br>'+
+        '<span style="color:var(--ink2)">Tm は<b>総光合成</b> P の最適温度です。純光合成はそれより <b>'+(bt-pt).toFixed(1)+
+        ' K</b> 低いところで最大になります。暗呼吸 Rd が温度とともに増え続けるためで、'+
+        'この差は Rd/P が大きいほど開きます（弱日射ほど差が大きく、強日射・高CO₂では Tm に近づきます）。</span></div>' : "");
+  }else{
+    el("opt-note").textContent = PAT[pattern].ja+" ／ 最適気温なし";
+    el("optbox").innerHTML =
+      '<div class="warn">この条件ではどの気温でも純光合成がマイナスです（光補償点以下）。'+
+      '日射かCO₂濃度を上げないと、この葉は炭素を消費するだけになります。</div>';
+  }
+}
+
+
+pairs.forEach(([n,r])=>{
+  el(n).addEventListener("input",()=>{ el(r).value=el(n).value; render(); });
+  el(r).addEventListener("input",()=>{ el(n).value=el(r).value; render(); });
+});
+el("i-pa").addEventListener("input",render);
+el("i-two").addEventListener("change",render);
+
+el("patsel").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  pattern=b.dataset.p;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed",x===b));
+  render();
+});
+el("chips").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  axisKey=b.dataset.k;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed",x===b));
+  drawMain(); drawTemp();
+});
+el("tabs").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  tab=b.dataset.t;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-selected",x===b));
+  document.querySelectorAll(".tabpane").forEach(p=>p.setAttribute("data-on",p.dataset.p===tab));
+});
+el("m-alt").addEventListener("click",()=>{
+  usePa=false; el("m-alt").setAttribute("aria-pressed","true"); el("m-pa").setAttribute("aria-pressed","false");
+  el("i-pa").style.display="none"; el("d-pa").style.display="";
+  el("i-alt").disabled=false; el("r-alt").disabled=false; render();
+});
+el("m-pa").addEventListener("click",()=>{
+  usePa=true; el("m-pa").setAttribute("aria-pressed","true"); el("m-alt").setAttribute("aria-pressed","false");
+  el("i-pa").value=paFromAlt(+el("i-alt").value).toFixed(1);
+  el("i-pa").style.display=""; el("d-pa").style.display="none";
+  el("i-alt").disabled=true; el("r-alt").disabled=true; render();
+});
+function applyPreset(turb,fst){
+  el("i-turb").value=turb; el("r-turb").value=turb;
+  el("i-fst").value=fst;   el("r-fst").value=fst;
+  render();
+}
+el("p-excel").addEventListener("click",()=>applyPreset(1.0,1.0));
+el("p-tomato").addEventListener("click",()=>applyPreset(1.4,2.0));
+
+el("btn-copy").addEventListener("click",async()=>{
+  const v=cur, A={sun:compute(v,"sun"),shade:compute(v,"shade"),air:compute(v,"air")}, r=A[pattern];
+  const line=(p)=>`${PAT[p].ja.padEnd(12," ")} 葉温 ${A[p].Tl.toFixed(1)} C / 蒸散 ${auto(A[p].Fv_mg)} / 純光合成 ${auto(A[p].Pn_mg)}`;
+  const txt=`光合成・蒸散 計算結果（葉温版）
+気温 ${v.Ta} C / 湿度 ${(v.hr*100).toFixed(0)} % / 日射 ${v.St} W/m2 / CO2 ${v.Cca} ppm
+風速 ${v.u} m/s / 葉幅 ${(v.w*100).toFixed(1)} cm / 最適温度 ${v.Tm} C / 大気圧 ${v.Pa.toFixed(1)} kPa
+校正 turb ${v.turb.toFixed(2)} / fst ${v.fst.toFixed(1)}
+---
+${line("sun")}
+${line("shade")}
+${line("air")}
+（蒸散 mg H2O/m2 s, 純光合成 mg CO2/m2 s）
+---
+選択中: ${PAT[pattern].ja}
+ 光合成速度 ${auto(r.P_mmol*44)} / 光呼吸 ${auto(r.Rp*44)} / 暗呼吸 ${auto(r.Rd*44)} mg CO2/m2 s
+ 葉緑体CO2濃度 ${auto(r.Ccc)} ppm${r.eb?`
+ Rni ${auto(r.eb.Rni)} = λE ${auto(r.eb.lamE)} + H ${auto(r.eb.H)} + ΔL ${auto(r.eb.dL)} W/m2`:""}`;
+  try{ await navigator.clipboard.writeText(txt); el("btn-copy").textContent="コピーしました"; }
+  catch(e){ el("btn-copy").textContent="コピーできませんでした"; }
+  setTimeout(()=>el("btn-copy").textContent="条件と結果をコピー",1600);
+});
+let rt; window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{drawMain();drawTemp();drawCarbon();},120);});
+render();
+</script>
+</body>
+</html>
