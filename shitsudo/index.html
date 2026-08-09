@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#F2F5F0">
+<title>湿度計算表</title>
+<style>
+:root{
+  --leaf:#F2F5F0;
+  --paper:#FFFFFF;
+  --ink:#16241D;
+  --muted:#657A70;
+  --line:#D6E0D8;
+  --vine:#2E6B4F;
+  --dry:#C8842B;
+  --good:#2E9E6B;
+  --wet:#4A7FB5;
+  --sans:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--leaf);color:var(--ink);font-family:var(--sans);
+  line-height:1.6;-webkit-text-size-adjust:100%;
+  padding:20px 16px calc(40px + env(safe-area-inset-bottom));
+}
+.wrap{max-width:520px;margin:0 auto}
+
+header{margin-bottom:22px}
+.eyebrow{font-size:11px;letter-spacing:.22em;color:var(--vine);font-weight:700;margin:0}
+h1{font-size:26px;font-weight:800;letter-spacing:.02em;margin:4px 0 2px}
+header p{margin:0;font-size:12.5px;color:var(--muted)}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 16px 18px;margin-bottom:14px}
+.card h2{font-size:12px;letter-spacing:.14em;color:var(--muted);font-weight:700;margin:0 0 14px}
+
+/* ---- 入力 ---- */
+.field{margin-bottom:18px}
+.field:last-child{margin-bottom:0}
+.field-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.field-top label{font-size:14px;font-weight:700}
+.field-top .sym{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:6px;font-weight:400}
+.numbox{display:flex;align-items:baseline;gap:4px}
+.numbox input[type=number]{
+  width:88px;text-align:right;font-family:var(--mono);font-size:22px;font-weight:600;
+  color:var(--ink);background:var(--leaf);border:1px solid var(--line);border-radius:8px;
+  padding:4px 8px;-moz-appearance:textfield;
+}
+.numbox input[type=number]::-webkit-outer-spin-button,
+.numbox input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.numbox .unit{font-size:13px;color:var(--muted);font-family:var(--mono)}
+input[type=range]{
+  width:100%;-webkit-appearance:none;appearance:none;background:transparent;margin:0;height:28px;
+}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--line);border-radius:2px}
+input[type=range]::-moz-range-track{height:4px;background:var(--line);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:26px;height:26px;margin-top:-11px;border-radius:50%;
+  background:var(--paper);border:2.5px solid var(--vine);box-shadow:0 1px 3px rgba(0,0,0,.16);cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{
+  width:22px;height:22px;border-radius:50%;background:var(--paper);
+  border:2.5px solid var(--vine);box-shadow:0 1px 3px rgba(0,0,0,.16);cursor:pointer;
+}
+input:focus-visible{outline:2px solid var(--vine);outline-offset:2px}
+
+.alert{
+  display:none;margin-top:12px;padding:9px 12px;border-radius:8px;
+  background:#FBF0DD;border:1px solid #E7CE9B;color:#7A5417;font-size:12.5px;
+}
+.alert.show{display:block}
+
+/* ---- 飽差ヒーロー ---- */
+.hero{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 16px 16px;margin-bottom:14px}
+.hero-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px}
+.hero-top .name{font-size:13px;font-weight:700}
+.hero-top .name span{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400;margin-left:6px}
+.zone-tag{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;color:#fff;background:var(--good)}
+.hero-value{display:flex;align-items:baseline;gap:8px;margin:2px 0 16px}
+.hero-value b{
+  font-family:var(--mono);font-size:56px;line-height:1;font-weight:600;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.hero-value .unit{font-size:15px;color:var(--muted);font-family:var(--mono)}
+
+/* 目盛りバー（署名要素） */
+.gauge{position:relative;height:14px;border-radius:7px;overflow:hidden;background:var(--line)}
+.gauge i{position:absolute;top:0;bottom:0;display:block;opacity:.42}
+.gauge .z1{left:0;width:30%;background:var(--dry)}
+.gauge .z2{left:30%;width:30%;background:var(--good)}
+.gauge .z3{left:60%;width:40%;background:var(--wet)}
+.needle{
+  position:absolute;top:-4px;bottom:-4px;width:3px;border-radius:2px;background:var(--ink);
+  transform:translateX(-1.5px);transition:left .18s ease-out;
+}
+.gauge-wrap{position:relative;padding:5px 0}
+.ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:6px}
+.ticks span:nth-child(2){margin-left:auto;margin-right:auto}
+.zone-note{font-size:11.5px;color:var(--muted);margin:8px 0 0}
+
+/* ---- 相対湿度・露点 ---- */
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.pair .card{margin-bottom:0;padding:14px}
+.pair .name{font-size:12.5px;font-weight:700;margin-bottom:6px}
+.pair .name span{font-family:var(--mono);font-size:10.5px;color:var(--muted);font-weight:400;margin-left:5px}
+.pair .val{display:flex;align-items:baseline;gap:5px}
+.pair b{font-family:var(--mono);font-size:32px;line-height:1;font-weight:600;font-variant-numeric:tabular-nums}
+.pair .unit{font-size:12.5px;color:var(--muted);font-family:var(--mono)}
+
+/* ---- 詳細 ---- */
+details{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:0 16px}
+summary{
+  cursor:pointer;list-style:none;padding:14px 0;font-size:12.5px;font-weight:700;color:var(--vine);
+  display:flex;align-items:center;justify-content:space-between;
+}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"＋";font-family:var(--mono);font-weight:400}
+details[open] summary::after{content:"－"}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:14px}
+th,td{text-align:left;padding:7px 0;border-bottom:1px solid var(--line);vertical-align:baseline}
+tr:last-child th,tr:last-child td{border-bottom:none}
+th{font-weight:500;color:var(--muted)}
+th small{display:block;font-family:var(--mono);font-size:10.5px;opacity:.8}
+td{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td em{font-style:normal;color:var(--muted);font-size:10.5px;margin-left:4px}
+.const-note{font-size:11.5px;color:var(--muted);margin:0 0 14px;padding-top:2px}
+.const-note code{font-family:var(--mono);font-size:11px}
+footer{text-align:center;font-size:11px;color:var(--muted);margin-top:20px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">乾湿球温度から求める</p>
+  <h1>湿度計算表</h1>
+  <p>乾球温度と湿球温度を入れると、飽差・相対湿度・露点温度を計算します。</p>
+</header>
+
+<section class="card">
+  <h2>温度を入力</h2>
+
+  <div class="field">
+    <div class="field-top">
+      <label for="ta">乾球温度<span class="sym">Ta</span></label>
+      <div class="numbox">
+        <input type="number" id="ta" value="20" min="0" max="50" step="0.1" inputmode="decimal">
+        <span class="unit">℃</span>
+      </div>
+    </div>
+    <input type="range" id="taR" value="20" min="0" max="50" step="0.1" aria-label="乾球温度スライダー">
+  </div>
+
+  <div class="field">
+    <div class="field-top">
+      <label for="tw">湿球温度<span class="sym">Tw</span></label>
+      <div class="numbox">
+        <input type="number" id="tw" value="17" min="0" max="50" step="0.1" inputmode="decimal">
+        <span class="unit">℃</span>
+      </div>
+    </div>
+    <input type="range" id="twR" value="17" min="0" max="50" step="0.1" aria-label="湿球温度スライダー">
+  </div>
+
+  <p class="alert" id="alert" role="status"></p>
+</section>
+
+<section class="hero">
+  <div class="hero-top">
+    <div class="name">飽差<span>D</span></div>
+    <div class="zone-tag" id="zone">適正</div>
+  </div>
+  <div class="hero-value">
+    <b id="vpd">4.83</b><span class="unit">g/m³</span>
+  </div>
+  <div class="gauge-wrap">
+    <div class="gauge">
+      <i class="z1"></i><i class="z2"></i><i class="z3"></i>
+      <div class="needle" id="needle" style="left:48%"></div>
+    </div>
+    <div class="ticks"><span>0</span><span>3</span><span>6</span><span>10</span></div>
+  </div>
+  <p class="zone-note">目盛りの区切り 3・6 g/m³ はトマト栽培で一般的に使われる目安です（計算結果には影響しません）。</p>
+</section>
+
+<div class="pair">
+  <div class="card">
+    <div class="name">相対湿度<span>hr</span></div>
+    <div class="val"><b id="rh">74.3</b><span class="unit">%</span></div>
+  </div>
+  <div class="card">
+    <div class="name">露点温度<span>Td</span></div>
+    <div class="val"><b id="td">15.3</b><span class="unit">℃</span></div>
+  </div>
+</div>
+
+<details>
+  <summary>途中の計算値と定数</summary>
+  <table>
+    <tbody>
+      <tr><th>大気圧<small>Pa</small></th><td id="d_pa">99.7553<em>kPa</em></td></tr>
+      <tr><th>Twにおける飽和水蒸気圧<small>es(Tw)</small></th><td id="d_estw">1.9362<em>kPa</em></td></tr>
+      <tr><th>TaとTwより算出された水蒸気圧<small>ea</small></th><td id="d_ea">1.7369<em>kPa</em></td></tr>
+      <tr><th>eaにおける水蒸気モル分率<small>Cv</small></th><td id="d_cvea">0.017411<em>mol/mol</em></td></tr>
+      <tr><th>Taにおける飽和水蒸気圧<small>es(Ta)</small></th><td id="d_esta">2.3365<em>kPa</em></td></tr>
+      <tr><th>es(Ta)における水蒸気モル分率<small>Cv</small></th><td id="d_cvesta">0.023422<em>mol/mol</em></td></tr>
+      <tr><th>飽差<small>D</small></th><td id="d_dkpa">0.5996<em>kPa</em></td></tr>
+      <tr><th>飽差<small>D</small></th><td id="d_dmol">0.006011<em>mol/mol</em></td></tr>
+      <tr><th>飽差<small>D</small></th><td id="d_dm3">0.2681<em>mol/m³</em></td></tr>
+    </tbody>
+  </table>
+
+  <div class="field" style="margin-bottom:16px">
+    <div class="field-top">
+      <label for="alt">標高<span class="sym">A</span></label>
+      <div class="numbox">
+        <input type="number" id="alt" value="126" min="0" max="3000" step="1" inputmode="numeric">
+        <span class="unit">m</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="const-note">
+    定数：<code>a = 0.611 kPa</code>／<code>b = 17.502</code>／<code>c = 240.97 ℃</code>／
+    <code>γ = 6.66×10⁻⁴ K⁻¹</code>／<code>1m³あたりのモル数 = 44.6 mol/m³</code>／<code>水の分子量 = 18.02 g/mol</code>
+  </p>
+</details>
+
+<footer>エクセル「湿度計算表」と同じ式・同じ単位で計算しています。</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var A_CONST=0.611, B_CONST=17.502, C_CONST=240.97, GAMMA=6.66e-4,
+      MOL_PER_M3=44.6, MW_WATER=18.02;
+
+  var ta=document.getElementById('ta'), tw=document.getElementById('tw'),
+      taR=document.getElementById('taR'), twR=document.getElementById('twR'),
+      alt=document.getElementById('alt'), alertBox=document.getElementById('alert');
+
+  function fix(x,n){ return isFinite(x) ? x.toFixed(n) : '—'; }
+
+  function calc(Ta,Tw,A){
+    var Pa   = 101.3*Math.exp(-A/8200);                        // kPa
+    var esTw = A_CONST*Math.exp((B_CONST*Tw)/(Tw+C_CONST));    // kPa
+    var ea   = esTw - GAMMA*Pa*(Ta-Tw);                        // kPa
+    var esTa = A_CONST*Math.exp((B_CONST*Ta)/(Ta+C_CONST));    // kPa
+    var cvEa = ea/Pa, cvEsTa = esTa/Pa;                        // mol/mol
+    var dMol = cvEsTa - cvEa;                                  // mol/mol
+    var dM3  = dMol*MOL_PER_M3;                                // mol/m3
+    var dG   = dM3*MW_WATER;                                   // g/m3
+    var ln   = Math.log(ea/A_CONST);
+    return {
+      Pa:Pa, esTw:esTw, ea:ea, esTa:esTa, cvEa:cvEa, cvEsTa:cvEsTa,
+      dKpa:esTa-ea, dMol:dMol, dM3:dM3, dG:dG,
+      rh:(ea/esTa)*100,                                        // %
+      td:(ea>0) ? (C_CONST*ln)/(B_CONST-ln) : NaN              // ℃
+    };
+  }
+
+  function setCell(id,val,dec,unit){
+    document.getElementById(id).innerHTML = fix(val,dec)+'<em>'+unit+'</em>';
+  }
+
+  function update(){
+    var Ta=parseFloat(ta.value), Tw=parseFloat(tw.value), A=parseFloat(alt.value);
+    if(isNaN(A)) A=0;
+
+    var msgs=[];
+    if(isNaN(Ta)||isNaN(Tw)){
+      alertBox.textContent='乾球温度と湿球温度を入力してください。';
+      alertBox.classList.add('show');
+      return;
+    }
+    if(Ta<0||Tw<0) msgs.push('この式は0℃以上で使います。0℃未満の値は結果が正しくありません。');
+    if(Tw>Ta)      msgs.push('湿球温度が乾球温度を超えています。相対湿度が100%を超えるため、値を確認してください。');
+    alertBox.textContent=msgs.join(' ');
+    alertBox.classList.toggle('show', msgs.length>0);
+
+    var r=calc(Ta,Tw,A);
+
+    document.getElementById('vpd').textContent = fix(r.dG,2);
+    document.getElementById('rh').textContent  = fix(r.rh,1);
+    document.getElementById('td').textContent  = fix(r.td,1);
+
+    setCell('d_pa',    r.Pa,     4,'kPa');
+    setCell('d_estw',  r.esTw,   4,'kPa');
+    setCell('d_ea',    r.ea,     4,'kPa');
+    setCell('d_cvea',  r.cvEa,   6,'mol/mol');
+    setCell('d_esta',  r.esTa,   4,'kPa');
+    setCell('d_cvesta',r.cvEsTa, 6,'mol/mol');
+    setCell('d_dkpa',  r.dKpa,   4,'kPa');
+    setCell('d_dmol',  r.dMol,   6,'mol/mol');
+    setCell('d_dm3',   r.dM3,    4,'mol/m³');
+
+    var d=r.dG, pct=Math.max(0,Math.min(100, d/10*100));
+    document.getElementById('needle').style.left=pct+'%';
+
+    var zone=document.getElementById('zone'), label, color;
+    if(!isFinite(d)||d<0){ label='—'; color='var(--muted)'; }
+    else if(d<3){ label='低い'; color='var(--wet)'; }
+    else if(d<=6){ label='適正'; color='var(--good)'; }
+    else { label='高い'; color='var(--dry)'; }
+    zone.textContent=label; zone.style.background=color;
+  }
+
+  function link(numEl,rangeEl){
+    numEl.addEventListener('input',function(){ rangeEl.value=numEl.value; update(); });
+    rangeEl.addEventListener('input',function(){ numEl.value=rangeEl.value; update(); });
+  }
+  link(ta,taR); link(tw,twR);
+  alt.addEventListener('input',update);
+
+  update();
+})();
+</script>
+</body>
+</html>
