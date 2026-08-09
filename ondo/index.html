@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>ハウス温度設定管理</title>
+<style>
+:root{
+  --bg:#e9eeef; --panel:#ffffff; --panel2:#f4f7f7;
+  --ink:#14201f; --muted:#677a78; --line:#d3dcdb; --line2:#e6ecec;
+  --target:#0f6b57; --vent:#1a6ea8; --heat:#c2551d;
+  --night:#dbe4e8; --warn:#a8324a; --ok:#3d7a4a;
+  --mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Noto Sans Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",YuGothic,Meiryo,sans-serif;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;
+  -webkit-text-size-adjust:100%;padding-bottom:40px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:.02em}
+button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
+input,select{font-family:inherit;font-size:inherit;color:inherit}
+
+/* ---------- header ---------- */
+header{position:sticky;top:0;z-index:30;background:rgba(233,238,239,.94);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);padding:8px 12px 0}
+.hbar{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hbar h1{font-size:15px}
+.hbar .sub{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.hbar .spacer{flex:1}
+.tools{display:flex;gap:5px;flex-wrap:wrap}
+.tools button{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-size:12px}
+.tools button:hover{background:var(--panel2)}
+.tabs{display:flex;gap:5px;overflow-x:auto;padding:8px 0 8px;scrollbar-width:thin}
+.tab{flex:0 0 auto;background:var(--panel);border:1px solid var(--line);border-radius:8px 8px 0 0;
+  padding:5px 11px;font-size:12px;white-space:nowrap;border-bottom:2px solid transparent}
+.tab .d{display:block;font-size:10px;color:var(--muted);font-family:var(--mono)}
+.tab.on{border-color:var(--target);border-bottom-color:var(--target);background:#fff;font-weight:700}
+.tab.add{color:var(--muted);border-style:dashed}
+.viewsw{display:flex;gap:0;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--panel)}
+.viewsw button{border:0;background:transparent;padding:4px 12px;font-size:12px}
+.viewsw button.on{background:var(--ink);color:#fff}
+
+/* ---------- layout ---------- */
+main{max-width:1180px;margin:0 auto;padding:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:12px}
+.card>.hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--line2)}
+.card>.hd h2{font-size:12.5px;letter-spacing:.08em}
+.card>.hd .spacer{flex:1}
+.card>.bd{padding:12px}
+.mini{font-size:11.5px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:999px;padding:2px 9px;font-size:11.5px}
+.dot{width:9px;height:3px;border-radius:2px;display:inline-block}
+
+/* period meta */
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.fld label{display:block;font-size:10.5px;letter-spacing:.08em;color:var(--muted);margin-bottom:3px}
+.fld input,.fld select{width:100%;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.fld input[type=date],.fld input[type=number]{font-family:var(--mono)}
+textarea{width:100%;min-height:64px;padding:7px;border:1px solid var(--line);border-radius:6px;
+  font-family:inherit;font-size:12.5px;line-height:1.55;resize:vertical;background:#fff}
+.suninfo{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.suninfo b{font-family:var(--mono);font-size:15px}
+
+/* houses */
+.houses{display:flex;gap:5px;flex-wrap:wrap}
+.houses button{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px 13px;font-size:12.5px}
+.houses button.on{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:700}
+
+/* chart */
+.legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--muted)}
+svg.chart{display:block;width:100%;height:auto}
+
+/* 編集バー */
+.editbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--line2)}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:0 0 auto}
+.seg button{border:0;background:#fff;padding:6px 14px;font-size:13px;border-right:1px solid var(--line);font-weight:600}
+.seg button:last-child{border-right:0}
+.seg button.on{color:#fff}
+.readout{font-family:var(--mono);font-size:13px;font-weight:600;padding:2px 8px;border-radius:6px;
+  background:var(--panel2);border:1px solid var(--line2);white-space:nowrap}
+.ebtn{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:5px 10px;font-size:12px}
+.ebtn:disabled{opacity:.35}
+
+/* スクロール可能なプロット＋一覧 */
+.scroller{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.plotrow{display:flex;align-items:flex-start}
+.yax{position:sticky;left:0;z-index:4;background:#fff;flex:0 0 auto}
+.plot{position:relative;flex:0 0 auto;touch-action:none;-webkit-user-select:none;user-select:none;cursor:crosshair}
+.bubble{position:absolute;transform:translateX(-50%);background:var(--ink);color:#fff;font-family:var(--mono);
+  font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;z-index:8}
+.bubble:after{content:"";position:absolute;left:50%;bottom:-5px;margin-left:-5px;
+  border:5px solid transparent;border-top-color:var(--ink);border-bottom:0}
+
+/* 一覧（グラフと横軸を共有） */
+.grid{font-size:12px}
+.grow{display:flex;align-items:stretch}
+.glab,.gcell{box-sizing:border-box;flex:0 0 auto;border-right:1px solid var(--line2);border-bottom:1px solid var(--line2)}
+.glab{position:sticky;left:0;z-index:3;background:#fff;border-right:1px solid var(--line);
+  font-size:10.5px;color:var(--muted);text-align:right;padding:3px 5px 0 2px;line-height:1.25}
+.gcell{text-align:center;position:relative}
+.grow.hh .gcell{background:var(--panel2);font-family:var(--mono);font-size:10.5px;color:var(--muted);padding:2px 0}
+.grow.hh .gcell.dy{background:#fff8e0;color:#8a6f2a}
+.grow.act .gcell{background:#f4faf8}
+.gcell.now{box-shadow:inset 0 0 0 2px var(--target);background:#e9f4f0}
+.cv{font-family:var(--mono);font-size:13px;font-weight:600;padding:3px 0 2px}
+.cx{font-family:var(--mono);font-size:8.5px;line-height:1.15;padding-bottom:2px;opacity:.8}
+.sn{font-size:9px;vertical-align:2px}
+.cb{display:flex;border-top:1px solid var(--line2)}
+.cb button{flex:1 1 0;min-width:0;border:0;background:var(--panel2);font-size:12px;padding:4px 0;
+  border-right:1px solid var(--line2);line-height:1}
+.cb button:last-child{border-right:0}
+.cb button:active{background:var(--line)}
+.gdiff .cv{font-size:11px;font-weight:400;color:var(--muted)}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:1px;background:var(--line2);
+  border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.stat{background:#fff;padding:8px 10px}
+.stat .k{font-size:10px;letter-spacing:.09em;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:19px;font-weight:600;line-height:1.25}
+.stat .u{font-size:11px;color:var(--muted);font-weight:400}
+.stat.hl .v{color:var(--target)}
+
+/* hour grid */
+/* step tables */
+.steps{display:grid;grid-template-columns:1fr;gap:0}
+table.st{width:100%;border-collapse:collapse;font-size:12.5px}
+table.st th{font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:600;text-align:left;padding:4px 5px;
+  border-bottom:1px solid var(--line)}
+table.st td{padding:4px 5px;border-bottom:1px solid var(--line2)}
+table.st tr.off{opacity:.4}
+table.st .no{font-family:var(--mono);color:var(--muted);width:26px}
+table.st select{padding:4px 3px;border:1px solid var(--line);border-radius:6px;font-family:var(--mono);background:#fff}
+table.st .tempbox{display:flex;align-items:center;gap:3px}
+table.st .tempbox input{width:52px;border:1px solid var(--line);border-radius:6px;padding:4px 2px;text-align:center;
+  font-family:var(--mono);font-size:14px;font-weight:600;background:#fff}
+table.st .tempbox button{width:24px;height:26px;border:1px solid var(--line);background:#fff;border-radius:6px;padding:0}
+table.st .span{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:820px){.two{grid-template-columns:1fr}}
+
+/* checks */
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--line2);font-size:12.5px}
+.check:last-child{border:0}
+.badge{flex:0 0 auto;font-size:10px;letter-spacing:.06em;padding:1px 7px;border-radius:999px;margin-top:2px}
+.badge.err{background:#fbe9ed;color:var(--warn)}
+.badge.warn{background:#fdf3e3;color:#96601a}
+.badge.ok{background:#e8f3ea;color:var(--ok)}
+.check .rng{font-family:var(--mono);color:var(--muted)}
+
+/* summary */
+table.sum{width:100%;border-collapse:collapse;font-size:12.5px}
+table.sum th,table.sum td{padding:6px 8px;border-bottom:1px solid var(--line2);text-align:right;white-space:nowrap}
+table.sum th{font-size:10px;letter-spacing:.07em;color:var(--muted);text-align:right;border-bottom:1px solid var(--line)}
+table.sum th:first-child,table.sum td:first-child{text-align:left}
+table.sum td.n{font-family:var(--mono)}
+table.sum tr.cur td{background:#f2f8f6;font-weight:600}
+.scrollx{overflow-x:auto}
+
+.hidden{display:none!important}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:8px 16px;border-radius:999px;font-size:12.5px;z-index:99;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+
+@media print{
+  header,.tools,.noprint{display:none!important}
+  .scroller{overflow:visible}
+  body{background:#fff}
+  .card{break-inside:avoid;border-color:#bbb}
+  main{max-width:none;padding:0}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hbar">
+    <h1>ハウス温度設定管理</h1>
+    <span class="sub" id="hLoc"></span>
+    <span class="spacer"></span>
+    <div class="viewsw">
+      <button id="vSet" class="on" onclick="setView('set')">期別設定</button>
+      <button id="vSum" onclick="setView('sum')">期間まとめ</button>
+    </div>
+    <div class="tools">
+      <button onclick="saveFile()">保存（JSON）</button>
+      <button onclick="document.getElementById('imp').click()">読込</button>
+      <button onclick="window.print()">印刷</button>
+      <button onclick="toggleCfg()">設定</button>
+      <input type="file" id="imp" accept=".json" class="hidden" onchange="loadFile(event)">
+    </div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<main>
+
+<!-- 位置設定 -->
+<div class="card hidden noprint" id="cfg">
+  <div class="hd"><h2>位置・計算の設定</h2></div>
+  <div class="bd">
+    <div class="meta">
+      <div class="fld"><label>地点名</label><input id="cfgName" oninput="cfgChange()"></div>
+      <div class="fld"><label>緯度（北緯 °）</label><input id="cfgLat" type="number" step="0.01" oninput="cfgChange()"></div>
+      <div class="fld"><label>経度（東経 °）</label><input id="cfgLon" type="number" step="0.01" oninput="cfgChange()"></div>
+      <div class="fld"><label>平均の求め方</label>
+        <select id="cfgMode" onchange="cfgChange()">
+          <option value="min">分単位で按分（推奨）</option>
+          <option value="hour">時単位で区切る（旧エクセル方式）</option>
+        </select></div>
+      <div class="fld"><label>ハウス</label><input id="cfgHouses" oninput="cfgChange()" placeholder="中央,東"></div>
+    </div>
+    <p class="mini" style="margin:10px 0 0">
+      日の出・日の入は緯度経度から計算します（大気差 0.833° を考慮、JST）。参考にしていた天文台の表と比べて誤差はおおむね 1〜2 分です。<br>
+      「分単位で按分」は、日の出が 6:19 なら 6 時台のうち 41 分だけを日中として重み付けします。「時単位」は日の出・日の入を含む時刻を丸ごと日中に入れる、これまでのエクセルと同じ数え方です。
+    </p>
+  </div>
+</div>
+
+<div id="viewSet">
+
+  <!-- 期の情報 -->
+  <div class="card">
+    <div class="hd">
+      <h2 id="pTitle">期の情報</h2><span class="spacer"></span>
+      <div class="tools noprint">
+        <button onclick="dupPeriod()">この期を複製</button>
+        <button onclick="delPeriod()">削除</button>
+      </div>
+    </div>
+    <div class="bd">
+      <div class="meta">
+        <div class="fld"><label>期の名前</label><input id="pName" oninput="pChange()"></div>
+        <div class="fld"><label>見出し</label><input id="pLabel" oninput="pChange()"></div>
+        <div class="fld"><label>開始日</label><input id="pStart" type="date" oninput="pChange()"></div>
+        <div class="fld"><label>終了日</label><input id="pEnd" type="date" oninput="pChange()"></div>
+      </div>
+      <div class="suninfo">
+        <span class="mini">期間平均の日の出</span><b id="sRise">–</b>
+        <span class="mini">日の入</span><b id="sSet">–</b>
+        <span class="mini">日長</span><b id="sLen">–</b>
+        <span class="mini" id="sRange"></span>
+      </div>
+      <div style="margin-top:10px">
+        <div class="fld"><label>備考</label><textarea id="pNote" oninput="pChange()"></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- グラフ -->
+  <div class="card">
+    <div class="hd">
+      <h2>設定温度グラフ</h2>
+      <div class="houses" id="houseTabs"></div>
+      <span class="spacer"></span>
+      <div class="tools noprint"><button onclick="copyHouse()">他のハウスへコピー</button></div>
+    </div>
+    <div class="bd" style="padding:0">
+      <div class="editbar noprint">
+        <div class="seg" id="modeSeg"></div>
+        <span class="readout" id="readout">—</span>
+        <span class="spacer"></span>
+        <button class="ebtn" id="addStepBtn" onclick="addStep()">＋段</button>
+        <button class="ebtn" id="shiftDn" onclick="shiftTarget(-0.5)">全体 −0.5</button>
+        <button class="ebtn" id="shiftUp" onclick="shiftTarget(0.5)">全体 +0.5</button>
+        <label class="chip"><input type="checkbox" id="diffOn" onchange="render()"> 差を表示</label>
+        <select class="ebtn" id="zoomSel" onchange="setZoom()">
+          <option value="34">幅 小</option><option value="46">幅 中</option><option value="62">幅 大</option>
+        </select>
+        <button class="ebtn" onclick="scrollPlot(-1)">◀</button>
+        <button class="ebtn" onclick="scrollPlot(1)">▶</button>
+      </div>
+      <div class="scroller" id="scroller">
+        <div class="plotrow">
+          <div class="yax" id="yax"></div>
+          <div class="plot" id="plot"><div id="plotsvg"></div><div class="bubble hidden" id="bubble"></div></div>
+        </div>
+        <div class="grid" id="gridTbl"></div>
+      </div>
+      <div class="legend" style="padding:8px 10px">
+        <span class="chip"><i class="dot" style="background:var(--target)"></i>目標温度</span>
+        <span class="chip"><i class="dot" style="background:var(--vent)"></i>換気設定</span>
+        <span class="chip"><i class="dot" style="background:var(--heat)"></i>暖房設定</span>
+        <span class="chip"><i class="dot" style="background:var(--night)"></i>夜</span>
+        <span class="mini noprint" id="modeHint"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 集計 -->
+  <div class="card">
+    <div class="hd"><h2>目標温度の集計</h2><span class="spacer"></span><span class="mini" id="statMode"></span></div>
+    <div class="bd"><div class="stats" id="stats"></div></div>
+  </div>
+
+  <!-- 段設定 -->
+  <div class="two">
+    <div class="card">
+      <div class="hd"><h2 style="color:var(--vent)">換気設定（6段）</h2><span class="spacer"></span>
+        <div class="tools noprint"><button onclick="draft('vent')">目標から下書き</button></div></div>
+      <div class="bd"><div id="ventTbl"></div>
+        <p class="mini" style="margin:8px 0 0">開始時刻は15分刻み。次の段までその温度が続き、最初の段より前の時間は最終段の温度が引き継がれます。</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="hd"><h2 style="color:var(--heat)">暖房設定（6段）</h2><span class="spacer"></span>
+        <div class="tools noprint"><button onclick="draft('heat')">目標から下書き</button></div></div>
+      <div class="bd"><div id="heatTbl"></div>
+        <p class="mini" style="margin:8px 0 0">下書きは目標温度を6区間に近似して作ります。作成後に手で調整してください。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 検証 -->
+  <div class="card">
+    <div class="hd"><h2>設定の検証</h2></div>
+    <div class="bd"><div id="checks"></div></div>
+  </div>
+
+</div><!-- /viewSet -->
+
+<div id="viewSum" class="hidden">
+  <div class="card">
+    <div class="hd"><h2>期間ごとの推移</h2><span class="spacer"></span><span class="mini" id="sumHouse"></span></div>
+    <div class="bd"><div id="sumChart"></div></div>
+  </div>
+  <div class="card">
+    <div class="hd"><h2>一覧表</h2></div>
+    <div class="bd scrollx"><div id="sumTbl"></div></div>
+  </div>
+</div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const C={line:"#d3dcdb",line2:"#e6ecec",muted:"#677a78",night:"#dbe4e8",target:"#0f6b57",vent:"#1a6ea8",heat:"#c2551d",mono:"ui-monospace,Menlo,Consolas,monospace"};
+
+/* =========================================================================
+   1. データ
+   ========================================================================= */
+const SEED = [{"name": "1020~", "label": "～晴天日温度設定管理", "start": "2024-10-20", "end": "2024-11-14", "note": "開カーテン1層目6時半まで、2層目7時半まで\n閉カーテン1層目は⊿5、2層目は⊿8を目安に閉める\n夜温が5℃以下、日が最短になる11月20日過ぎからクイックドロップ（3：45～）は開度制限をかける→クイックドロップは基本行わない\n換気開度制限外気が10度あれば２０～２５％くらいで攻められる、10度きるようなら１５％（10％以下？）\n日中25℃が10時過ぎから取れないようなら夜温を上げて平均気温17℃の確保を\n【前年設定】7時半で17℃10％、8時で17.5℃15％、11時で20℃15％、14時18.5℃15％、15時45分8度15％\n日没2時間前から徐々に温度が下がるように設定\n中央は北を0.5℃高く、東は西を0.5℃高く設定するとちょうどいい？", "houses": {"中央": {"target": [14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 16.5, 19.0, 22.0, 24.0, 25.0, 25.0, 25.0, 24.0, 20.0, 16.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0], "vent": [{"on": true, "time": "06:00", "temp": 16.0}, {"on": true, "time": "08:00", "temp": 17.0}, {"on": true, "time": "11:00", "temp": 21.0}, {"on": true, "time": "14:00", "temp": 18.5}, {"on": true, "time": "16:00", "temp": 14.0}, {"on": true, "time": "18:00", "temp": 20.0}], "heat": [{"on": true, "time": "08:00", "temp": 8.0}, {"on": true, "time": "18:00", "temp": 14.0}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}, "東": {"target": [14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 16.5, 19.0, 22.0, 24.0, 25.0, 25.0, 25.0, 24.0, 20.0, 16.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0], "vent": [{"on": true, "time": "11:00", "temp": 21.0}, {"on": true, "time": "14:00", "temp": 18.5}, {"on": true, "time": "16:00", "temp": 14.0}, {"on": true, "time": "19:00", "temp": 16.5}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "08:00", "temp": 8.0}, {"on": true, "time": "18:00", "temp": 14.0}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}}}, {"name": "1115~", "label": "～晴天日温度設定管理", "start": "2024-11-15", "end": "2024-12-14", "note": "カーテンは８：30まで1層閉める、2層は７：15　曇天９：００\n閉カーテン1層目は⊿5、2層目は⊿8を目安に閉める\nクイックドロップは行わない、暖房機が動き出すようには注意する\n換気が閉まったらCO2は高濃度施用500ｐｐｍが限界か？\n日中の換気が閉まり過ぎないように気を付ける\n【前年設定】夜間～9時半まで17℃5％、9時半～19℃10％、10時半～22℃10％、11時半～23.5℃10％（外気に合わせて要調整）、14時45分～20℃5％、15時45分～外気に合わせて10％～0％で調整下がりすぎ注意\n日没2時間前から徐々に温度が下がるように設定", "houses": {"中央": {"target": [13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 15.0, 18.0, 20.0, 24.0, 25.0, 25.0, 25.0, 21.0, 19.0, 18.0, 14.0, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0], "vent": [{"on": true, "time": "08:00", "temp": 17.5}, {"on": true, "time": "10:00", "temp": 23.0}, {"on": true, "time": "14:00", "temp": 19.5}, {"on": true, "time": "16:00", "temp": 16.0}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 13.0}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}, "東": {"target": [13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 15.0, 18.0, 20.0, 24.0, 25.0, 25.0, 25.0, 21.0, 19.0, 18.0, 14.0, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0], "vent": [{"on": true, "time": "08:00", "temp": 17.5}, {"on": true, "time": "10:00", "temp": 23.0}, {"on": true, "time": "14:00", "temp": 19.5}, {"on": true, "time": "16:00", "temp": 16.0}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 13.0}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}}}, {"name": "1215~", "label": "～晴天日温度設定管理", "start": "2024-12-15", "end": "2025-01-19", "note": "カーテンは9：00まで1層閉める、2層は７：30　曇天は９：３０\n閉カーテン1層目は⊿5、2層目は⊿8を目安に閉める\nクイックドロップは行わない、暖房機が動き出すようには注意する\n換気が閉まったらCO2は高濃度施用500ｐｐｍが限界か？\n日中の換気が閉まり過ぎないように気を付ける\n【前年設定】9時半まで17.5℃１０％に変更、10時半まで18.5℃１０％11時半まで21℃１０％、14時45分まで23.5℃１０％、クイックドロップは外気温度に合わせて16℃～13.5℃の幅で変更開けるのは１０％\n日没2時間前から徐々に温度が下がるように設定", "houses": {"中央": {"target": [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 15.0, 18.0, 20.0, 22.0, 24.0, 25.0, 25.0, 21.0, 19.0, 18.0, 14.0, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5], "vent": [{"on": true, "time": "08:00", "temp": 18.0}, {"on": true, "time": "10:00", "temp": 21.5}, {"on": true, "time": "11:00", "temp": 23.5}, {"on": true, "time": "14:00", "temp": 21.5}, {"on": true, "time": "16:00", "temp": 17.0}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 12.5}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}, "東": {"target": [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 15.0, 17.0, 19.5, 21.5, 23.0, 25.0, 25.0, 21.0, 19.0, 18.0, 14.0, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5], "vent": [{"on": true, "time": "08:00", "temp": 18.0}, {"on": true, "time": "10:00", "temp": 21.5}, {"on": true, "time": "11:00", "temp": 23.5}, {"on": true, "time": "14:00", "temp": 21.5}, {"on": true, "time": "16:00", "temp": 17.0}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 12.5}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}}}, {"name": "0120~", "label": "～晴天日温度設定管理", "start": "2025-01-20", "end": "2025-02-04", "note": "カーテンは2層8:15開く　1層は7:15\n閉カーテン1層目は⊿5、2層目は⊿8を目安に閉める\n午前中からなるべく換気があくように\n温度上昇が早くなってくるが感度は１０％をキープ、感度上げると温度の上下が激しい、温度設定で管理\n【前年設定】8時で17.5℃10％、10時で19.5℃10％、11時で21.5℃～23℃外気で調整、15時15分で20℃、16時15分で15度外気で１０％～３０％\n中央は北を0.5℃高く、東は西を0.5℃高く設定するとちょうどいい？\n日没2時間前から徐々に温度が下がるように設定", "houses": {"中央": {"target": [13.5, 13.5, 13.5, 13.5, 13.5, 13.5, 13.5, 15.0, 18.0, 20.0, 22.0, 24.0, 25.0, 25.0, 21.0, 19.0, 18.0, 14.0, 13.5, 13.5, 13.5, 13.5, 13.5, 13.5], "vent": [{"on": true, "time": "08:00", "temp": 18.0}, {"on": true, "time": "10:00", "temp": 21.5}, {"on": true, "time": "11:00", "temp": 24.0}, {"on": true, "time": "14:00", "temp": 21.5}, {"on": true, "time": "16:00", "temp": 17.0}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 13.5}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}, "東": {"target": [12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 15.0, 18.0, 20.0, 22.0, 24.0, 25.0, 25.0, 21.0, 19.0, 18.0, 14.0, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5], "vent": [{"on": true, "time": "08:00", "temp": 18.0}, {"on": true, "time": "10:00", "temp": 21.5}, {"on": true, "time": "11:00", "temp": 23.5}, {"on": true, "time": "14:00", "temp": 21.5}, {"on": true, "time": "16:00", "temp": 17.0}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 13.5}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}}}, {"name": "0205~", "label": "～晴天日温度設定管理", "start": "2025-02-05", "end": "2025-02-19", "note": "カーテンは2層8:00開く　1層は7:00\n閉カーテン1層目は⊿5、2層目は⊿8を目安に閉める\n午前中からなるべく換気があくように\n【前年設定】8時で18℃15％、10時で18度１０％、11時で20.5℃１０％、15時30分で19.5℃１０％\n日没2時間前から徐々に温度が下がるように設定", "houses": {"中央": {"target": [14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 15.0, 18.0, 20.0, 22.0, 24.0, 25.0, 25.0, 21.0, 19.0, 18.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0], "vent": [{"on": true, "time": "08:00", "temp": 18.0}, {"on": true, "time": "10:00", "temp": 21.5}, {"on": true, "time": "11:00", "temp": 24.5}, {"on": true, "time": "14:00", "temp": 21.5}, {"on": true, "time": "16:00", "temp": 17.0}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 14.0}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}, "東": {"target": [14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 15.0, 18.0, 20.0, 22.0, 24.0, 25.0, 25.0, 21.0, 19.0, 18.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0], "vent": [{"on": true, "time": "08:00", "temp": 18.0}, {"on": true, "time": "10:00", "temp": 21.5}, {"on": true, "time": "11:00", "temp": 24.5}, {"on": true, "time": "14:00", "temp": 21.5}, {"on": true, "time": "16:00", "temp": 17.0}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 14.0}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}}}, {"name": "0220~", "label": "～晴天日温度設定管理", "start": "2025-02-20", "end": "2025-03-04", "note": "カーテンは2層7：45開く　1層は6：45\n閉カーテン1層目は⊿5、2層目は⊿8を目安に閉める\n午前中からなるべく換気があくように\n【前年設定】8時で17℃15％、10時で18.5～19.5度１０％、11時で20.5～22.5℃１０％、15時30分で18℃１０％、基本的に16時半で12℃設定クイックドロップ　全開　　日中は最大25℃超えないように管理\n日没2時間前から徐々に温度が下がるように設定", "houses": {"中央": {"target": [14.5, 14.5, 14.5, 14.5, 14.5, 14.5, 14.5, 16.0, 18.0, 21.0, 23.0, 25.0, 25.0, 25.0, 24.0, 20.0, 19.0, 16.0, 14.5, 14.5, 14.5, 14.5, 14.5, 14.5], "vent": [{"on": true, "time": "08:00", "temp": 18.0}, {"on": true, "time": "10:00", "temp": 20.0}, {"on": true, "time": "11:00", "temp": 24.5}, {"on": true, "time": "15:00", "temp": 21.0}, {"on": true, "time": "17:00", "temp": 17.0}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 14.5}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}, "東": {"target": [14.5, 14.5, 14.5, 14.5, 14.5, 14.5, 14.5, 15.0, 18.0, 21.0, 23.0, 25.0, 25.0, 25.0, 22.0, 20.0, 19.0, 16.0, 14.5, 14.5, 14.5, 14.5, 14.5, 14.5], "vent": [{"on": true, "time": "08:00", "temp": 18.0}, {"on": true, "time": "10:00", "temp": 21.5}, {"on": true, "time": "11:00", "temp": 24.5}, {"on": true, "time": "14:00", "temp": 21.5}, {"on": true, "time": "16:00", "temp": 17.0}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 14.5}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}}}, {"name": "0305~", "label": "日中の温度が上がり始めたら", "start": "2025-03-05", "end": "2025-04-04", "note": "夜温14℃でも十分に平均気温確保できるので、日中の温度見て夜間温度は設定\nカーテンは2層7：45開く　1層は6：45\n閉カーテン1層目は⊿5、2層目は⊿8を目安に閉める\n午前中からなるべく換気があくように\n【前年設定】8時で17℃15％、10時で18.5～19.5度１０％、11時で20.5～22.5℃１０％、15時30分で18℃１０％、基本的に16時半で12℃設定クイックドロップ　全開　　日中は最大25℃超えないように管理\n日没2時間前から徐々に温度が下がるように設定", "houses": {"中央": {"target": [14.5, 14.5, 14.5, 14.5, 14.5, 14.5, 14.5, 17.0, 20.0, 23.0, 24.0, 25.0, 25.0, 25.0, 25.0, 20.0, 19.0, 16.0, 14.5, 14.5, 14.5, 14.5, 14.5, 14.5], "vent": [{"on": true, "time": "07:00", "temp": 18.0}, {"on": true, "time": "09:00", "temp": 20.0}, {"on": true, "time": "10:00", "temp": 23.5}, {"on": true, "time": "15:00", "temp": 20.0}, {"on": true, "time": "17:00", "temp": 17.0}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 14.5}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}, "東": {"target": [14.5, 14.5, 14.5, 14.5, 14.5, 14.5, 14.5, 17.0, 20.0, 23.0, 24.0, 25.0, 25.0, 25.0, 25.0, 20.0, 19.0, 16.0, 14.5, 14.5, 14.5, 14.5, 14.5, 14.5], "vent": [{"on": true, "time": "07:00", "temp": 18.0}, {"on": true, "time": "09:00", "temp": 20.0}, {"on": true, "time": "10:00", "temp": 23.5}, {"on": true, "time": "15:00", "temp": 20.0}, {"on": true, "time": "17:00", "temp": 17.0}, {"on": false, "time": "00:00", "temp": 16}], "heat": [{"on": true, "time": "00:00", "temp": 14.5}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}, {"on": false, "time": "00:00", "temp": 16}]}}}];
+
+const DEFAULT_CFG = { name:"つくば", lat:36.08, lon:140.08, tz:9, mode:"min", zoom:46, houses:["中央","東"] };
+
+let DB = null, curP = 0, curH = 0;
+
+function blankHouse(){
+  return { target: Array(24).fill(15),
+           vent: Array.from({length:6},(_,i)=>({on:i===0,time:"08:00",temp:20})),
+           heat: Array.from({length:6},(_,i)=>({on:i===0,time:"00:00",temp:14})) };
+}
+function freshDB(){
+  return { version:1, cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),
+           periods: JSON.parse(JSON.stringify(SEED)) };
+}
+function normalize(db){
+  db.cfg = Object.assign({}, DEFAULT_CFG, db.cfg||{});
+  if(!Array.isArray(db.cfg.houses)||!db.cfg.houses.length) db.cfg.houses=DEFAULT_CFG.houses.slice();
+  if(!Array.isArray(db.periods)||!db.periods.length)
+    db.periods=[{name:"新しい期",label:"",start:"",end:"",note:"",houses:{}}];
+  db.periods.forEach(p=>{
+    p.houses = p.houses||{};
+    db.cfg.houses.forEach(h=>{ if(!p.houses[h]) p.houses[h] = blankHouse(); });
+    Object.values(p.houses).forEach(hh=>{
+      hh.target = (hh.target||[]).slice(0,24);
+      while(hh.target.length<24) hh.target.push(15);
+      hh.target = hh.target.map(v=> v==null?15:snap(v));
+      ["vent","heat"].forEach(k=>{
+        hh[k] = (hh[k]||[]).slice(0,6);
+        while(hh[k].length<6) hh[k].push({on:false,time:"00:00",temp:16});
+        hh[k] = hh[k].map(s=>({on:!!s.on, time:s.time||"00:00", temp:snap(s.temp==null?16:s.temp)}));
+      });
+    });
+  });
+  return db;
+}
+const snap = v => Math.round(v*2)/2;
+const LS = "greenhouse_temp_settings_v1";
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(DB)); }catch(e){} }
+function load(){ try{ const s=localStorage.getItem(LS); if(s) return normalize(JSON.parse(s)); }catch(e){} return null; }
+
+/* =========================================================================
+   2. 日の出・日の入（NOAA）
+   ========================================================================= */
+const D2R=Math.PI/180, R2D=180/Math.PI;
+function julianDay(y,m,d){ if(m<=2){y-=1;m+=12;} const A=Math.floor(y/100), B=2-A+Math.floor(A/4);
+  return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5; }
+function sunTimes(lat,lon,y,m,d,tz){
+  const JD0=julianDay(y,m,d), out={};
+  for(const rising of [true,false]){
+    let t=0.5;
+    for(let i=0;i<3;i++){
+      const T=(JD0+t-tz/24-2451545)/36525;
+      const L0=(280.46646+T*(36000.76983+T*0.0003032))%360;
+      const M=357.52911+T*(35999.05029-0.0001537*T);
+      const C=Math.sin(M*D2R)*(1.914602-T*(0.004817+0.000014*T))
+             +Math.sin(2*M*D2R)*(0.019993-0.000101*T)+Math.sin(3*M*D2R)*0.000289;
+      const om=125.04-1934.136*T, lam=L0+C-0.00569-0.00478*Math.sin(om*D2R);
+      const e0=23.439291-T*(0.0130042+T*(1.64e-7-5.04e-7*T)), ec=e0+0.00256*Math.cos(om*D2R);
+      const dec=Math.asin(Math.sin(ec*D2R)*Math.sin(lam*D2R))*R2D;
+      const ecc=0.016708634-T*(0.000042037+0.0000001267*T);
+      const y2=Math.pow(Math.tan(ec/2*D2R),2);
+      const eot=4*R2D*(y2*Math.sin(2*L0*D2R)-2*ecc*Math.sin(M*D2R)
+             +4*ecc*y2*Math.sin(M*D2R)*Math.cos(2*L0*D2R)
+             -0.5*y2*y2*Math.sin(4*L0*D2R)-1.25*ecc*ecc*Math.sin(2*M*D2R));
+      let cosH=(Math.cos(90.833*D2R)-Math.sin(lat*D2R)*Math.sin(dec*D2R))/(Math.cos(lat*D2R)*Math.cos(dec*D2R));
+      cosH=Math.max(-1,Math.min(1,cosH));
+      const HA=Math.acos(cosH)*R2D, noon=(720-4*lon-eot+tz*60)/1440;
+      t = rising ? noon-HA*4/1440 : noon+HA*4/1440;
+    }
+    out[rising?"rise":"set"]=t*24;
+  }
+  return out;
+}
+function parseDate(s){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||""); return m?[+m[1],+m[2],+m[3]]:null; }
+function dayNum(y,m,d){ return Math.floor(julianDay(y,m,d)); }
+function fromDayNum(n){ const dt=new Date(Date.UTC(1970,0,1)); dt.setUTCDate(dt.getUTCDate()+(n-2440587));
+  return [dt.getUTCFullYear(),dt.getUTCMonth()+1,dt.getUTCDate()]; }
+function periodSun(p){
+  const cfg=DB.cfg, a=parseDate(p.start), b=parseDate(p.end);
+  if(!a) return null;
+  let n0=dayNum(...a), n1=b?dayNum(...b):n0;
+  if(n1<n0) n1=n0;
+  if(n1-n0>400) n1=n0+400;
+  let sr=0, ss=0, cnt=0, first=null, last=null;
+  for(let n=n0;n<=n1;n++){
+    const [y,m,d]=fromDayNum(n), t=sunTimes(cfg.lat,cfg.lon,y,m,d,cfg.tz);
+    sr+=t.rise; ss+=t.set; cnt++;
+    if(!first) first=t; last=t;
+  }
+  return { rise:sr/cnt, set:ss/cnt, days:cnt, first, last };
+}
+const hhmm = h => { let mm=Math.round(h*60); mm=((mm%1440)+1440)%1440;
+  return String(Math.floor(mm/60)).padStart(2,"0")+":"+String(mm%60).padStart(2,"0"); };
+
+/* =========================================================================
+   3. 計算
+   ========================================================================= */
+function t2h(s){ const m=/^(\d{1,2}):(\d{2})$/.exec(s); return m? (+m[1])+(+m[2])/60 : 0; }
+/* 段設定 → 任意時刻の設定温度（前の段を引き継ぎ、最初の段より前は最終段） */
+function stepSeries(steps, slots){
+  const on = steps.map((s,i)=>({...s,i})).filter(s=>s.on).sort((a,b)=>t2h(a.time)-t2h(b.time));
+  const out = new Array(slots).fill(null);
+  if(!on.length) return out;
+  for(let k=0;k<slots;k++){
+    const h = k*24/slots;
+    let cur = on[on.length-1];
+    for(const s of on){ if(t2h(s.time)<=h+1e-9) cur=s; else break; }
+    out[k]=cur.temp;
+  }
+  return out;
+}
+function stepAt(steps,h){ const a=stepSeries(steps,1440); return a[Math.min(1439,Math.max(0,Math.floor(h*60)))]; }
+
+/* 目標温度の日中／夜間平均 */
+function averages(target, sun, mode){
+  const day=Array(24).fill(0);
+  if(sun){
+    if(mode==="hour"){
+      const a=Math.floor(sun.rise), b=Math.floor(sun.set);
+      for(let h=a;h<=b;h++) day[h]=1;
+    }else{
+      for(let h=0;h<24;h++){
+        const ov=Math.max(0, Math.min(h+1,sun.set)-Math.max(h,sun.rise));
+        day[h]=ov;
+      }
+    }
+  }
+  let dw=0,ds=0,nw=0,ns=0;
+  for(let h=0;h<24;h++){
+    const w=day[h];
+    dw+=w; ds+=target[h]*w;
+    nw+=1-w; ns+=target[h]*(1-w);
+  }
+  const all = target.reduce((a,b)=>a+b,0)/24;
+  const dayAvg = dw>0? ds/dw : null, nightAvg = nw>0? ns/nw : null;
+  return { all, day:dayAvg, night:nightAvg,
+           dif:(dayAvg!=null&&nightAvg!=null)?dayAvg-nightAvg:null,
+           max:Math.max(...target), min:Math.min(...target),
+           range:Math.max(...target)-Math.min(...target), dayW:day };
+}
+const f1 = v => v==null? "–" : (Math.round(v*10)/10).toFixed(1);
+
+/* =========================================================================
+   4. 画面
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+let view="set";
+function setView(v){ view=v; $("vSet").classList.toggle("on",v==="set"); $("vSum").classList.toggle("on",v==="sum");
+  $("viewSet").classList.toggle("hidden",v!=="set"); $("viewSum").classList.toggle("hidden",v!=="sum"); render(); }
+function toggleCfg(){ $("cfg").classList.toggle("hidden"); }
+let toastT=null;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("on");
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("on"),1600); }
+
+function P(){ return DB.periods[curP]; }
+function H(){ const p=P(); const name=DB.cfg.houses[curH]||DB.cfg.houses[0];
+  if(!p.houses[name]) p.houses[name]=blankHouse(); return p.houses[name]; }
+
+function renderTabs(){
+  const el=$("tabs"); el.innerHTML="";
+  DB.periods.forEach((p,i)=>{
+    const b=document.createElement("button");
+    b.className="tab"+(i===curP?" on":"");
+    b.innerHTML=`${esc(p.name||"期"+(i+1))}<span class="d">${(p.start||"").slice(5)}〜</span>`;
+    b.onclick=()=>{curP=i;render();};
+    el.appendChild(b);
+  });
+  const a=document.createElement("button");
+  a.className="tab add"; a.innerHTML='＋ 期を追加<span class="d">&nbsp;</span>';
+  a.onclick=addPeriod; el.appendChild(a);
+  $("hLoc").textContent = `${DB.cfg.name}  N${DB.cfg.lat.toFixed(2)} / E${DB.cfg.lon.toFixed(2)}`;
+}
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderHouseTabs(){
+  const el=$("houseTabs"); el.innerHTML="";
+  DB.cfg.houses.forEach((h,i)=>{
+    const b=document.createElement("button");
+    b.textContent=h; b.className=(i===curH?"on":"");
+    b.onclick=()=>{curH=i;render();}; el.appendChild(b);
+  });
+}
+
+let curSun=null;
+function renderMeta(){
+  const p=P();
+  $("pTitle").textContent = (p.name||"期")+"　"+(p.label||"");
+  $("pName").value=p.name||""; $("pLabel").value=p.label||"";
+  $("pStart").value=p.start||""; $("pEnd").value=p.end||""; $("pNote").value=p.note||"";
+  const s=periodSun(p);
+  if(s){
+    $("sRise").textContent=hhmm(s.rise); $("sSet").textContent=hhmm(s.set);
+    $("sLen").textContent=hhmm(s.set-s.rise);
+    $("sRange").textContent=`（${s.days}日間の平均：初日 ${hhmm(s.first.rise)}–${hhmm(s.first.set)} → 最終日 ${hhmm(s.last.rise)}–${hhmm(s.last.set)}）`;
+  }else{ $("sRise").textContent=$("sSet").textContent=$("sLen").textContent="–"; $("sRange").textContent="開始日を入力してください"; }
+  curSun=s; return s;
+}
+
+/* ---------- グラフ（描いて設定する） ---------- */
+const isNarrow = () => window.innerWidth < 720;
+const SERIES = { target:{lab:"目標温度",short:"目標",col:C.target},
+                 vent  :{lab:"換気設定",short:"換気",col:C.vent},
+                 heat  :{lab:"暖房設定",short:"暖房",col:C.heat} };
+const CIRC=["①","②","③","④","⑤","⑥"];
+let mode="target", geom=null, dragState=null, activeH=null;
+
+function plotDims(){
+  const N=isNarrow();
+  const cw=+(DB.cfg.zoom||46);
+  return { N, G:N?36:44, CH:N?250:330, MT:12, MB:10, cw, W:cw*24, PH:(N?250:330)-22 };
+}
+/* ある時刻を支配している段の番号（配列上の添字） */
+function govStep(steps,hr){
+  const on=steps.map((s,i)=>({s,i})).filter(o=>o.s.on).sort((a,b)=>t2h(a.s.time)-t2h(b.s.time));
+  if(!on.length) return -1;
+  let cur=on[on.length-1];
+  for(const o of on){ if(t2h(o.s.time)<=hr+1e-9) cur=o; else break; }
+  return cur.i;
+}
+
+function renderModeBar(){
+  const seg=$("modeSeg"); seg.innerHTML="";
+  Object.keys(SERIES).forEach(k=>{
+    const b=document.createElement("button");
+    b.textContent=SERIES[k].short;
+    if(k===mode){ b.className="on"; b.style.background=SERIES[k].col; }
+    else b.style.color=SERIES[k].col;
+    b.onclick=()=>{ mode=k; $("readout").textContent="—"; render(); };
+    seg.appendChild(b);
+  });
+  const isT = mode==="target";
+  $("addStepBtn").classList.toggle("hidden", isT);
+  $("shiftUp").classList.toggle("hidden", !isT);
+  $("shiftDn").classList.toggle("hidden", !isT);
+  $("zoomSel").value=String(DB.cfg.zoom||46);
+  $("modeHint").textContent = isT
+    ? "グラフをなぞると目標温度を 0.5℃ 刻みで描けます"
+    : "丸印を動かすと開始時刻（15分刻み）と温度、線の途中をなぞると温度だけ変わります";
+}
+function setZoom(){ DB.cfg.zoom=+$("zoomSel").value; save(); render(); }
+function scrollPlot(dir){ const sc=$("scroller"); sc.scrollBy({left:dir*sc.clientWidth*0.8,behavior:"smooth"}); }
+
+function renderPlot(sun,a){
+  const g=plotDims(), h=H(), t=h.target;
+  const vent=stepSeries(h.vent,96), heat=stepSeries(h.heat,96);
+  const vals=t.concat(vent.filter(v=>v!=null),heat.filter(v=>v!=null));
+  let lo=Math.floor(Math.min(...vals)-1.5), hi=Math.ceil(Math.max(...vals)+1.5);
+  if(hi-lo<10){ const c=(hi+lo)/2; lo=Math.floor(c-5); hi=Math.ceil(c+5); }
+  const PH=g.CH-g.MT-g.MB;
+  const X=x=>x*g.cw, Y=v=>g.MT+PH*(hi-v)/(hi-lo);
+  geom={...g,PH,lo,hi,X,Y};
+  const yStep=(hi-lo)>24?4:2;
+
+  /* 温度軸（横スクロールしても左に固定） */
+  const ya=[`<svg class="yaxsvg" width="${g.G}" height="${g.CH}" viewBox="0 0 ${g.G} ${g.CH}">`];
+  for(let v=Math.ceil(lo);v<=hi;v++){ if(v%yStep) continue;
+    ya.push(`<text x="${g.G-7}" y="${Y(v)+4}" text-anchor="end" font-size="11" font-family="${C.mono}" fill="${C.muted}">${v}</text>`);
+    ya.push(`<line x1="${g.G-4}" y1="${Y(v)}" x2="${g.G}" y2="${Y(v)}" stroke="${C.line}"/>`); }
+  ya.push(`<line x1="${g.G-0.5}" y1="${g.MT}" x2="${g.G-0.5}" y2="${g.CH-g.MB}" stroke="${C.line}"/>`);
+  ya.push(`<text x="3" y="10" font-size="9" fill="${C.muted}">℃</text></svg>`);
+  $("yax").innerHTML=ya.join("");
+
+  /* 本体 */
+  const s=[`<svg width="${g.W}" height="${g.CH}" viewBox="0 0 ${g.W} ${g.CH}" style="display:block">`];
+  s.push(`<rect x="0" y="${g.MT}" width="${g.W}" height="${PH}" fill="#fff"/>`);
+  if(sun){
+    s.push(`<rect x="0" y="${g.MT}" width="${X(sun.rise)}" height="${PH}" fill="${C.night}" opacity=".8"/>`);
+    s.push(`<rect x="${X(sun.set)}" y="${g.MT}" width="${g.W-X(sun.set)}" height="${PH}" fill="${C.night}" opacity=".8"/>`);
+  }
+  for(let v=Math.ceil(lo);v<=hi;v++){ if(v%yStep) continue;
+    s.push(`<line x1="0" y1="${Y(v)}" x2="${g.W}" y2="${Y(v)}" stroke="${C.line2}"/>`); }
+  for(let x=0;x<=24;x++)
+    s.push(`<line x1="${X(x)}" y1="${g.MT}" x2="${X(x)}" y2="${g.CH-g.MB}" stroke="${x%3?C.line2:C.line}"/>`);
+  if(sun) [sun.rise,sun.set].forEach(v=>
+    s.push(`<line x1="${X(v)}" y1="${g.MT}" x2="${X(v)}" y2="${g.CH-g.MB}" stroke="#8fa3a8" stroke-dasharray="4 3"/>`));
+
+  /* 換気と暖房のあいだ */
+  const top=[],bot=[];
+  for(let k=0;k<96;k++){ if(vent[k]==null||heat[k]==null) continue;
+    top.push(`${X(k*.25)},${Y(vent[k])} ${X((k+1)*.25)},${Y(vent[k])}`);
+    bot.unshift(`${X((k+1)*.25)},${Y(heat[k])} ${X(k*.25)},${Y(heat[k])}`); }
+  if(top.length) s.push(`<polygon points="${top.join(" ")} ${bot.join(" ")}" fill="#8ab4cd" opacity=".12"/>`);
+
+  const stepPts = arr => { const p=[]; for(let k=0;k<96;k++){ if(arr[k]==null) continue;
+      p.push(`${X(k*.25)},${Y(arr[k])}`); p.push(`${X((k+1)*.25)},${Y(arr[k])}`);} return p.join(" "); };
+  const tPts = (()=>{ const p=[]; for(let i=0;i<24;i++){ p.push(`${X(i)},${Y(t[i])}`); p.push(`${X(i+1)},${Y(t[i])}`);} return p.join(" "); })();
+  const line=(k,pts)=>{ const on=(mode===k);
+    s.push(`<polyline points="${pts}" fill="none" stroke="${SERIES[k].col}" stroke-width="${on?3.4:2}"
+      stroke-linejoin="round" opacity="${on?1:.4}"/>`); };
+  ["heat","vent","target"].forEach(k=> line(k, k==="target"?tPts:(k==="vent"?stepPts(vent):stepPts(heat))));
+
+  /* つまみ */
+  if(mode==="target"){
+    for(let i=0;i<24;i++)
+      s.push(`<circle cx="${X(i+.5)}" cy="${Y(t[i])}" r="${g.N?6:5.5}" fill="#fff" stroke="${C.target}" stroke-width="2.4"/>`);
+  }else{
+    h[mode].forEach((st,i)=>{ if(!st.on) return;
+      const x=X(t2h(st.time)), y=Y(st.temp);
+      s.push(`<circle cx="${x}" cy="${y}" r="${g.N?9:8}" fill="#fff" stroke="${SERIES[mode].col}" stroke-width="2.6"/>`);
+      s.push(`<text x="${x}" y="${y+3.5}" text-anchor="middle" font-size="10" font-weight="700"
+        font-family="${C.mono}" fill="${SERIES[mode].col}">${i+1}</text>`); });
+  }
+  if(activeH!=null)
+    s.push(`<line x1="${X(activeH+.5)}" y1="${g.MT}" x2="${X(activeH+.5)}" y2="${g.CH-g.MB}" stroke="${C.target}" stroke-dasharray="3 3" opacity=".5"/>`);
+  s.push("</svg>");
+  $("plotsvg").innerHTML=s.join("");
+  renderGridTable(g,a,vent,heat);
+}
+
+/* グラフと横軸をそろえた設定温度一覧 */
+function renderGridTable(g,a,vent,heat){
+  const h=H(), t=h.target, showDiff=$("diffOn").checked;
+  const cell=(i,inner,cls)=>`<div class="gcell${cls?" "+cls:""}${activeH===i?" now":""}" style="width:${g.cw}px">${inner}</div>`;
+  const row=(lab,col,cls,fn)=>{
+    let r=`<div class="grow ${cls}"><div class="glab" style="width:${g.G}px;color:${col}">${lab}</div>`;
+    for(let i=0;i<24;i++) r+=fn(i);
+    return r+"</div>";
+  };
+  const stepper=(i)=>`<div class="cb"><button data-a="-" data-h="${i}">−</button><button data-a="+" data-h="${i}">＋</button></div>`;
+  let out="";
+  // 時刻
+  out+=`<div class="grow hh"><div class="glab" style="width:${g.G}px">時</div>`;
+  for(let i=0;i<24;i++) out+=`<div class="gcell${a.dayW[i]>0?" dy":""}${activeH===i?" now":""}" style="width:${g.cw}px">${i}</div>`;
+  out+=`</div>`;
+  // 目標
+  out+=row("目標",C.target,mode==="target"?"act":"",i=>
+    cell(i,`<div class="cv">${f1(t[i])}</div>`+(mode==="target"?stepper(i):"")));
+  // 換気・暖房
+  [["vent",vent],["heat",heat]].forEach(([k,arr])=>{
+    out+=row(SERIES[k].short,SERIES[k].col,mode===k?"act":"",i=>{
+      const v=arr[i*4];
+      const bi=h[k].findIndex(st=>st.on&&t2h(st.time)>=i&&t2h(st.time)<i+1);
+      const bg = bi>=0 ? `<span class="sn" style="color:${SERIES[k].col}">${CIRC[bi]}</span>` : "";
+      let extra="", onHour=(bi<0)||Math.abs(t2h(h[k][bi].time)-i)<1e-9;
+      for(let q=1;q<4;q++){ if(arr[i*4+q]!==v){
+        extra=`<div class="cx" style="color:${SERIES[k].col}">${bg}${hhmm(i+q*.25)}▸${f1(arr[i*4+q])}</div>`; break; } }
+      return cell(i,`<div class="cv">${v==null?"–":f1(v)}${onHour?bg:""}</div>${extra}`+(mode===k?stepper(i):""));
+    });
+  });
+  if(showDiff){
+    out+=row("換気−目標",C.muted,"gdiff",i=>cell(i,`<div class="cv">${vent[i*4]==null?"–":f1(vent[i*4]-t[i])}</div>`));
+    out+=row("目標−暖房",C.muted,"gdiff",i=>cell(i,`<div class="cv">${heat[i*4]==null?"–":f1(t[i]-heat[i*4])}</div>`));
+  }
+  const el=$("gridTbl");
+  el.style.width=(g.G+g.W)+"px";
+  el.innerHTML=out;
+}
+
+/* 段を1つ増やす */
+function addStep(){
+  if(mode==="target") return;
+  const steps=H()[mode], free=steps.findIndex(s=>!s.on);
+  if(free<0){ toast("段は6つまでです"); return; }
+  const on=steps.filter(s=>s.on).map(s=>t2h(s.time)).sort((x,y)=>x-y);
+  let ti=12;
+  if(on.length){ let best=-1;
+    for(let i=0;i<on.length;i++){ const A=on[i], B=(i+1<on.length?on[i+1]:on[0]+24);
+      if(B-A>best){ best=B-A; ti=(A+(B-A)/2)%24; } } }
+  ti=Math.round(ti*4)/4;
+  const cur=stepSeries(steps,96)[Math.min(95,Math.floor(ti*4))];
+  steps[free]={on:true,time:hhmm(ti),temp: cur==null?18:cur};
+  save(); render(); toast(`${free+1}段目を ${hhmm(ti)} に追加しました`);
+}
+
+/* ---------- グラフ上での操作 ---------- */
+function ptXY(e){
+  const svg=$("plotsvg").querySelector("svg");
+  const r=svg.getBoundingClientRect(), sc=geom.W/(r.width||geom.W);
+  return { x:(e.clientX-r.left)*sc, y:(e.clientY-r.top)*sc,
+           cx:e.clientX-$("plot").getBoundingClientRect().left,
+           cy:e.clientY-$("plot").getBoundingClientRect().top };
+}
+function bindPlot(){
+  const el=$("plot");
+  el.addEventListener("pointerdown",e=>{
+    if(!geom||!$("plotsvg").querySelector("svg")) return;
+    const p=ptXY(e);
+    if(p.y<geom.MT-8||p.y>geom.CH-geom.MB+8) return;
+    if(mode==="target"){ dragState={kind:"target"}; }
+    else{
+      const steps=H()[mode];
+      let bi=-1,bd=1e9;
+      steps.forEach((st,i)=>{ if(!st.on) return;
+        const d=Math.hypot(geom.X(t2h(st.time))-p.x, geom.Y(st.temp)-p.y);
+        if(d<bd){bd=d;bi=i;} });
+      if(bi>=0&&bd<=(geom.N?30:26)) dragState={kind:"step",i:bi,moveTime:true};
+      else { const gi=govStep(steps,p.x/geom.cw); if(gi<0){ toast("先に段を追加してください"); return; }
+             dragState={kind:"step",i:gi,moveTime:false}; }
+    }
+    el.setPointerCapture(e.pointerId);
+    applyDrag(e); e.preventDefault();
+  });
+  el.addEventListener("pointermove",e=>{ if(dragState) applyDrag(e); });
+  const end=()=>{ if(!dragState) return;
+    const wasStep=dragState.kind==="step"; dragState=null; activeH=null; lastPaint=null;
+    $("bubble").classList.add("hidden");
+    if(wasStep){ renderSteps("vent",$("ventTbl")); renderSteps("heat",$("heatTbl")); }
+    renderData(); };
+  el.addEventListener("pointerup",end);
+  el.addEventListener("pointercancel",end);
+}
+let lastPaint=null;
+function applyDrag(e){
+  if(!geom||!dragState) return;
+  const p=ptXY(e);
+  const x=Math.max(0,Math.min(geom.W,p.x));
+  let v=snap(Math.max(geom.lo,Math.min(geom.hi, geom.hi-(p.y-geom.MT)*(geom.hi-geom.lo)/geom.PH)));
+  let txt="";
+  if(dragState.kind==="target"){
+    const i=Math.max(0,Math.min(23,Math.floor(x/geom.cw)));
+    activeH=i; H().target[i]=v;
+    if(lastPaint && lastPaint.i!==i){            // 指を速く動かしても間の時間を塗り残さない
+      const st=lastPaint.i, d0=Math.sign(i-st);
+      for(let j=st+d0; j!==i; j+=d0){
+        const r=(j-st)/(i-st);
+        H().target[j]=snap(lastPaint.v+(v-lastPaint.v)*r);
+      }
+    }
+    lastPaint={i,v};
+    txt=`目標 ${i}時 ${f1(v)}℃`;
+  }else{
+    const st=H()[mode][dragState.i];
+    st.temp=v;
+    if(dragState.moveTime){
+      let hr=Math.max(0,Math.min(23.75,Math.round((x/geom.cw)*4)/4));
+      st.time=hhmm(hr);
+    }
+    activeH=Math.max(0,Math.min(23,Math.floor((dragState.moveTime?x:geom.X(t2h(st.time)))/geom.cw)));
+    txt=`${SERIES[mode].short}${dragState.i+1}段 ${st.time} ${f1(v)}℃`;
+  }
+  save();
+  const b=$("bubble");
+  b.textContent=txt; b.classList.remove("hidden");
+  b.style.left=Math.max(30,Math.min(geom.W-30,p.cx))+"px";
+  b.style.top=Math.max(-4,p.cy-54)+"px";
+  $("readout").textContent=txt;
+  renderData();
+}
+
+/* ---------- 集計 ---------- */
+function renderStats(sun){
+  const a=averages(H().target,sun,DB.cfg.mode);
+  const items=[["日平均",a.all,"hl"],["日中平均",a.day,"hl"],["夜間平均",a.night,"hl"],["DIF",a.dif,"hl"],
+               ["最高",a.max,""],["最低",a.min,""],["日格差",a.range,""]];
+  $("stats").innerHTML=items.map(([k,v,c])=>
+    `<div class="stat ${c}"><div class="k">${k}</div><div class="v">${f1(v)}<span class="u"> ℃</span></div></div>`).join("");
+  $("statMode").textContent = DB.cfg.mode==="hour"
+    ? `日中＝${sun?Math.floor(sun.rise):"–"}時〜${sun?Math.floor(sun.set):"–"}時（時単位）`
+    : `日中＝${sun?hhmm(sun.rise):"–"}〜${sun?hhmm(sun.set):"–"}（分単位で按分）`;
+  return a;
+}
+
+function shiftTarget(d){ H().target=H().target.map(v=>snap(v+d)); save(); renderData(); }
+
+/* ---------- 段テーブル ---------- */
+const TIMES=(()=>{const a=[];for(let m=0;m<1440;m+=15)a.push(String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));return a;})();
+function renderSteps(kind, mount){
+  const h=H(), steps=h[kind], col=kind==="vent"?C.vent:C.heat;
+  const on=steps.map((s,i)=>({...s,i})).filter(s=>s.on).sort((x,y)=>t2h(x.time)-t2h(y.time));
+  const spanOf = i => {
+    const k=on.findIndex(s=>s.i===i); if(k<0) return "";
+    const nx=on[(k+1)%on.length];
+    return on.length===1 ? "0:00〜24:00" : `${on[k].time}〜${nx.time}${(k===on.length-1)?"（翌）":""}`;
+  };
+  const tbl=document.createElement("table"); tbl.className="st";
+  tbl.innerHTML=`<thead><tr><th>段</th><th>使用</th><th>開始時刻</th><th>設定温度</th><th>適用範囲</th></tr></thead><tbody></tbody>`;
+  const tb=tbl.querySelector("tbody");
+  steps.forEach((st,i)=>{
+    const tr=document.createElement("tr"); tr.className=st.on?"":"off";
+    tr.innerHTML=`<td class="no">${i+1}</td>
+      <td><input type="checkbox" ${st.on?"checked":""}></td>
+      <td><select>${TIMES.map(t=>`<option ${t===st.time?"selected":""}>${t}</option>`).join("")}</select></td>
+      <td><div class="tempbox"><button>−</button><input class="num" type="text" inputmode="decimal" value="${st.temp}"><button>＋</button></div></td>
+      <td class="span">${spanOf(i)}</td>`;
+    const cb=tr.querySelector('input[type=checkbox]'), sel=tr.querySelector("select");
+    const [mi,pl]=tr.querySelectorAll(".tempbox button"), ti=tr.querySelector(".tempbox input");
+    const upd=()=>{ save(); renderSteps(kind,mount); renderData(); };
+    cb.onchange=()=>{st.on=cb.checked;upd();};
+    sel.onchange=()=>{st.time=sel.value;upd();};
+    mi.onclick=()=>{st.temp=snap(st.temp-0.5);upd();};
+    pl.onclick=()=>{st.temp=snap(st.temp+0.5);upd();};
+    ti.onchange=()=>{const v=parseFloat(ti.value); if(!isNaN(v)) st.temp=snap(v); upd();};
+    tb.appendChild(tr);
+  });
+  mount.innerHTML=""; mount.appendChild(tbl);
+}
+
+/* 目標温度を6区間に近似して段の下書きを作る（動的計画法） */
+function draft(kind){
+  const t=H().target, K=6, n=24;
+  const pre=[0],pre2=[0];
+  for(let i=0;i<n;i++){pre.push(pre[i]+t[i]);pre2.push(pre2[i]+t[i]*t[i]);}
+  const cost=(a,b)=>{const c=b-a,s=pre[b]-pre[a];return (pre2[b]-pre2[a])-s*s/c;};
+  const dp=Array.from({length:K+1},()=>Array(n+1).fill(Infinity));
+  const bk=Array.from({length:K+1},()=>Array(n+1).fill(0));
+  dp[0][0]=0;
+  for(let k=1;k<=K;k++) for(let j=k;j<=n;j++) for(let i=k-1;i<j;i++){
+    const c=dp[k-1][i]+cost(i,j); if(c<dp[k][j]){dp[k][j]=c;bk[k][j]=i;}
+  }
+  const cuts=[]; let j=n;
+  for(let k=K;k>=1;k--){ cuts.unshift(bk[k][j]); j=bk[k][j]; }
+  const dflt = kind==="vent" ? -3 : 0;
+  const raw = prompt(`目標温度からの差（℃）を入力してください。\n${kind==="vent"?"換気":"暖房"}設定 ＝ 区間の平均目標温度 ＋ この値`, String(dflt));
+  if(raw===null) return;
+  const d=parseFloat(raw); if(isNaN(d)) return;
+  const steps=H()[kind];
+  for(let k=0;k<K;k++){
+    const a=cuts[k], b=(k===K-1)?n:cuts[k+1];
+    let s=0; for(let i=a;i<b;i++) s+=t[i];
+    steps[k]={on:true, time:String(a).padStart(2,"0")+":00", temp:snap(s/(b-a)+d)};
+  }
+  save(); render(); toast("下書きを作成しました");
+}
+
+/* ---------- 検証 ---------- */
+function renderChecks(){
+  const h=H(), vent=stepSeries(h.vent,96), heat=stepSeries(h.heat,96), t=h.target;
+  const flags=new Array(96).fill(null);
+  for(let k=0;k<96;k++){
+    const v=vent[k], hh=heat[k], tg=t[Math.floor(k/4)];
+    if(v==null||hh==null) continue;
+    if(hh>=v) flags[k]="band";
+    else if(v-hh<1) flags[k]="narrow";
+    else if(tg<hh) flags[k]="under";
+  }
+  const out=[];
+  const label={band:["err","暖房設定が換気設定以上"],narrow:["warn","換気と暖房の差が1℃未満"],under:["warn","目標温度が暖房設定を下回る"]};
+  let k=0;
+  while(k<96){
+    if(!flags[k]){k++;continue;}
+    let j=k; while(j<96&&flags[j]===flags[k])j++;
+    const [cls,msg]=label[flags[k]];
+    const rng = (k===0&&j===96) ? "終日" : `${hhmm(k*.25)}〜${j>=96?"24:00":hhmm(j*.25)}`;
+    out.push(`<div class="check"><span class="badge ${cls}">${cls==="err"?"要修正":"注意"}</span>
+      <div><b>${msg}</b><br><span class="rng">${rng}</span></div></div>`);
+    k=j;
+  }
+  if(!h.vent.some(s=>s.on)) out.push(`<div class="check"><span class="badge err">要修正</span><div>換気設定の段が1つも有効になっていません。</div></div>`);
+  if(!h.heat.some(s=>s.on)) out.push(`<div class="check"><span class="badge err">要修正</span><div>暖房設定の段が1つも有効になっていません。</div></div>`);
+  if(!out.length) out.push(`<div class="check"><span class="badge ok">問題なし</span><div>暖房設定は常に換気設定より1℃以上低く、目標温度も暖房設定を下回っていません。</div></div>`);
+  $("checks").innerHTML=out.join("");
+}
+
+/* ---------- まとめ ---------- */
+function renderSummary(){
+  const hname=DB.cfg.houses[curH]||DB.cfg.houses[0];
+  $("sumHouse").textContent="ハウス："+hname;
+  const rows=DB.periods.map((p,i)=>{
+    const hh=p.houses[hname]||blankHouse(), s=periodSun(p), a=averages(hh.target,s,DB.cfg.mode);
+    return {i,p,s,a};
+  });
+  let s='<table class="sum"><thead><tr><th>期</th><th>期間</th><th>日の出</th><th>日の入</th><th>日長</th>'+
+        '<th>日平均</th><th>日中平均</th><th>夜間平均</th><th>DIF</th><th>最高</th><th>最低</th><th>日格差</th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    s+=`<tr class="${r.i===curP?"cur":""}"><td>${esc(r.p.name||"")}</td>
+      <td class="n">${(r.p.start||"").slice(5)}〜${(r.p.end||"").slice(5)}</td>
+      <td class="n">${r.s?hhmm(r.s.rise):"–"}</td><td class="n">${r.s?hhmm(r.s.set):"–"}</td>
+      <td class="n">${r.s?hhmm(r.s.set-r.s.rise):"–"}</td>
+      <td class="n">${f1(r.a.all)}</td><td class="n">${f1(r.a.day)}</td><td class="n">${f1(r.a.night)}</td>
+      <td class="n">${f1(r.a.dif)}</td><td class="n">${f1(r.a.max)}</td><td class="n">${f1(r.a.min)}</td>
+      <td class="n">${f1(r.a.range)}</td></tr>`;
+  });
+  s+="</tbody></table>";
+  $("sumTbl").innerHTML=s;
+
+  // 折れ線
+  const N=isNarrow(), W=N?430:980, Hh=N?270:300, ml=N?28:42, mr=N?8:14, mt=12, mb=N?58:48;
+  const series=[["日中平均",C.vent,r=>r.a.day],["日平均",C.target,r=>r.a.all],
+                ["夜間平均",C.heat,r=>r.a.night],["DIF","#8a6fb0",r=>r.a.dif]];
+  const all=series.flatMap(([,,f])=>rows.map(f)).filter(v=>v!=null);
+  if(!all.length){ $("sumChart").innerHTML=""; return; }
+  let lo=Math.floor(Math.min(...all)-2), hi=Math.ceil(Math.max(...all)+2);
+  const X=i=>ml+(W-ml-mr)*(rows.length<2?0.5:i/(rows.length-1));
+  const Y=v=>mt+(Hh-mt-mb)*(hi-v)/(hi-lo);
+  const g=[`<svg class="chart" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="xMidYMid meet">`];
+  g.push(`<rect x="${ml}" y="${mt}" width="${W-ml-mr}" height="${Hh-mt-mb}" fill="#fff" stroke="${C.line}"/>`);
+  for(let v=Math.ceil(lo);v<=hi;v++){ if(v%2) continue;
+    g.push(`<line x1="${ml}" y1="${Y(v)}" x2="${W-mr}" y2="${Y(v)}" stroke="${C.line2}"/>`);
+    g.push(`<text x="${ml-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" font-family="${C.mono}" fill="${C.muted}">${v}</text>`);}
+  rows.forEach((r,i)=>{
+    g.push(`<line x1="${X(i)}" y1="${mt}" x2="${X(i)}" y2="${Hh-mb}" stroke="${C.line2}"/>`);
+    g.push(`<text x="${X(i)}" y="${Hh-mb+15}" text-anchor="middle" font-size="${N?9:11}" fill="${C.muted}">${esc(r.p.name||"")}</text>`);});
+  series.forEach(([nm,col,f],si)=>{
+    const pts=rows.map((r,i)=>f(r)==null?null:`${X(i)},${Y(f(r))}`).filter(Boolean);
+    g.push(`<polyline points="${pts.join(" ")}" fill="none" stroke="${col}" stroke-width="2.4"/>`);
+    rows.forEach((r,i)=>{ if(f(r)!=null) g.push(`<circle cx="${X(i)}" cy="${Y(f(r))}" r="3.6" fill="${col}"/>`);});
+    const lx=ml+(si%(N?2:4))*(N?115:130), ly=N?(si<2?Hh-26:Hh-10):Hh-18;
+    g.push(`<rect x="${lx}" y="${ly}" width="16" height="3" fill="${col}"/>`);
+    g.push(`<text x="${lx+22}" y="${ly+5}" font-size="11" fill="${C.muted}">${nm}</text>`);});
+  g.push("</svg>");
+  $("sumChart").innerHTML=g.join("");
+}
+
+/* ---------- 全体描画 ---------- */
+function renderData(){
+  const sc=$("scroller"), sl=sc?sc.scrollLeft:0;
+  const a=renderStats(curSun);
+  renderPlot(curSun,a);
+  renderChecks();
+  if(sc) sc.scrollLeft=sl;
+}
+function render(){
+  if(curP>=DB.periods.length) curP=Math.max(0,DB.periods.length-1);
+  if(curH>=DB.cfg.houses.length) curH=0;
+  renderTabs();
+  if(view==="sum"){ renderSummary(); return; }
+  renderHouseTabs();
+  renderMeta();
+  renderModeBar();
+  const sc=$("scroller"), sl=sc?sc.scrollLeft:0;
+  const a=renderStats(curSun);
+  renderPlot(curSun,a);
+  renderSteps("vent",$("ventTbl"));
+  renderSteps("heat",$("heatTbl"));
+  renderChecks();
+  if(sc) sc.scrollLeft=sl;
+}
+
+/* ---------- 編集操作 ---------- */
+function pChange(){
+  const p=P();
+  p.name=$("pName").value; p.label=$("pLabel").value;
+  p.start=$("pStart").value; p.end=$("pEnd").value; p.note=$("pNote").value;
+  save(); renderTabs();
+  const s=periodSun(p);
+  if(s){ $("sRise").textContent=hhmm(s.rise); $("sSet").textContent=hhmm(s.set); $("sLen").textContent=hhmm(s.set-s.rise);
+    $("sRange").textContent=`（${s.days}日間の平均：初日 ${hhmm(s.first.rise)}–${hhmm(s.first.set)} → 最終日 ${hhmm(s.last.rise)}–${hhmm(s.last.set)}）`;
+    renderData(); }
+}
+function cfgChange(){
+  DB.cfg.name=$("cfgName").value;
+  const la=parseFloat($("cfgLat").value), lo=parseFloat($("cfgLon").value);
+  if(!isNaN(la)) DB.cfg.lat=la; if(!isNaN(lo)) DB.cfg.lon=lo;
+  DB.cfg.mode=$("cfgMode").value;
+  const hs=$("cfgHouses").value.split(/[,、]/).map(s=>s.trim()).filter(Boolean);
+  if(hs.length) DB.cfg.houses=hs;
+  normalize(DB); save(); render();
+}
+function addPeriod(){
+  const last=DB.periods[DB.periods.length-1];
+  const np=last?JSON.parse(JSON.stringify(last)):{name:"新しい期",label:"",start:"",end:"",note:"",houses:{}};
+  np.name="新しい期"; np.note=last?last.note:"";
+  DB.periods.push(normalize({cfg:DB.cfg,periods:[np]}).periods[0]);
+  curP=DB.periods.length-1; save(); render();
+}
+function dupPeriod(){
+  const c=JSON.parse(JSON.stringify(P())); c.name=(c.name||"")+" 複製";
+  DB.periods.splice(curP+1,0,c); curP++; save(); render(); toast("複製しました");
+}
+function delPeriod(){
+  if(DB.periods.length<=1){ toast("最後の1期は削除できません"); return; }
+  if(!confirm(`「${P().name}」を削除します。よろしいですか？`)) return;
+  DB.periods.splice(curP,1); curP=Math.max(0,curP-1); save(); render();
+}
+function copyHouse(){
+  const from=DB.cfg.houses[curH];
+  const others=DB.cfg.houses.filter(h=>h!==from);
+  if(!others.length){ toast("コピー先がありません"); return; }
+  const to = others.length===1 ? others[0] : prompt("コピー先のハウス名","" + others.join(" / "));
+  if(!to||!DB.cfg.houses.includes(to)){ if(to!==null) toast("ハウス名が見つかりません"); return; }
+  if(!confirm(`${from} の設定を ${to} に上書きコピーします。よろしいですか？`)) return;
+  P().houses[to]=JSON.parse(JSON.stringify(H())); save(); render(); toast(`${to} にコピーしました`);
+}
+
+/* ---------- ファイル ---------- */
+function saveFile(){
+  const blob=new Blob([JSON.stringify(DB,null,1)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="温度設定管理_"+new Date().toISOString().slice(0,10)+".json";
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  toast("JSONを書き出しました");
+}
+function loadFile(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ DB=normalize(JSON.parse(r.result)); curP=0; curH=0; save(); initCfgFields(); render(); toast("読み込みました"); }
+    catch(e){ alert("読み込めませんでした：ファイルの形式を確認してください。"); } };
+  r.readAsText(f); ev.target.value="";
+}
+function initCfgFields(){
+  $("cfgName").value=DB.cfg.name; $("cfgLat").value=DB.cfg.lat; $("cfgLon").value=DB.cfg.lon;
+  $("cfgMode").value=DB.cfg.mode; $("cfgHouses").value=DB.cfg.houses.join(",");
+}
+
+/* ---------- 起動 ---------- */
+DB = load() || normalize(freshDB());
+initCfgFields();
+bindPlot();
+$("gridTbl").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-a]"); if(!b) return;
+  const i=+b.dataset.h, d=(b.dataset.a==="+")?0.5:-0.5;
+  if(mode==="target"){ H().target[i]=snap(H().target[i]+d); renderData(); }
+  else{ const gi=govStep(H()[mode],i); if(gi<0){ toast("先に段を追加してください"); return; }
+        H()[mode][gi].temp=snap(H()[mode][gi].temp+d);
+        renderSteps(mode,$(mode+"Tbl")); renderData(); }
+  save();
+});
+render();
+window.addEventListener("beforeprint",()=>{ printZoom=DB.cfg.zoom; DB.cfg.zoom=30; render(); });
+window.addEventListener("afterprint",()=>{ if(printZoom){ DB.cfg.zoom=printZoom; printZoom=null; render(); } });
+let printZoom=null;
+let rzT=null, lastNarrow=isNarrow();
+window.addEventListener("resize",()=>{ clearTimeout(rzT);
+  rzT=setTimeout(()=>{ if(isNarrow()!==lastNarrow){ lastNarrow=isNarrow(); render(); } },200); });
+</script>
+</body>
+</html>
