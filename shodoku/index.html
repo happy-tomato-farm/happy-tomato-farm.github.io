@@ -846,13 +846,17 @@ $('#b-dbx').addEventListener('click',()=>{
     },
     body:blob
   })).then(r=>{
-    if(!r.ok) return r.text().then(x=>{ throw new Error('HTTP '+r.status+' '+x.slice(0,120)); });
+    if(!r.ok) return r.text().then(x=>{ throw new Error('HTTP '+r.status+' '+x.slice(0,160)); });
     return r.json();
-  }).then(()=>{
-    note.textContent='保存しました: 作業記録／消毒データ／'+name;
+  }).then(j=>{
+    /* 要求したパスではなく、Dropboxが実際に保存した場所を表示する。
+       権限が「アプリ用フォルダ」型だと頭に /アプリ/<アプリ名> が付いた別の場所に入る。
+       要求パスを表示していると、それに気づけない。 */
+    const real = (j && j.path_display) ? j.path_display : (DBX_FOLDER+name);
+    note.innerHTML='保存しました<br><code>'+esc(real)+'</code>';
     toast('Dropboxへ保存しました');
   }).catch(e=>{
-    note.textContent='保存できませんでした: '+e.message;
+    note.innerHTML='<b>保存できませんでした</b><br><code>'+esc(e.message)+'</code>';
     toast('Dropboxへ保存できませんでした');
   });
 });
