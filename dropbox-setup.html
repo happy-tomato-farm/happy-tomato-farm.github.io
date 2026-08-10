@@ -82,7 +82,7 @@
   <h2>接続する</h2>
   <p>App key を確認して、ボタンを押してください。Dropboxの許可画面に移ります。</p>
   <label for="key">App key</label>
-  <input type="text" id="key" value="yi9enfrq5fu6c9u" autocomplete="off" spellcheck="false">
+  <input type="text" id="key" value="" placeholder="Dropbox開発者ページの App key" autocomplete="off" spellcheck="false">
   <button id="go">Dropboxに接続</button>
 </div>
 
@@ -121,6 +121,9 @@
 (function(){
   var REDIRECT = location.origin + location.pathname;
   var LS_KEY = 'htf_dbx_key';
+  // 同じ端末で再設定するときだけ、前回のキーを復元する。
+  // 別端末では空欄のままにし、古いキーを誤って使わせない。
+  try{ var _k=localStorage.getItem('htf_dbx_key'); if(_k) document.getElementById('key').value=_k; }catch(e){}
   var LS_TOK = 'htf_dbx_refresh';
   var SS_VER = 'htf_pkce_verifier';
 
