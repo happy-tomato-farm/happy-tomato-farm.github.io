@@ -21,6 +21,7 @@
   --leaf:#4E9A5A;
   --grape:#8A5CC4;
   --sun:#D9960F;
+  --teal:#2A8FA8;
 
   --shadow:0 1px 0 rgba(36,41,31,.04), 0 6px 18px -10px rgba(36,41,31,.28);
   --shadow-lift:0 2px 0 rgba(36,41,31,.05), 0 16px 32px -14px rgba(36,41,31,.4);
@@ -32,7 +33,7 @@
   :root:not([data-theme="light"]){
     --ground:#191D18; --card:#232821; --card-sub:#1E231D;
     --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
-    --tomato:#FF6E5B; --leaf:#6FBB7B; --grape:#B189E8; --sun:#F0BC4E;
+    --tomato:#FF6E5B; --leaf:#6FBB7B; --grape:#B189E8; --sun:#F0BC4E; --teal:#5FBDD4;
     --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
     --shadow-lift:0 2px 0 rgba(0,0,0,.3), 0 16px 32px -14px rgba(0,0,0,.85);
   }
@@ -104,6 +105,7 @@ a.app:focus-visible{outline:3px solid var(--c);outline-offset:3px}
   flex:none;font-size:20px;font-weight:800;color:var(--c);
 }
 
+a.app.shift  {--c:var(--teal)}
 a.app.note   {--c:var(--tomato)}
 a.app.byogai {--c:var(--grape)}
 a.app.jisseki{--c:var(--leaf)}
@@ -144,6 +146,22 @@ a.app.jisseki{--c:var(--leaf)}
   <p class="lead">つかいたいものを えらんでください</p>
 
   <nav class="menu">
+
+    <a class="app shift" href="../shift/">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2A8FA8" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="3"/>
+          <path d="M3 10h18M8 3v4M16 3v4"/>
+          <path d="M12 13.5V16l1.8 1.1"/>
+        </svg>
+      </span>
+      <span class="txt">
+        <span class="t">シフト</span>
+        <span class="d">じぶんの きんむ時間を たしかめる</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
 
     <a class="app note" href="../note/">
       <span class="icon">
