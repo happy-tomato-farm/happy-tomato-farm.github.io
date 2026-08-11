@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#8A5CC4">
+<title>病害虫の記録｜ハッピートマトファーム</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 8C20 8 12 20 12 34c0 12 9 22 20 22s20-10 20-22C52 20 44 8 32 8z' fill='%234E9A5A'/%3E%3Ccircle cx='24' cy='28' r='4' fill='%238A5CC4'/%3E%3Ccircle cx='38' cy='38' r='5' fill='%238A5CC4'/%3E%3Ccircle cx='36' cy='22' r='3' fill='%238A5CC4'/%3E%3C/svg%3E">
+<style>
+:root{
+  --ground:#F2F6F0; --card:#FFFFFF; --card-sub:#F7FAF6;
+  --ink:#24291F; --muted:#6D7768; --line:#DFE7DB; --line-soft:#EDF2EA;
+
+  --tomato:#EE5340; --leaf:#4E9A5A;
+  --accent:#8A5CC4;                 /* 病害のページの色。ノートと取り違えないため */
+
+  --h-chuo:#4E9A5A; --h-higashi:#E0688A; --h-minami:#D9960F;
+  --h-nishi:#DD6630; --h-all:#42566A;
+
+  --shadow:0 1px 0 rgba(36,41,31,.04), 0 6px 18px -10px rgba(36,41,31,.28);
+  --shadow-lift:0 2px 0 rgba(36,41,31,.05), 0 14px 30px -14px rgba(36,41,31,.36);
+  --r-card:18px; --r-chip:999px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+    --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+    --tomato:#FF6E5B; --leaf:#6FBB7B; --accent:#B08CE8;
+    --h-chuo:#6FBB7B; --h-higashi:#FF9DB6; --h-minami:#F0BC4E;
+    --h-nishi:#F58E5C; --h-all:#8FA9C2;
+    --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+    --shadow-lift:0 2px 0 rgba(0,0,0,.3), 0 14px 30px -14px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+  --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+  --tomato:#FF6E5B; --leaf:#6FBB7B; --accent:#B08CE8;
+  --h-chuo:#6FBB7B; --h-higashi:#FF9DB6; --h-minami:#F0BC4E;
+  --h-nishi:#F58E5C; --h-all:#8FA9C2;
+  --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+  --shadow-lift:0 2px 0 rgba(0,0,0,.3), 0 14px 30px -14px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Zen Maru Gothic",
+              "Quicksand","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",
+              system-ui,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 130px}
+
+header{
+  position:sticky;top:0;z-index:30;
+  background:color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter:saturate(1.4) blur(10px);
+  border-bottom:1px solid var(--line-soft);
+}
+.head-in{max-width:1080px;margin:0 auto;padding:14px 16px 0}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balance}
+.brand .farm{font-size:12.5px;color:var(--muted);font-weight:700;letter-spacing:.08em}
+.brand a{
+  margin-left:auto;font-size:12.5px;font-weight:800;color:var(--muted);
+  text-decoration:none;border-bottom:1.5px dotted var(--muted);
+}
+.brand a:hover{color:var(--ink);border-bottom-color:var(--ink)}
+
+.filters{display:flex;flex-direction:column;gap:8px;padding:12px 0 12px}
+.frow{display:flex;gap:7px;align-items:center;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.frow::-webkit-scrollbar{display:none}
+.flabel{flex:none;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.12em;width:52px}
+
+.chip{
+  flex:none;display:inline-flex;align-items:center;gap:6px;
+  border:1.5px solid var(--line);background:var(--card);color:var(--muted);
+  border-radius:var(--r-chip);padding:6px 13px;font-size:13.5px;font-weight:700;
+  font-family:inherit;cursor:pointer;white-space:nowrap;
+  transition:border-color .15s,color .15s;
+}
+.chip:hover{border-color:var(--muted)}
+.chip:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}
+.chip[aria-pressed="true"]{color:var(--ink);border-color:currentColor}
+.chip .n{font-size:11px;opacity:.7;font-variant-numeric:tabular-nums}
+
+.chip.house[data-house="中央"]{--c:var(--h-chuo)}
+.chip.house[data-house="東"]{--c:var(--h-higashi)}
+.chip.house[data-house="南"]{--c:var(--h-minami)}
+.chip.house[data-house="西"]{--c:var(--h-nishi)}
+.chip.house .dot{background:var(--c,var(--muted))}
+.chip.house[aria-pressed="true"]{color:var(--c,var(--ink));box-shadow:inset 0 0 0 1px currentColor}
+
+.chip.pestf[aria-pressed="true"],.chip.monthf[aria-pressed="true"],.chip.seasonf[aria-pressed="true"]{
+  background:color-mix(in srgb, var(--accent) 18%, var(--card));
+  border-color:color-mix(in srgb, var(--accent) 45%, transparent);
+  color:color-mix(in srgb, var(--accent) 62%, var(--ink));
+}
+
+.sec-head{display:flex;align-items:center;gap:9px;margin:24px 0 12px}
+.sec-head h2{font-size:13px;font-weight:800;letter-spacing:.14em;color:var(--muted);margin:0}
+.sec-head .rule{flex:1;height:1px;background:var(--line-soft)}
+.count{
+  font-size:11.5px;font-weight:800;color:var(--muted);background:var(--card);
+  border:1px solid var(--line);border-radius:var(--r-chip);padding:1px 9px;
+  font-variant-numeric:tabular-nums;
+}
+
+/* 月ごとの件数。傾向がひと目で分かるようにする */
+.months{
+  display:grid;grid-template-columns:repeat(12,1fr);gap:4px;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:14px 12px 10px;margin-bottom:6px;
+}
+.mcol{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;min-height:78px}
+.mbar{
+  width:100%;max-width:26px;border-radius:4px 4px 2px 2px;
+  background:color-mix(in srgb, var(--accent) 55%, var(--card));
+  min-height:2px;
+}
+.mcol.on .mbar{background:var(--accent)}
+.mcol .ml{font-size:10.5px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+.mcol.on .ml{color:var(--accent)}
+.mcol .mn{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));align-items:start}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);
+  box-shadow:var(--shadow);padding:15px 16px 14px;position:relative;
+  display:flex;flex-direction:column;gap:9px;
+  animation:pop .3s cubic-bezier(.2,.9,.3,1.1) backwards;
+}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.99)}}
+@media (prefers-reduced-motion:reduce){.card{animation:none}}
+
+.card .when{
+  font-size:13px;font-weight:800;color:var(--ink);
+  font-variant-numeric:tabular-nums;letter-spacing:.02em;
+}
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.houses{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.house-tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--c)}
+.house-tag .dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.house-tag[data-house="中央"]{--c:var(--h-chuo)}
+.house-tag[data-house="東"]{--c:var(--h-higashi)}
+.house-tag[data-house="南"]{--c:var(--h-minami)}
+.house-tag[data-house="西"]{--c:var(--h-nishi)}
+.house-tag[data-house="ぜんぶ"]{--c:var(--h-all)}
+
+.spot{
+  font-size:12px;font-weight:700;color:var(--muted);
+  background:var(--card-sub);border:1px solid var(--line);
+  border-radius:6px;padding:1px 8px;
+}
+.pests{display:flex;gap:6px;flex-wrap:wrap}
+.pest{
+  font-size:12px;font-weight:800;letter-spacing:.03em;padding:2px 10px;
+  border-radius:var(--r-chip);
+  background:color-mix(in srgb, var(--accent) 16%, var(--card));
+  border:1.5px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  color:color-mix(in srgb, var(--accent) 62%, var(--ink));
+}
+.card p{margin:0;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.shots{display:flex;gap:6px;flex-wrap:wrap}
+.shots img{
+  width:calc(33.333% - 4px);aspect-ratio:1;object-fit:cover;border-radius:11px;
+  border:1px solid var(--line);cursor:zoom-in;background:var(--card-sub);
+}
+.card .by{
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  font-size:12px;color:var(--muted);font-weight:700;
+  border-top:1px dashed var(--line);padding-top:8px;margin-top:2px;
+}
+.src{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.06em;
+  border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.acts{display:flex;gap:14px;align-items:center}
+.linkbtn{
+  background:none;border:none;font-family:inherit;color:var(--muted);
+  font-size:12.5px;font-weight:800;cursor:pointer;padding:2px 0;
+  border-bottom:1.5px dotted var(--muted);
+}
+.linkbtn:hover{color:var(--ink);border-bottom-color:var(--ink)}
+.linkbtn:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+.empty{
+  grid-column:1/-1;text-align:center;color:var(--muted);font-size:14.5px;font-weight:700;
+  padding:44px 16px;border:2px dashed var(--line);border-radius:var(--r-card);
+}
+.loading{text-align:center;color:var(--muted);font-weight:700;padding:60px 16px}
+.more{
+  display:block;margin:18px auto 0;background:var(--card);border:1.5px solid var(--line);
+  border-radius:var(--r-chip);padding:11px 26px;font-family:inherit;
+  font-size:14.5px;font-weight:800;color:var(--muted);cursor:pointer;
+}
+.more:hover{color:var(--ink);border-color:var(--muted)}
+
+.fab{
+  position:fixed;right:18px;bottom:18px;z-index:40;
+  display:inline-flex;align-items:center;gap:9px;
+  background:var(--accent);color:#fff;border:none;border-radius:var(--r-chip);
+  padding:15px 22px 15px 19px;font-family:inherit;font-size:16px;font-weight:800;
+  letter-spacing:.03em;cursor:pointer;
+  box-shadow:0 6px 20px -6px color-mix(in srgb, var(--accent) 65%, transparent), 0 2px 0 rgba(0,0,0,.06);
+  transition:transform .16s cubic-bezier(.2,.9,.3,1.2);
+}
+.fab:hover{transform:translateY(-2px)}
+.fab:disabled{opacity:.55;cursor:progress}
+.fab:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.fab .plus{font-size:21px;line-height:1;margin-top:-2px}
+
+dialog{border:none;padding:0;background:transparent;max-width:520px;width:calc(100% - 28px)}
+dialog::backdrop{background:rgba(24,29,22,.5);backdrop-filter:blur(3px)}
+.sheet{
+  background:var(--card);color:var(--ink);border-radius:22px;border:1px solid var(--line);
+  padding:22px 20px 20px;box-shadow:var(--shadow-lift);
+  display:flex;flex-direction:column;gap:15px;max-height:86vh;overflow-y:auto;
+}
+.sheet h2{font-size:19px;font-weight:800;margin:0}
+.sheet .hint{font-size:12.5px;color:var(--muted);margin:-8px 0 0}
+.field{display:flex;flex-direction:column;gap:7px}
+.field > span{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.1em}
+input[type="text"],input[type="date"],textarea{
+  font-family:inherit;font-size:16px;color:var(--ink);background:var(--card-sub);
+  border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;width:100%;
+}
+textarea{min-height:88px;resize:vertical;line-height:1.7}
+input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.picker{display:flex;gap:7px;flex-wrap:wrap}
+.sheet-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:2px}
+.btn{
+  font-family:inherit;font-size:15px;font-weight:800;border-radius:var(--r-chip);
+  padding:11px 20px;cursor:pointer;border:1.5px solid var(--line);
+  background:var(--card);color:var(--muted);
+}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn:disabled{opacity:.55;cursor:progress}
+.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.thumb{position:relative;width:84px;height:84px}
+.thumb img{width:100%;height:100%;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
+.thumb .rm{
+  position:absolute;top:-7px;right:-7px;width:25px;height:25px;border-radius:50%;
+  background:var(--ink);color:var(--ground);border:2px solid var(--card);cursor:pointer;
+  font-size:13px;font-weight:800;line-height:1;font-family:inherit;padding:0;
+}
+.addimg{
+  border:1.5px dashed var(--line);background:var(--card-sub);color:var(--muted);
+  border-radius:12px;width:84px;height:84px;cursor:pointer;
+  font-family:inherit;font-size:12px;font-weight:800;line-height:1.5;
+}
+.addimg:disabled{opacity:.4;cursor:not-allowed}
+
+#lb{max-width:96vw;width:auto;background:transparent}
+#lb::backdrop{background:rgba(0,0,0,.88)}
+#lb img{max-width:96vw;max-height:86vh;border-radius:12px;display:block;cursor:zoom-out}
+
+.bar{
+  position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:50;
+  max-width:calc(100% - 32px);background:var(--ink);color:var(--ground);
+  border-radius:var(--r-chip);padding:10px 18px;font-size:13.5px;font-weight:700;
+  box-shadow:var(--shadow-lift);opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.bar.on{opacity:1}
+.bar.ng{background:var(--tomato);color:#fff}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <div class="brand">
+      <h1>病害虫の記録</h1>
+      <span class="farm">ハッピートマトファーム</span>
+      <a href="../note/">みんなのノート →</a>
+    </div>
+    <div class="filters">
+      <div class="frow" id="house-filter" role="group" aria-label="ハウスでしぼる">
+        <span class="flabel">ハウス</span>
+        <button class="chip house" data-house="" aria-pressed="true">すべて</button>
+        <button class="chip house" data-house="中央" aria-pressed="false"><span class="dot"></span>中央</button>
+        <button class="chip house" data-house="東" aria-pressed="false"><span class="dot"></span>東</button>
+        <button class="chip house" data-house="西" aria-pressed="false"><span class="dot"></span>西</button>
+        <button class="chip house" data-house="南" aria-pressed="false"><span class="dot"></span>南</button>
+      </div>
+      <div class="frow" id="pest-filter" role="group" aria-label="病害虫でしぼる">
+        <span class="flabel">病害虫</span>
+      </div>
+      <div class="frow" id="season-filter" role="group" aria-label="シーズンでしぼる">
+        <span class="flabel">シーズン</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="loading" class="loading">読み込んでいます…</div>
+
+  <div id="body" hidden>
+    <div class="sec-head">
+      <h2>月ごとの件数</h2>
+      <span class="count" id="m-total">0</span>
+      <span class="rule"></span>
+      <button class="linkbtn" type="button" id="m-clear" hidden>月のしぼりこみを外す</button>
+    </div>
+    <div class="months" id="months"></div>
+
+    <div class="sec-head">
+      <h2>あたらしい順</h2>
+      <span class="count" id="list-count">0</span>
+      <span class="rule"></span>
+    </div>
+    <div class="grid" id="list"></div>
+    <button class="more" id="more" hidden>もっと見る</button>
+  </div>
+</div>
+
+<button class="fab" id="fab"><span class="plus">＋</span>きろく</button>
+<div class="bar" id="bar"></div>
+
+<dialog id="dlg">
+  <form method="dialog" class="sheet" id="form">
+    <h2>病害虫をきろくする</h2>
+
+    <label class="field">
+      <span>みつけた日</span>
+      <input type="date" id="f-date" required>
+    </label>
+
+    <div class="field">
+      <span>どのハウス（いくつでも選べます）</span>
+      <div class="picker" id="house-pick">
+        <button type="button" class="chip house" data-house="中央" aria-pressed="false"><span class="dot"></span>中央</button>
+        <button type="button" class="chip house" data-house="東" aria-pressed="false"><span class="dot"></span>東</button>
+        <button type="button" class="chip house" data-house="西" aria-pressed="false"><span class="dot"></span>西</button>
+        <button type="button" class="chip house" data-house="南" aria-pressed="false"><span class="dot"></span>南</button>
+      </div>
+    </div>
+
+    <label class="field">
+      <span>ばしょ</span>
+      <input type="text" id="f-spot" placeholder="例：入口から3列目・南より">
+    </label>
+
+    <div class="field">
+      <span>病害虫（分かるものだけ・空でもOK）</span>
+      <div class="picker" id="pest-pick"></div>
+    </div>
+
+    <label class="field">
+      <span>ほかの名前をたす</span>
+      <input type="text" id="f-pest-new" placeholder="一覧にないときはここに書いてください">
+    </label>
+
+    <label class="field">
+      <span>ようす</span>
+      <textarea id="f-body" placeholder="見た様子、広がりぐあい、どうしたか など"></textarea>
+    </label>
+
+    <div class="field">
+      <span>しゃしん（3まいまで）</span>
+      <div class="thumbs" id="thumbs"></div>
+      <input type="file" id="f-img" accept="image/*" multiple hidden>
+    </div>
+
+    <label class="field" id="who-field">
+      <span>なまえ</span>
+      <input type="text" id="f-who" placeholder="お名前" required>
+    </label>
+
+    <div class="sheet-actions">
+      <button type="button" class="btn" id="cancel">やめる</button>
+      <button type="submit" class="btn primary" id="submit">きろくする</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="lb"><img id="lb-img" alt="写真"></dialog>
+
+<script>
+(function(){
+  "use strict";
+
+  var API = "https://script.google.com/macros/s/AKfycbzYkVlVngoC6CXf9HKPlfnFbJHs5lrarw2J9dLjdqaqvdVQFIN15aMr5EyNSA8tj1UU/exec";
+
+  var HOUSES = ["中央","東","西","南"];
+  var NAME_LS = "htf_note_name";
+  var PAGE = 40;                 /* 一度に出す件数。7年分あるので区切って出す */
+
+  /* 一覧に出す病害虫。過去データから拾えたものを並べてある。
+     ここに無いものはフォームの「ほかの名前をたす」から足せる */
+  var PESTS = [
+    "灰色カビ","葉カビ","うどんこ病","すすかび病","疫病","菌核病",
+    "黄化葉巻","青枯病","根腐れ",
+    "コナジラミ","アザミウマ","ハモグリバエ","ハダニ","アブラムシ","ヨトウムシ",
+    "チップバーン","尻腐れ","裂果","空洞果","Ca欠乏","Mg欠乏"
+  ];
+
+  var PESTS_ALL = PESTS.slice();     /* 記録から見つかった名前も足していく */
+  var ITEMS = [];
+  var filter = { house:"", pest:"", month:0, season:"" };
+  var shown = PAGE;
+
+  var $ = function(s){ return document.querySelector(s); };
+  var esc = function(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  };
+
+  var barTimer = null;
+  var bar = function(msg, ng){
+    var el = $("#bar");
+    el.textContent = msg;
+    el.className = "bar on" + (ng ? " ng" : "");
+    clearTimeout(barTimer);
+    barTimer = setTimeout(function(){ el.className = "bar"; }, ng ? 7000 : 2600);
+  };
+
+  var send = function(payload){
+    return fetch(API, {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if(!j.ok) throw new Error(j.error || "保存できませんでした");
+      return j;
+    });
+  };
+
+  var gazoURL = function(id, w){
+    return "https://drive.google.com/thumbnail?id=" + encodeURIComponent(id) + "&sz=w" + (w || 800);
+  };
+
+  /* シーズンは9月はじまり。9〜12月はその年、1〜8月は前年をはじまりの年とする */
+  var seasonOf = function(iso){
+    var y = +iso.slice(0,4), m = +iso.slice(5,7);
+    return (m >= 9 ? y : y - 1);
+  };
+  var seasonLabel = function(sy){ return (sy + 1) + "年度"; };
+
+  var fmtDate = function(iso){
+    var p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+    if(!p) return String(iso || "");
+    var d = new Date(+p[1], +p[2]-1, +p[3]);
+    return +p[1] + "年" + (+p[2]) + "月" + (+p[3]) + "日（" + "日月火水木金土"[d.getDay()] + "）";
+  };
+
+  var houseTags = function(list){
+    var arr = list || [];
+    var all = HOUSES.every(function(h){ return arr.indexOf(h) >= 0; });
+    var show = all ? ["ぜんぶ"] : HOUSES.filter(function(h){ return arr.indexOf(h) >= 0; });
+    if(!show.length) return "";
+    return '<span class="houses">' + show.map(function(h){
+      return '<span class="house-tag" data-house="' + esc(h) + '"><span class="dot"></span>' + esc(h) + '</span>';
+    }).join("") + '</span>';
+  };
+
+  var cardHTML = function(n, i){
+    var imgs = n.images || [];
+    var shotsHTML = imgs.length ? '<div class="shots">' + imgs.map(function(id){
+      return '<img src="' + esc(gazoURL(id, 600)) + '" alt="しゃしん" loading="lazy" data-big="' +
+             esc(gazoURL(id, 1600)) + '">';
+    }).join("") + '</div>' : "";
+
+    var pests = (n.pest || []).length
+      ? '<div class="pests">' + n.pest.map(function(p){
+          return '<span class="pest">' + esc(p) + '</span>';
+        }).join("") + '</div>'
+      : "";
+
+    return '<article class="card" style="animation-delay:' + (Math.min(i,12) * 30) + 'ms">' +
+      '<div class="when">' + fmtDate(n.date) + '</div>' +
+      '<div class="meta">' + houseTags(n.houses) +
+        (n.spot ? '<span class="spot">' + esc(n.spot) + '</span>' : "") + '</div>' +
+      pests +
+      (n.body ? '<p>' + esc(n.body) + '</p>' : "") +
+      shotsHTML +
+      '<div class="acts">' +
+        '<button class="linkbtn" type="button" data-edit="' + esc(n.id) + '">なおす</button>' +
+        '<button class="linkbtn" type="button" data-del="' + esc(n.id) + '">けす</button>' +
+      '</div>' +
+      '<div class="by"><span>' + esc(n.who || "") + '</span>' +
+        (n.source ? '<span class="src">' + esc(n.source) + '</span>' : "") + '</div>' +
+    '</article>';
+  };
+
+  /* 月のグラフだけは「月のしぼりこみ」を外した状態で数える。
+     でないと選んだ月以外が0になり、比較できなくなる */
+  var matchesExceptMonth = function(n){
+    var arr = n.houses || [];
+    return (!filter.house || arr.indexOf(filter.house) >= 0) &&
+           (!filter.pest  || (n.pest || []).indexOf(filter.pest) >= 0) &&
+           (!filter.season || String(seasonOf(n.date)) === filter.season);
+  };
+  var matches = function(n){
+    return matchesExceptMonth(n) &&
+           (!filter.month || +String(n.date).slice(5,7) === filter.month);
+  };
+
+  var renderMonths = function(){
+    var base = ITEMS.filter(matchesExceptMonth);
+    var cnt = {};
+    base.forEach(function(n){
+      var m = +String(n.date).slice(5,7);
+      cnt[m] = (cnt[m] || 0) + 1;
+    });
+    var max = Math.max.apply(null, [1].concat(Object.keys(cnt).map(function(k){ return cnt[k]; })));
+
+    /* 栽培の並びに合わせ、9月はじまりで表示する */
+    var order = [9,10,11,12,1,2,3,4,5,6,7,8];
+    var box = $("#months");
+    box.innerHTML = "";
+
+    order.forEach(function(m){
+      var v = cnt[m] || 0;
+      var col = document.createElement("button");
+      col.type = "button";
+      col.className = "mcol" + (filter.month === m ? " on" : "");
+      col.style.cssText = "background:none;border:none;cursor:pointer;padding:0;font-family:inherit";
+      col.setAttribute("aria-pressed", String(filter.month === m));
+      col.innerHTML =
+        '<span class="mn">' + (v || "") + '</span>' +
+        '<span class="mbar" style="height:' + Math.round(v / max * 46) + 'px"></span>' +
+        '<span class="ml">' + m + '</span>';
+      col.addEventListener("click", function(){
+        filter.month = (filter.month === m) ? 0 : m;
+        shown = PAGE;
+        renderAll();
+      });
+      box.appendChild(col);
+    });
+
+    $("#m-total").textContent = base.length;
+    $("#m-clear").hidden = !filter.month;
+  };
+
+  var renderList = function(){
+    var list = ITEMS.filter(matches).sort(function(a,b){
+      if(a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return a.id < b.id ? 1 : -1;
+    });
+
+    $("#list-count").textContent = list.length;
+    var cut = list.slice(0, shown);
+
+    $("#list").innerHTML = cut.length
+      ? cut.map(cardHTML).join("")
+      : '<p class="empty">この条件の記録はありません</p>';
+
+    $("#more").hidden = list.length <= shown;
+    $("#more").textContent = "もっと見る（あと " + (list.length - shown) + " 件）";
+
+    document.querySelectorAll("[data-edit]").forEach(function(b){
+      b.addEventListener("click", function(){ openForm(b.getAttribute("data-edit")); });
+    });
+    document.querySelectorAll("[data-del]").forEach(function(b){
+      b.addEventListener("click", function(){ removeItem(b.getAttribute("data-del")); });
+    });
+    document.querySelectorAll(".shots img").forEach(function(im){
+      im.addEventListener("click", function(){
+        $("#lb-img").src = im.getAttribute("data-big");
+        $("#lb").showModal();
+      });
+    });
+  };
+
+  var renderAll = function(){
+    $("#loading").hidden = true;
+    $("#body").hidden = false;
+    renderMonths();
+    renderList();
+  };
+
+  /* ---- しぼりこみのボタン ---- */
+  var mkChip = function(cls, attr, val, label, n, pressed){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip " + cls;
+    b.setAttribute(attr, val);
+    b.setAttribute("aria-pressed", String(pressed));
+    b.innerHTML = esc(label) + (n != null ? ' <span class="n">' + n + '</span>' : "");
+    return b;
+  };
+
+  var renderFilters = function(){
+    /* 病害虫。記録に出てくるものだけ、多い順に並べる */
+    var cnt = {};
+    ITEMS.forEach(function(n){
+      (n.pest || []).forEach(function(p){ cnt[p] = (cnt[p] || 0) + 1; });
+    });
+    var names = Object.keys(cnt).sort(function(a,b){ return cnt[b] - cnt[a]; });
+
+    var pf = $("#pest-filter");
+    pf.querySelectorAll(".chip").forEach(function(e){ e.remove(); });
+    pf.appendChild(mkChip("pestf", "data-pest", "", "すべて", null, filter.pest === ""));
+    names.forEach(function(p){
+      pf.appendChild(mkChip("pestf", "data-pest", p, p, cnt[p], filter.pest === p));
+    });
+    pf.querySelectorAll(".chip").forEach(function(b){
+      b.addEventListener("click", function(){
+        var v = b.getAttribute("data-pest");
+        filter.pest = (filter.pest === v) ? "" : v;
+        shown = PAGE;
+        renderFilters(); renderAll();
+      });
+    });
+
+    /* シーズン */
+    var ss = {};
+    ITEMS.forEach(function(n){ var s = seasonOf(n.date); ss[s] = (ss[s] || 0) + 1; });
+    var years = Object.keys(ss).sort(function(a,b){ return b - a; });
+
+    var sf = $("#season-filter");
+    sf.querySelectorAll(".chip").forEach(function(e){ e.remove(); });
+    sf.appendChild(mkChip("seasonf", "data-season", "", "すべて", null, filter.season === ""));
+    years.forEach(function(y){
+      sf.appendChild(mkChip("seasonf", "data-season", y, seasonLabel(+y), ss[y], filter.season === y));
+    });
+    sf.querySelectorAll(".chip").forEach(function(b){
+      b.addEventListener("click", function(){
+        var v = b.getAttribute("data-season");
+        filter.season = (filter.season === v) ? "" : v;
+        shown = PAGE;
+        renderFilters(); renderAll();
+      });
+    });
+  };
+
+  document.querySelectorAll("#house-filter .chip.house").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var v = btn.getAttribute("data-house");
+      filter.house = (filter.house === v) ? "" : v;
+      document.querySelectorAll("#house-filter .chip.house").forEach(function(b){
+        b.setAttribute("aria-pressed", String(b.getAttribute("data-house") === filter.house));
+      });
+      shown = PAGE;
+      renderAll();
+    });
+  });
+
+  $("#m-clear").addEventListener("click", function(){
+    filter.month = 0; shown = PAGE; renderAll();
+  });
+  $("#more").addEventListener("click", function(){ shown += PAGE; renderList(); });
+
+  /* ---- 写真 ---- */
+  var MAX_IMG = 3;
+  var shots = [];
+
+  var shrink = function(file){
+    return new Promise(function(res, rej){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+        var cv = document.createElement("canvas");
+        cv.width = Math.max(1, Math.round(img.width * scale));
+        cv.height = Math.max(1, Math.round(img.height * scale));
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        res(cv.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); rej(new Error("この写真は読み込めませんでした")); };
+      img.src = url;
+    });
+  };
+
+  var renderThumbs = function(){
+    var box = $("#thumbs");
+    box.innerHTML = "";
+    shots.forEach(function(s, i){
+      var d = document.createElement("div"); d.className = "thumb";
+      var im = document.createElement("img");
+      im.src = (s.indexOf("data:") === 0) ? s : gazoURL(s, 300);
+      im.alt = "しゃしん";
+      var rm = document.createElement("button");
+      rm.type = "button"; rm.className = "rm"; rm.textContent = "×";
+      rm.setAttribute("aria-label", "この写真をはずす");
+      rm.addEventListener("click", function(){ shots.splice(i,1); renderThumbs(); });
+      d.appendChild(im); d.appendChild(rm); box.appendChild(d);
+    });
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "addimg";
+    add.textContent = shots.length ? "＋ ついか" : "＋ しゃしん";
+    add.disabled = shots.length >= MAX_IMG;
+    add.addEventListener("click", function(){ $("#f-img").click(); });
+    box.appendChild(add);
+  };
+
+  $("#f-img").addEventListener("change", function(e){
+    var files = Array.prototype.slice.call(e.target.files || []);
+    e.target.value = "";
+    if(!files.length) return;
+    var nokori = MAX_IMG - shots.length;
+    if(files.length > nokori){ bar("しゃしんは" + MAX_IMG + "まいまでです", true); files = files.slice(0, nokori); }
+    if(!files.length) return;
+    bar("しゃしんを小さくしています…");
+    Promise.all(files.map(shrink)).then(function(list){
+      shots = shots.concat(list).slice(0, MAX_IMG);
+      renderThumbs(); bar("しゃしんをつけました");
+    }).catch(function(err){ bar(err.message, true); });
+  });
+
+  $("#lb").addEventListener("click", function(){ $("#lb").close(); });
+
+  /* ---- 病害虫のえらび（いくつでも） ---- */
+  var renderPestPick = function(selected){
+    var box = $("#pest-pick");
+    box.innerHTML = "";
+    PESTS_ALL.forEach(function(p){
+      var b = mkChip("pestf", "data-pest", p, p, null, (selected || []).indexOf(p) >= 0);
+      b.addEventListener("click", function(){
+        b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
+      });
+      box.appendChild(b);
+    });
+  };
+  var pickedPests = function(){
+    var out = Array.prototype.filter.call($("#pest-pick").querySelectorAll(".chip"), function(b){
+      return b.getAttribute("aria-pressed") === "true";
+    }).map(function(b){ return b.getAttribute("data-pest"); });
+
+    var soto = $("#f-pest-new").value.trim();
+    if(soto){
+      soto.split(/[,、\s]+/).forEach(function(s){ if(s && out.indexOf(s) < 0) out.push(s); });
+    }
+    return out;
+  };
+
+  /* ---- ハウスのえらび ---- */
+  var housePick = $("#house-pick");
+  housePick.querySelectorAll(".chip.house").forEach(function(b){
+    b.addEventListener("click", function(){
+      b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
+    });
+  });
+  var pickedHouses = function(){
+    return Array.prototype.filter.call(housePick.querySelectorAll(".chip.house"), function(b){
+      return b.getAttribute("aria-pressed") === "true";
+    }).map(function(b){ return b.getAttribute("data-house"); });
+  };
+
+  /* ---- 入力フォーム ---- */
+  var editing = null;
+
+  var openForm = function(id){
+    editing = id || null;
+    shots = [];
+    var n = editing ? ITEMS.filter(function(x){ return x.id === editing; })[0] : null;
+
+    $("#form").reset();
+    $("#dlg").querySelector("h2").textContent = n ? "きろくをなおす" : "病害虫をきろくする";
+    $("#submit").textContent = n ? "なおす" : "きろくする";
+    $("#who-field").hidden = !!n;
+    $("#f-who").required = !n;
+    $("#f-pest-new").value = "";
+
+    if(n){
+      $("#f-date").value = n.date || "";
+      $("#f-spot").value = n.spot || "";
+      $("#f-body").value = n.body || "";
+      $("#f-who").value = n.who || "";
+      shots = (n.images || []).slice();
+      housePick.querySelectorAll(".chip.house").forEach(function(b){
+        b.setAttribute("aria-pressed", String((n.houses || []).indexOf(b.getAttribute("data-house")) >= 0));
+      });
+      renderPestPick(n.pest || []);
+    } else {
+      var d = new Date();
+      $("#f-date").value = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+      try{ $("#f-who").value = localStorage.getItem(NAME_LS) || ""; }catch(e){}
+      housePick.querySelectorAll(".chip.house").forEach(function(b){ b.setAttribute("aria-pressed","false"); });
+      renderPestPick([]);
+    }
+
+    renderThumbs();
+    $("#dlg").showModal();
+  };
+
+  $("#fab").addEventListener("click", function(){ openForm(null); });
+  $("#cancel").addEventListener("click", function(){ $("#dlg").close(); });
+
+  $("#form").addEventListener("submit", function(){
+    var date = $("#f-date").value;
+    var who = $("#f-who").value.trim();
+    if(!date || (!editing && !who)) return;
+
+    var houses = pickedHouses();
+    var pest = pickedPests();
+    var spot = $("#f-spot").value.trim();
+    var body = $("#f-body").value.trim();
+    var okuru = shots.slice();
+
+    if(!editing){ try{ localStorage.setItem(NAME_LS, who); }catch(e){} }
+    $("#fab").disabled = true; $("#submit").disabled = true;
+    bar(editing ? "なおしています…" : "きろくしています…");
+
+    var payload = editing
+      ? { action:"editPest", id:editing, date:date, houses:houses, spot:spot, pest:pest, body:body, images:okuru }
+      : { action:"addPest", date:date, houses:houses, spot:spot, pest:pest, body:body, who:who, images:okuru };
+    var target = editing;
+
+    send(payload).then(function(j){
+      if(target){
+        var n = ITEMS.filter(function(x){ return x.id === target; })[0];
+        if(n){
+          n.date = date; n.houses = houses; n.spot = spot;
+          n.pest = pest; n.body = body; n.images = j.images || [];
+        }
+        bar("なおしました");
+      } else {
+        ITEMS.unshift({
+          id:j.id, date:date, houses:houses, spot:spot, pest:pest,
+          body:body, who:who, images:j.images || [], source:""
+        });
+        bar("きろくしました");
+      }
+      pest.forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
+      shots = [];
+      renderFilters(); renderAll();
+    }).catch(function(e){
+      bar(e.message, true);
+    }).then(function(){
+      $("#fab").disabled = false; $("#submit").disabled = false;
+      editing = null;
+    });
+  });
+
+  var removeItem = function(id){
+    var n = ITEMS.filter(function(x){ return x.id === id; })[0];
+    if(!n) return;
+    if(!confirm(fmtDate(n.date) + " のきろくをけしますか？")) return;
+
+    var nokosi = ITEMS.slice();
+    ITEMS = ITEMS.filter(function(x){ return x.id !== id; });
+    renderFilters(); renderAll();
+
+    send({ action:"deletePest", id:id })
+      .then(function(){ bar("けしました"); })
+      .catch(function(e){
+        ITEMS = nokosi; renderFilters(); renderAll();
+        bar(e.message, true);
+      });
+  };
+
+  /* ---- 起動 ---- */
+  fetch(API + "?want=pests&t=" + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(!j.ok) throw new Error(j.error || "読み込めませんでした");
+      ITEMS = j.pests || [];
+      ITEMS.forEach(function(n){
+        (n.pest || []).forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
+      });
+      renderFilters();
+      renderAll();
+    })
+    .catch(function(e){
+      $("#loading").innerHTML = '読み込めませんでした<br><span style="font-size:13px">' + esc(e.message) + '</span>';
+    });
+})();
+</script>
+</body>
+</html>
