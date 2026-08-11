@@ -258,6 +258,39 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
 .addrow{display:flex;gap:8px;align-items:center}
 .addrow input{flex:1}
 
+/* カードに並ぶ写真 */
+.shots{display:flex;gap:6px;flex-wrap:wrap}
+.shots img{
+  width:calc(33.333% - 4px);aspect-ratio:1;object-fit:cover;
+  border-radius:11px;border:1px solid var(--line);
+  cursor:zoom-in;background:var(--card-sub);
+}
+.acts{display:flex;gap:14px;align-items:center}
+
+/* 写真を選ぶところ */
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.thumb{position:relative;width:84px;height:84px}
+.thumb img{width:100%;height:100%;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
+.thumb .rm{
+  position:absolute;top:-7px;right:-7px;width:25px;height:25px;border-radius:50%;
+  background:var(--ink);color:var(--ground);border:2px solid var(--card);cursor:pointer;
+  font-size:13px;font-weight:800;line-height:1;font-family:inherit;padding:0;
+}
+.thumb .rm:focus-visible{outline:3px solid var(--tomato);outline-offset:2px}
+.addimg{
+  border:1.5px dashed var(--line);background:var(--card-sub);color:var(--muted);
+  border-radius:12px;width:84px;height:84px;cursor:pointer;
+  font-family:inherit;font-size:12px;font-weight:800;line-height:1.5;
+}
+.addimg:hover:not(:disabled){border-color:var(--muted);color:var(--ink)}
+.addimg:disabled{opacity:.4;cursor:not-allowed}
+.addimg:focus-visible{outline:3px solid var(--tomato);outline-offset:2px}
+
+/* 写真の拡大 */
+#lb{max-width:96vw;width:auto;background:transparent}
+#lb::backdrop{background:rgba(0,0,0,.88)}
+#lb img{max-width:96vw;max-height:86vh;border-radius:12px;display:block;cursor:zoom-out}
+
 /* 通信の状態。うまくいかないとき、何が起きたか分かるようにする */
 .bar{
   position:fixed;left:50%;bottom:88px;transform:translateX(-50%);
@@ -346,7 +379,12 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
       <span>ないよう</span>
       <textarea id="f-body" placeholder="くわしく書いてください"></textarea>
     </label>
-    <label class="field">
+    <div class="field">
+      <span>しゃしん（3まいまで）</span>
+      <div class="thumbs" id="thumbs"></div>
+      <input type="file" id="f-img" accept="image/*" multiple hidden>
+    </div>
+    <label class="field" id="who-field">
       <span>なまえ</span>
       <input type="text" id="f-who" placeholder="お名前" required>
     </label>
@@ -356,6 +394,8 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
     </div>
   </form>
 </dialog>
+
+<dialog id="lb"><img id="lb-img" alt="写真"></dialog>
 
 <dialog id="rdlg">
   <form method="dialog" class="sheet" id="rform">
@@ -482,12 +522,24 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
     }).join("") + '</span>';
   };
 
+  /* ドライブに置いた写真の表示先。
+     大きさを指定して受け取れるので、一覧では小さめを読み込む */
+  var gazoURL = function(id, w){
+    return "https://drive.google.com/thumbnail?id=" + encodeURIComponent(id) + "&sz=w" + (w || 800);
+  };
+
   var cardHTML = function(n, i){
     var k = kindOf(n.kind);
     var rs = repliesOf(n.id);
     var replies = rs.length ? '<div class="replies">' + rs.map(function(r){
       return '<div class="reply"><span class="who">' + esc(r.who) + ' さんの答え</span>' +
              '<p>' + esc(r.text) + '</p></div>';
+    }).join("") + '</div>' : "";
+
+    var imgs = (n.images || []);
+    var shotsHTML = imgs.length ? '<div class="shots">' + imgs.map(function(id){
+      return '<img src="' + esc(gazoURL(id, 600)) + '" alt="しゃしん" loading="lazy" ' +
+             'data-big="' + esc(gazoURL(id, 1600)) + '">';
     }).join("") + '</div>' : "";
 
     var isQuestion = k && k.label.indexOf("質問") >= 0;
@@ -502,9 +554,14 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
       '</div>' +
       '<h3>' + esc(n.title) + '</h3>' +
       (n.body ? '<p>' + esc(n.body) + '</p>' : "") +
+      shotsHTML +
       replies +
-      (isQuestion && !rs.length
-        ? '<button class="linkbtn" type="button" data-reply="' + esc(n.id) + '">こたえる</button>' : "") +
+      '<div class="acts">' +
+        (isQuestion && !rs.length
+          ? '<button class="linkbtn" type="button" data-reply="' + esc(n.id) + '">こたえる</button>' : "") +
+        '<button class="linkbtn" type="button" data-edit="' + esc(n.id) + '">なおす</button>' +
+        '<button class="linkbtn" type="button" data-del="' + esc(n.id) + '">けす</button>' +
+      '</div>' +
       '<div class="by"><span>' + esc(n.who) + '</span><time>' + fmtDate(n.date) + '</time></div>' +
     '</article>';
   };
@@ -541,6 +598,18 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
     });
     document.querySelectorAll("[data-reply]").forEach(function(b){
       b.addEventListener("click", function(){ openReply(b.getAttribute("data-reply")); });
+    });
+    document.querySelectorAll("[data-edit]").forEach(function(b){
+      b.addEventListener("click", function(){ openForm(b.getAttribute("data-edit")); });
+    });
+    document.querySelectorAll("[data-del]").forEach(function(b){
+      b.addEventListener("click", function(){ removeNote(b.getAttribute("data-del")); });
+    });
+    document.querySelectorAll(".shots img").forEach(function(im){
+      im.addEventListener("click", function(){
+        $("#lb-img").src = im.getAttribute("data-big");
+        $("#lb").showModal();
+      });
     });
   };
 
@@ -700,52 +769,198 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
     }).map(function(b){ return b.getAttribute("data-house"); });
   };
 
-  $("#fab").addEventListener("click", function(){
-    try{ $("#f-who").value = localStorage.getItem(NAME_LS) || ""; }catch(e){}
-    $("#dlg").showModal();
+  /* ---- 写真 ----
+     スマホの写真はそのままだと3〜5MBあり、電波が弱いと送信に失敗する。
+     長辺1600pxのJPEGに縮めてから送る（200〜500KB程度になる）。 */
+  var MAX_IMG = 3;
+  var shots = [];          /* 中身は data:... （新規）か ドライブのID（保存済み） */
+
+  var shrink = function(file){
+    return new Promise(function(res, rej){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+        var cv = document.createElement("canvas");
+        cv.width = Math.max(1, Math.round(img.width * scale));
+        cv.height = Math.max(1, Math.round(img.height * scale));
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        res(cv.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = function(){
+        URL.revokeObjectURL(url);
+        rej(new Error("この写真は読み込めませんでした"));
+      };
+      img.src = url;
+    });
+  };
+
+  var renderThumbs = function(){
+    var box = $("#thumbs");
+    box.innerHTML = "";
+
+    shots.forEach(function(s, i){
+      var d = document.createElement("div");
+      d.className = "thumb";
+
+      var im = document.createElement("img");
+      im.src = (s.indexOf("data:") === 0) ? s : gazoURL(s, 300);
+      im.alt = "しゃしん";
+
+      var rm = document.createElement("button");
+      rm.type = "button"; rm.className = "rm"; rm.textContent = "×";
+      rm.setAttribute("aria-label", "この写真をはずす");
+      rm.addEventListener("click", function(){ shots.splice(i, 1); renderThumbs(); });
+
+      d.appendChild(im); d.appendChild(rm);
+      box.appendChild(d);
+    });
+
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "addimg";
+    add.textContent = shots.length ? "＋ ついか" : "＋ しゃしん";
+    add.disabled = shots.length >= MAX_IMG;
+    add.addEventListener("click", function(){ $("#f-img").click(); });
+    box.appendChild(add);
+  };
+
+  $("#f-img").addEventListener("change", function(e){
+    var files = Array.prototype.slice.call(e.target.files || []);
+    e.target.value = "";
+    if(!files.length) return;
+
+    var nokori = MAX_IMG - shots.length;
+    if(files.length > nokori){
+      bar("しゃしんは" + MAX_IMG + "まいまでです", true);
+      files = files.slice(0, nokori);
+    }
+    if(!files.length) return;
+
+    bar("しゃしんを小さくしています…");
+    Promise.all(files.map(shrink)).then(function(list){
+      shots = shots.concat(list).slice(0, MAX_IMG);
+      renderThumbs();
+      bar("しゃしんをつけました");
+    }).catch(function(err){ bar(err.message, true); });
   });
+
+  $("#lb").addEventListener("click", function(){ $("#lb").close(); });
+
+  /* ---- 投稿フォーム（新しく書く／なおす の両方） ---- */
+  var editing = null;
+
+  var openForm = function(id){
+    editing = id || null;
+    shots = [];
+
+    var n = editing ? NOTES.filter(function(x){ return x.id === editing; })[0] : null;
+
+    $("#form").reset();
+    $("#dlg").querySelector("h2").textContent = n ? "かきなおす" : "ノートにかきこむ";
+    $("#submit").textContent = n ? "なおす" : "はりだす";
+    /* なおすときは、書いた人を変えない。
+       隠した項目に required が残っていると送信できなくなるので、一緒に外す。 */
+    $("#who-field").hidden = !!n;
+    $("#f-who").required = !n;
+
+    if(n){
+      $("#f-title").value = n.title || "";
+      $("#f-body").value = n.body || "";
+      shots = (n.images || []).slice();
+      $("#f-who").value = n.who || "";
+      housePick.querySelectorAll(".chip.house").forEach(function(b){
+        b.setAttribute("aria-pressed", String((n.houses || []).indexOf(b.getAttribute("data-house")) >= 0));
+      });
+      document.querySelectorAll("#kind-pick [data-kind]").forEach(function(b){
+        b.setAttribute("aria-pressed", String(b.getAttribute("data-kind") === n.kind));
+      });
+    } else {
+      try{ $("#f-who").value = localStorage.getItem(NAME_LS) || ""; }catch(e){}
+      housePick.querySelectorAll(".chip.house").forEach(function(b){ b.setAttribute("aria-pressed","false"); });
+      document.querySelectorAll("#kind-pick [data-kind]").forEach(function(b, i){
+        b.setAttribute("aria-pressed", String(i === 0));
+      });
+    }
+
+    renderThumbs();
+    $("#dlg").showModal();
+  };
+
+  $("#fab").addEventListener("click", function(){ openForm(null); });
   $("#cancel").addEventListener("click", function(){ $("#dlg").close(); });
 
   $("#form").addEventListener("submit", function(){
     var title = $("#f-title").value.trim();
     var who = $("#f-who").value.trim();
-    if(!title || !who) return;
+    if(!title || (!editing && !who)) return;
 
     var houses = pickedHouses();
     if(!houses.length) houses = HOUSES.slice();
     var on = document.querySelector("#kind-pick [aria-pressed='true']");
+    var kind = on ? on.getAttribute("data-kind") : (KINDS[0] && KINDS[0].id);
+    var body = $("#f-body").value.trim();
+    var okuru = shots.slice();
 
-    var payload = {
-      action: "addNote",
-      kind: on ? on.getAttribute("data-kind") : (KINDS[0] && KINDS[0].id),
-      houses: houses,
-      title: title,
-      body: $("#f-body").value.trim(),
-      who: who
-    };
-
-    try{ localStorage.setItem(NAME_LS, who); }catch(e){}
+    if(!editing){ try{ localStorage.setItem(NAME_LS, who); }catch(e){} }
     $("#fab").disabled = true;
-    bar("はりだしています…");
+    $("#submit").disabled = true;
+    bar(editing ? "なおしています…" : "はりだしています…");
+
+    var payload = editing
+      ? { action:"editNote", id:editing, kind:kind, houses:houses, title:title, body:body, images:okuru }
+      : { action:"addNote", kind:kind, houses:houses, title:title, body:body, who:who, images:okuru };
+
+    var target = editing;
 
     send(payload).then(function(j){
-      var d = new Date();
-      NOTES.unshift({
-        id: j.id, kind: payload.kind, houses: houses,
-        title: title, body: payload.body, who: who,
-        date: d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"),
-        pin: false
-      });
-      $("#form").reset();
-      housePick.querySelectorAll(".chip.house").forEach(function(b){ b.setAttribute("aria-pressed","false"); });
+      if(target){
+        var n = NOTES.filter(function(x){ return x.id === target; })[0];
+        if(n){
+          n.kind = kind; n.houses = houses; n.title = title; n.body = body;
+          n.images = j.images || [];
+        }
+        bar("なおしました");
+      } else {
+        var d = new Date();
+        NOTES.unshift({
+          id: j.id, kind: kind, houses: houses, title: title, body: body, who: who,
+          images: j.images || [],
+          date: d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"),
+          pin: false
+        });
+        bar("はりだしました");
+      }
+      shots = [];
       render();
-      bar("はりだしました");
     }).catch(function(e){
       bar(e.message, true);
     }).then(function(){
       $("#fab").disabled = false;
+      $("#submit").disabled = false;
+      editing = null;
     });
   });
+
+  /* ---- 削除 ----
+     シートには残るので、間違えてもスプレッドシートから戻せる。 */
+  var removeNote = function(id){
+    var n = NOTES.filter(function(x){ return x.id === id; })[0];
+    if(!n) return;
+    if(!confirm("「" + n.title + "」をけしますか？")) return;
+
+    var nokosi = NOTES.slice();
+    NOTES = NOTES.filter(function(x){ return x.id !== id; });
+    render();
+
+    send({ action:"deleteNote", id:id })
+      .then(function(){ bar("けしました"); })
+      .catch(function(e){
+        NOTES = nokosi;             /* 失敗したら戻す */
+        render();
+        bar(e.message, true);
+      });
+  };
 
   /* ---- こたえる ---- */
   var replyTo = null;
