@@ -481,7 +481,8 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
   };
 
   var load = function(){
-    return fetch(API + "?t=" + Date.now())
+    /* want=notes を付けて、必要な分だけ受け取る（病害の記録は読まない） */
+    return fetch(API + "?want=notes&t=" + Date.now())
       .then(function(r){ return r.json(); })
       .then(function(j){
         if(!j.ok) throw new Error(j.error || "読み込めませんでした");
