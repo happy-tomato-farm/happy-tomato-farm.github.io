@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1E7F9B">
+<title>液肥混入機レシピ｜ハッピートマトファーム</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 6 C20 26 14 34 14 42 a18 18 0 0 0 36 0 C50 34 44 26 32 6z' fill='%231E7F9B'/%3E%3C/svg%3E">
+<style>
+:root{
+  --ground:#EFF4F5;
+  --card:#FFFFFF;
+  --sunk:#F4F8F9;
+  --ink:#1B242A;
+  --muted:#5D6B72;
+  --line:#D6E1E4;
+  --line-soft:#E7EEF0;
+
+  --aqua:#1E7F9B;          /* 水・灌水 */
+  --leaf:#3E8F58;          /* 肥料・N */
+  --amber:#C97A0C;         /* 注意 */
+  --red:#D2402C;           /* だめ */
+
+  --in-bg:#FFFBE6;         /* 入力欄＝Excelの黄色にあわせる */
+  --in-line:#E8C84A;
+
+  --shadow:0 1px 0 rgba(27,36,42,.04), 0 8px 22px -14px rgba(27,36,42,.45);
+  --r:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#151A1C; --card:#1F2629; --sunk:#1A2123;
+    --ink:#E8EEF0; --muted:#9AA8AE; --line:#2F3A3E; --line-soft:#273134;
+    --aqua:#5FBDD4; --leaf:#6FBB7B; --amber:#EBB454; --red:#FF7B66;
+    --in-bg:#2C2A1B; --in-line:#8A7A25;
+    --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 22px -14px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#151A1C; --card:#1F2629; --sunk:#1A2123;
+  --ink:#E8EEF0; --muted:#9AA8AE; --line:#2F3A3E; --line-soft:#273134;
+  --aqua:#5FBDD4; --leaf:#6FBB7B; --amber:#EBB454; --red:#FF7B66;
+  --in-bg:#2C2A1B; --in-line:#8A7A25;
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 22px -14px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",
+              system-ui,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:860px;margin:0 auto;padding:0 14px 80px}
+
+/* ===== ヘッダー ===== */
+header{
+  position:sticky;top:0;z-index:30;
+  background:color-mix(in srgb, var(--ground) 92%, transparent);
+  backdrop-filter:saturate(1.4) blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.head-in{max-width:860px;margin:0 auto;padding:12px 14px}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h1{font-size:21px;font-weight:800;margin:0;letter-spacing:.01em}
+.brand .farm{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.08em}
+.brand a{
+  margin-left:auto;font-size:12.5px;font-weight:800;color:var(--muted);
+  text-decoration:none;border-bottom:1.5px dotted var(--muted);
+}
+.tabs{display:flex;gap:8px;margin-top:10px}
+.tab{
+  flex:1;padding:9px 10px;border-radius:999px;border:2px solid var(--line);
+  background:var(--card);color:var(--muted);font-family:inherit;
+  font-size:15px;font-weight:800;cursor:pointer;
+}
+.tab[aria-pressed="true"]{border-color:var(--aqua);color:var(--aqua);background:var(--sunk)}
+.tab:focus-visible{outline:3px solid var(--aqua);outline-offset:2px}
+
+/* ===== 節 ===== */
+section{
+  background:var(--card);border:2px solid var(--line);border-radius:var(--r);
+  margin:12px 0;box-shadow:var(--shadow);overflow:hidden;
+}
+.sec-head{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 15px;border-bottom:1px solid var(--line-soft);
+  background:var(--sunk);
+}
+.sec-head h2{font-size:15.5px;font-weight:800;margin:0;letter-spacing:.02em}
+.sec-head .hint{margin-left:auto;font-size:12px;color:var(--muted);font-weight:700}
+.sec-body{padding:14px 15px 16px}
+
+details.fold > summary{list-style:none;cursor:pointer}
+details.fold > summary::-webkit-details-marker{display:none}
+details.fold > summary .hint::after{content:"　▼"}
+details.fold[open] > summary .hint::after{content:"　▲"}
+
+/* ===== 入力 ===== */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 12px}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.f label{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.02em}
+.f label i{font-style:normal;color:var(--aqua)}
+.f input, .f select{
+  font-family:inherit;font-size:17px;font-weight:800;color:var(--ink);
+  background:var(--in-bg);border:2px solid var(--in-line);border-radius:10px;
+  padding:8px 10px;width:100%;min-width:0;
+}
+.f input:focus, .f select:focus{outline:none;border-color:var(--aqua);background:var(--card)}
+.f input[readonly]{background:var(--sunk);border-color:var(--line);color:var(--muted);font-weight:700}
+.f .u{font-size:11.5px;color:var(--muted);font-weight:700}
+
+/* ===== 出た数字 ===== */
+.outs{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;
+      padding-top:12px;border-top:1px dashed var(--line)}
+.o{min-width:96px}
+.o .k{display:block;font-size:11.5px;font-weight:800;color:var(--muted)}
+.o .v{display:block;font-size:17px;font-weight:800;line-height:1.35;
+      font-variant-numeric:tabular-nums}
+.o .v em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--muted);margin-left:2px}
+
+/* ===== 回ごとのカード ===== */
+.kai{border:2px solid var(--line);border-radius:14px;margin-bottom:10px;background:var(--card)}
+.kai.off{opacity:.55}
+.kai > .kh{
+  display:flex;align-items:center;gap:9px;padding:9px 13px;
+  border-bottom:1px solid var(--line-soft);background:var(--sunk);
+  border-radius:12px 12px 0 0;
+}
+.kai > .kh b{font-size:15px;font-weight:800}
+.kai > .kh .st{margin-left:auto;font-size:12px;font-weight:800;color:var(--muted)}
+.kai > .kb{padding:12px 13px 13px}
+
+/* 大きく出す2つ */
+.big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.big > div{
+  border-radius:12px;padding:10px 12px;text-align:center;
+  border:2px solid transparent;
+}
+.big .bai{background:color-mix(in srgb, var(--leaf) 12%, var(--card));
+          border-color:color-mix(in srgb, var(--leaf) 38%, transparent)}
+.big .jikan{background:color-mix(in srgb, var(--aqua) 12%, var(--card));
+            border-color:color-mix(in srgb, var(--aqua) 38%, transparent)}
+.big .k{display:block;font-size:11.5px;font-weight:800;color:var(--muted)}
+.big .v{display:block;font-size:29px;font-weight:800;line-height:1.25;
+        font-variant-numeric:tabular-nums}
+.big .bai .v{color:var(--leaf)}
+.big .jikan .v{color:var(--aqua)}
+.big .v small{font-size:13px;font-weight:700;color:var(--muted);margin-left:3px}
+
+.warn{
+  margin-top:10px;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:800;
+  background:color-mix(in srgb, var(--red) 10%, var(--card));
+  border:1.5px solid color-mix(in srgb, var(--red) 40%, transparent);
+  color:var(--red);
+}
+.warn.hide{display:none}
+
+.mini{
+  font-family:inherit;font-size:11.5px;font-weight:800;color:var(--aqua);
+  background:none;border:none;border-bottom:1.5px solid currentColor;
+  cursor:pointer;padding:0;margin-left:8px;
+}
+
+/* ===== 表（手計算・合計） ===== */
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+th{font-size:12px;font-weight:800;color:var(--muted);background:var(--sunk)}
+th:first-child,td:first-child{text-align:left}
+td.num{font-weight:800;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:12px}
+
+.foot{font-size:12.5px;color:var(--muted);font-weight:700;line-height:1.8;margin-top:6px}
+.foot code{background:var(--sunk);border-radius:5px;padding:1px 5px;font-size:12px}
+
+.bar{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:50;
+  background:var(--ink);color:var(--ground);border-radius:999px;
+  padding:9px 18px;font-size:13px;font-weight:800;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.bar.on{opacity:1}
+
+@media (max-width:520px){
+  .big .v{font-size:25px}
+  .wrap{padding:0 10px 80px}
+  .sec-body{padding:12px 12px 14px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <div class="brand">
+      <h1>液肥混入機レシピ</h1>
+      <span class="farm">ハッピートマトファーム</span>
+      <a href="../">← ツール一覧</a>
+    </div>
+    <div class="tabs" id="tabs" role="group" aria-label="ハウスを選ぶ">
+      <button class="tab" data-house="中央" aria-pressed="true">中央</button>
+      <button class="tab" data-house="東"   aria-pressed="false">東</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ このシーズンの設定 ============ -->
+  <section>
+    <details class="fold">
+      <summary class="sec-head">
+        <h2>このハウスの設定</h2>
+        <span class="hint" id="setsum"></span>
+      </summary>
+      <div class="sec-body">
+        <div class="grid">
+          <div class="f">
+            <label for="i-flow">流量</label>
+            <input id="i-flow" type="number" step="1" inputmode="decimal">
+            <span class="u">L/min</span>
+          </div>
+          <div class="f">
+            <label for="i-need">1000Jあたり必要灌水量</label>
+            <input id="i-need" type="number" step="0.1" inputmode="decimal">
+            <span class="u">L/㎡</span>
+          </div>
+          <div class="f">
+            <label for="i-area">面積</label>
+            <input id="i-area" type="number" step="10" inputmode="decimal">
+            <span class="u">㎡</span>
+          </div>
+          <div class="f">
+            <label for="i-coef">日射センサーの係数</label>
+            <input id="i-coef" type="number" step="0.1" inputmode="decimal">
+            <span class="u">実質日射 = 日射 × 10 ÷ 係数</span>
+          </div>
+          <div class="f">
+            <label for="i-film">フィルム劣化による減衰</label>
+            <input id="i-film" type="number" step="0.01" inputmode="decimal">
+            <span class="u">1 で 100％（劣化なし）</span>
+          </div>
+          <div class="f">
+            <label for="i-plus">実際灌水時間の上乗せ</label>
+            <input id="i-plus" type="number" step="10" inputmode="decimal">
+            <span class="u">秒（必要時間に足す初期値）</span>
+          </div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ 液肥のもと ============ -->
+  <section>
+    <div class="sec-head"><h2>液肥のもと</h2></div>
+    <div class="sec-body">
+      <div class="grid">
+        <div class="f">
+          <label for="i-fert">使用する肥料</label>
+          <select id="i-fert"></select>
+        </div>
+        <div class="f">
+          <label for="i-bags">肥料の袋数</label>
+          <input id="i-bags" type="number" step="1" min="0" inputmode="decimal">
+          <span class="u">袋</span>
+        </div>
+        <div class="f">
+          <label for="i-made">出来上がり量</label>
+          <input id="i-made" type="number" step="10" min="1" inputmode="decimal">
+          <span class="u">L</span>
+        </div>
+      </div>
+      <div class="outs" id="fert-out"></div>
+    </div>
+  </section>
+
+  <!-- ============ 回ごと ============ -->
+  <section>
+    <div class="sec-head">
+      <h2>1回ごとの灌水</h2>
+      <span class="hint">N量と日射量を入れる</span>
+    </div>
+    <div class="sec-body" id="kais"></div>
+  </section>
+
+  <!-- ============ 合計 ============ -->
+  <section>
+    <div class="sec-head"><h2>このシーズンの合計</h2></div>
+    <div class="sec-body"><div class="outs" id="totals" style="border-top:none;padding-top:0;margin-top:0"></div></div>
+  </section>
+
+  <!-- ============ 手計算 ============ -->
+  <section>
+    <details class="fold">
+      <summary class="sec-head">
+        <h2>肥料の使用量（手計算）</h2>
+        <span class="hint">開く</span>
+      </summary>
+      <div class="sec-body">
+        <div class="f" style="max-width:220px;margin-bottom:12px">
+          <label for="i-hand">流したN量</label>
+          <input id="i-hand" type="number" step="0.01" inputmode="decimal">
+          <span class="u">kg/10a</span>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr>
+              <th>肥料</th><th>含有N<br>％</th><th>1袋<br>kg</th>
+              <th>レシピぶん<br>kg</th><th>手計算ぶん<br>kg</th>
+            </tr></thead>
+            <tbody id="hand"></tbody>
+          </table>
+        </div>
+        <p class="foot">
+          「レシピぶん」は、上で入れた<b>流したいN量の合計</b>を、この肥料だけで流すときの必要量です。<br>
+          「手計算ぶん」は、すぐ上の欄に入れたN量ぶんの必要量です。
+        </p>
+      </div>
+    </details>
+  </section>
+
+  <p class="foot">
+    入力した値は<b>この端末に自動で保存</b>されます。ハウスごとに別々に覚えます。<br>
+    もとにした表: <code>2027作業記録.xlsx</code> の「液肥混入機レシピ (中央)／(東）」。
+    Excel は書き換えません。
+  </p>
+</div>
+
+<div class="bar" id="bar"></div>
+
+<script>
+/* =====================================================================
+   肥料の一覧（Excelの A15:C19 と同じ）
+   n = 含有N量（0.1 なら 10％） / bag = 1袋の重さ kg
+   ===================================================================== */
+const FERTS = [
+  { name:"トケル養液配合1号", n:0.100, bag:25 },
+  { name:"トケル養液配合5号", n:0.085, bag:25 },
+  { name:"OATハウス2号",     n:0.110, bag:10 },
+  { name:"トケル養液配合2号", n:0.100, bag:25 },
+  { name:"養液土耕2号",      n:0.140, bag:10 },
+];
+
+const KAI = 7;                 // 1週間ぶん＝7回
+const KEY = "htf_ekihi_v1";
+const HOUSES = ["中央", "東"];
+
+/* Excelの初期値をそのまま既定にする */
+const KITEI = {
+  "中央": { flow:140, need:3.2, area:1740, coef:6.5, film:0.95, plus:100,
+            fert:"トケル養液配合1号", bags:1, made:350, hand:0.12,
+            rows:[{d:0.048,e:5},{d:0.048,e:5},{d:"",e:""},{d:"",e:""},
+                  {d:"",e:""},{d:"",e:""},{d:"",e:""}] },
+  "東":   { flow:140, need:3,   area:1740, coef:6.5, film:1,    plus:100,
+            fert:"トケル養液配合1号", bags:1, made:350, hand:0.12,
+            rows:[{d:0.042,e:5},{d:0.042,e:5},{d:0.042,e:5},{d:"",e:""},
+                  {d:"",e:""},{d:"",e:""},{d:"",e:""}] },
+};
+
+const $ = s => document.querySelector(s);
+const num = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
+const has = v => v !== "" && v !== null && v !== undefined && Number.isFinite(parseFloat(v));
+
+/** 数字を見やすく。桁数は値の大きさで変える */
+function fmt(v, d){
+  if(!Number.isFinite(v)) return "—";
+  if(d === undefined) d = Math.abs(v) >= 100 ? 0 : Math.abs(v) >= 10 ? 1 : 2;
+  return v.toLocaleString("ja-JP", { minimumFractionDigits:d, maximumFractionDigits:d });
+}
+/** 秒 → 0:00:00 / 00:00 */
+function hms(sec){
+  if(!Number.isFinite(sec) || sec <= 0) return "—";
+  const s = Math.round(sec);
+  const h = Math.floor(s/3600), m = Math.floor(s%3600/60), t = s%60;
+  const mm = String(m).padStart(2,"0"), ss = String(t).padStart(2,"0");
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+/* =====================================================================
+   保存
+   ===================================================================== */
+let state = load();
+
+function load(){
+  let saved = {};
+  try{ saved = JSON.parse(localStorage.getItem(KEY) || "{}"); }catch(e){ saved = {}; }
+  const out = { house: saved.house || "中央" };
+  for(const h of HOUSES){
+    const k = KITEI[h];
+    const s = saved[h] || {};
+    out[h] = {
+      flow: s.flow ?? k.flow, need: s.need ?? k.need, area: s.area ?? k.area,
+      coef: s.coef ?? k.coef, film: s.film ?? k.film, plus: s.plus ?? k.plus,
+      fert: s.fert ?? k.fert, bags: s.bags ?? k.bags, made: s.made ?? k.made,
+      hand: s.hand ?? k.hand,
+      rows: Array.from({length:KAI}, (_,i) => ({
+        d: s.rows?.[i]?.d ?? k.rows[i].d,
+        e: s.rows?.[i]?.e ?? k.rows[i].e,
+        // p = 実際灌水時間（秒）。空なら「必要時間＋上乗せ」を使う
+        p: s.rows?.[i]?.p ?? "",
+      })),
+    };
+  }
+  return out;
+}
+
+let saveTimer = null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); tell("保存しました"); }
+    catch(e){ tell("保存できませんでした：" + e.message); }
+  }, 400);
+}
+let barTimer = null;
+function tell(msg){
+  const b = $("#bar");
+  b.textContent = msg; b.classList.add("on");
+  clearTimeout(barTimer);
+  barTimer = setTimeout(() => b.classList.remove("on"), 1400);
+}
+
+const cur = () => state[state.house];
+
+/* =====================================================================
+   計算  — Excel の式をそのまま写しています
+   ===================================================================== */
+function fertOf(name){
+  return FERTS.find(f => f.name === name) || FERTS[0];
+}
+
+/** 液肥のもとの計算（Excel の AC3〜AI3） */
+function calcFert(c){
+  const f = fertOf(c.fert);
+  const ryo  = f.bag * num(c.bags);          // AD 肥料の量 kg
+  const mizu = num(c.made) - ryo;            // AC 溶かす水 L
+  const nkg  = f.n * ryo;                    // AG 溶かすN量 kg
+  const n100 = num(c.made) ? nkg / num(c.made) * 100 : 0;  // AH 液肥N量 kg/100L
+  const bai  = ryo ? num(c.made) / ryo : 0;  // AI 溶解倍率
+  return { f, ryo, mizu, nkg, n100, bai };
+}
+
+/** 1回ぶんの計算（Excel の 6〜12 行） */
+function calcRow(c, row, fert){
+  const B = num(c.flow);                     // 流量 L/min
+  const C = num(c.need);                     // 1000Jあたり必要灌水量 L/㎡
+  const A = num(c.area);                     // 面積 ㎡
+  const D = num(row.d);                      // 流したいN量 kg/10a
+  const E = num(row.e);                      // 日射量 MJ/㎡
+  const X = num(c.coef), Y = num(c.film);
+
+  const kakeru = A / 1000;                   // Excel の 1.74（＝面積÷1000）
+  const F = D * kakeru;                      // 流したいN量 ハウス全体 kg
+  const G = X ? E * 10 / X : 0;              // 実質日射量
+  const H = G * Y;                           // 減衰を考えた日射量
+  const J = C * A;                           // 必要灌水量 L（全体）
+  const K = J * H / 10;                      // 日射量あたり必要灌水量 L
+  const L = B ? K / B : 0;                   // 必要灌水時間 分
+  const M = L * 60;                          // 必要灌水時間 秒
+
+  // 実際灌水時間。手で入れていればその値、無ければ「必要時間＋上乗せ」
+  const jido = M > 0 ? M + num(c.plus) : 0;
+  const P = has(row.p) ? num(row.p) : jido;  // 秒
+  const O = P / 60;                          // 分
+
+  const R = fert.n100 ? F / fert.n100 * 100 : 0;   // 流す液肥量 L
+  const S = O ? R / O : 0;                         // 1分で流す液肥量 L/min
+  const T = S ? B / S : 0;                         // 設定倍率
+  const U = L * B;                                 // 灌水量 L（全体）
+  const V = A ? U / A : 0;                         // 灌水量 L/㎡
+
+  return { B,C,A,D,E,F,G,H,J,K,L,M, jido, P,O,R,S,T,U,V,
+           tsukau: D > 0 || E > 0 };
+}
+
+/* =====================================================================
+   えがく
+   ===================================================================== */
+function drawFertSelect(){
+  const sel = $("#i-fert");
+  sel.innerHTML = FERTS.map(f =>
+    `<option value="${f.name}">${f.name}</option>`).join("");
+}
+
+function drawKaiFrames(){
+  let h = "";
+  for(let i = 0; i < KAI; i++){
+    h += `<div class="kai" id="kai${i}">
+      <div class="kh"><b>${i+1}回目</b><span class="st" id="st${i}"></span></div>
+      <div class="kb">
+        <div class="grid">
+          <div class="f">
+            <label for="d${i}">流したいN量</label>
+            <input id="d${i}" data-row="${i}" data-k="d" type="number" step="0.001" inputmode="decimal">
+            <span class="u">kg/10a</span>
+          </div>
+          <div class="f">
+            <label for="e${i}">日射量（ハウス内）</label>
+            <input id="e${i}" data-row="${i}" data-k="e" type="number" step="0.1" inputmode="decimal">
+            <span class="u">MJ/㎡</span>
+          </div>
+          <div class="f">
+            <label for="p${i}">実際の灌水時間
+              <button class="mini" data-reset="${i}" type="button">計算値に戻す</button>
+            </label>
+            <input id="p${i}" data-row="${i}" data-k="p" type="number" step="1" inputmode="decimal">
+            <span class="u" id="pu${i}">秒</span>
+          </div>
+        </div>
+        <div class="big">
+          <div class="bai"><span class="k">設定倍率（混入機のダイヤル）</span>
+            <span class="v" id="T${i}">—</span></div>
+          <div class="jikan"><span class="k">実際の灌水時間</span>
+            <span class="v" id="Q${i}">—</span></div>
+        </div>
+        <div class="warn hide" id="w${i}"></div>
+        <div class="outs" id="o${i}"></div>
+      </div>
+    </div>`;
+  }
+  $("#kais").innerHTML = h;
+
+  $("#kais").addEventListener("input", ev => {
+    const el = ev.target;
+    if(el.dataset.row === undefined) return;
+    cur().rows[+el.dataset.row][el.dataset.k] = el.value;
+    save(); render();
+  });
+  $("#kais").addEventListener("click", ev => {
+    const i = ev.target.dataset?.reset;
+    if(i === undefined) return;
+    cur().rows[+i].p = "";          // 空にすると計算値に戻る
+    save(); render();
+  });
+}
+
+function o(k, v, u){
+  return `<div class="o"><span class="k">${k}</span>
+          <span class="v">${v}${u ? `<em>${u}</em>` : ""}</span></div>`;
+}
+
+function render(){
+  const c = cur();
+
+  // ---- 上の入力欄 ----
+  $("#i-flow").value = c.flow; $("#i-need").value = c.need; $("#i-area").value = c.area;
+  $("#i-coef").value = c.coef; $("#i-film").value = c.film; $("#i-plus").value = c.plus;
+  $("#i-fert").value = c.fert; $("#i-bags").value = c.bags; $("#i-made").value = c.made;
+  $("#i-hand").value = c.hand;
+  $("#setsum").textContent =
+    `流量 ${fmt(num(c.flow),0)} L/min ・ ${fmt(num(c.need),1)} L/㎡ ・ ${fmt(num(c.area),0)} ㎡`;
+
+  // ---- 液肥のもと ----
+  const fert = calcFert(c);
+  $("#fert-out").innerHTML =
+      o("肥料の量", fmt(fert.ryo,1), "kg")
+    + o("溶かす水", fmt(fert.mizu,0), "L")
+    + o("含有N量", fmt(fert.f.n*100,1), "％")
+    + o("溶かすN量", fmt(fert.nkg,2), "kg")
+    + o("液肥N量", fmt(fert.n100,3), "kg/100L")
+    + o("溶解倍率", fmt(fert.bai,1), "倍");
+
+  // ---- 回ごと ----
+  const rs = [];
+  for(let i = 0; i < KAI; i++){
+    const row = c.rows[i];
+    const r = calcRow(c, row, fert);
+    rs.push(r);
+
+    $("#d"+i).value = row.d ?? "";
+    $("#e"+i).value = row.e ?? "";
+    $("#p"+i).value = row.p ?? "";
+    $("#p"+i).placeholder = r.jido > 0 ? String(Math.round(r.jido)) : "";
+    $("#pu"+i).textContent = r.jido > 0
+      ? `秒（空欄なら 計算値 ${hms(r.jido)}）` : "秒";
+
+    $("#kai"+i).classList.toggle("off", !r.tsukau);
+    $("#st"+i).textContent = r.tsukau ? "" : "使わない";
+
+    $("#T"+i).innerHTML = r.T > 0 ? `${fmt(r.T,0)}<small>倍</small>` : "—";
+    $("#Q"+i).innerHTML = r.P > 0 ? hms(r.P) : "—";
+
+    const w = $("#w"+i);
+    if(r.tsukau && r.S > 0 && r.S <= 0.2){
+      w.classList.remove("hide");
+      w.textContent = `1分あたりの液肥量が ${fmt(r.S,3)} L/min です。`
+                    + `0.2 以下は混入機が正しく効きません。`;
+    }else{
+      w.classList.add("hide");
+    }
+
+    $("#o"+i).innerHTML =
+        o("必要灌水時間", hms(r.M))
+      + o("流す液肥量", fmt(r.R,1), "L")
+      + o("1分あたり液肥量", fmt(r.S,3), "L/min")
+      + o("灌水量", fmt(r.V,2), "L/㎡")
+      + o("実質日射量", fmt(r.G,1), "MJ/㎡");
+  }
+
+  // ---- 合計 ----
+  const tsukau = rs.filter(r => r.tsukau);
+  const sum = k => rs.reduce((a,r) => a + r[k], 0);
+  const dSum = sum("D"), eSum = sum("E");
+  const baiList = rs.filter(r => r.T > 0).map(r => r.T);
+  const baiAvg = baiList.length ? baiList.reduce((a,b) => a+b,0) / baiList.length : 0;
+
+  $("#totals").innerHTML =
+      o("使う回数", tsukau.length, "回")
+    + o("流したいN量 合計", fmt(dSum,3), "kg/10a")
+    + o("日射量 合計", fmt(eSum,1), "MJ/㎡")
+    + o("灌水時間 合計", hms(sum("P")))
+    + o("灌水量 合計", fmt(sum("V"),2), "L/㎡")
+    + o("設定倍率（平均）", fmt(baiAvg,0), "倍")
+    + o("灌水倍率", fmt(fert.bai * baiAvg,0), "倍")
+    + o("1週間で流れるN量", fmt(dSum * num(c.coef),3), "kg/10a");
+
+  // ---- 手計算 ----
+  const zenN = dSum * (num(c.area) / 1000);      // レシピぶん（全体 kg）
+  const teN  = num(c.hand) * (num(c.area) / 1000);
+  $("#hand").innerHTML = FERTS.map(f => {
+    const oneBagN = f.bag * f.n;                 // 1袋のN量 kg
+    const rec = oneBagN ? zenN / oneBagN * f.bag : 0;
+    const te  = oneBagN ? teN  / oneBagN * f.bag : 0;
+    return `<tr>
+      <td>${f.name}</td>
+      <td class="num">${fmt(f.n*100,1)}</td>
+      <td class="num">${fmt(f.bag,0)}</td>
+      <td class="num">${fmt(rec,2)}</td>
+      <td class="num">${fmt(te,2)}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* =====================================================================
+   そうさ
+   ===================================================================== */
+function wire(){
+  const map = { "#i-flow":"flow", "#i-need":"need", "#i-area":"area",
+                "#i-coef":"coef", "#i-film":"film", "#i-plus":"plus",
+                "#i-fert":"fert", "#i-bags":"bags", "#i-made":"made",
+                "#i-hand":"hand" };
+  for(const [sel, key] of Object.entries(map)){
+    $(sel).addEventListener("input", e => {
+      cur()[key] = e.target.value;
+      save(); render();
+    });
+  }
+
+  document.querySelectorAll(".tab").forEach(b => {
+    b.addEventListener("click", () => {
+      state.house = b.dataset.house;
+      document.querySelectorAll(".tab").forEach(x =>
+        x.setAttribute("aria-pressed", String(x.dataset.house === state.house)));
+      save(); render();
+    });
+  });
+}
+
+drawFertSelect();
+drawKaiFrames();
+wire();
+document.querySelectorAll(".tab").forEach(x =>
+  x.setAttribute("aria-pressed", String(x.dataset.house === state.house)));
+render();
+</script>
+</body>
+</html>
