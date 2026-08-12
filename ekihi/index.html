@@ -116,7 +116,7 @@ details.fold[open] > summary .hint::after{content:"　▲"}
 .outs{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;
       padding-top:12px;border-top:1px dashed var(--line)}
 .o{min-width:96px}
-.o .k{display:block;font-size:11.5px;font-weight:800;color:var(--muted)}
+.o .k{display:block;font-size:11.5px;font-weight:800;color:var(--muted);line-height:1.4}
 .o .v{display:block;font-size:17px;font-weight:800;line-height:1.35;
       font-variant-numeric:tabular-nums}
 .o .v em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--muted);margin-left:2px}
@@ -287,7 +287,10 @@ td.num{font-weight:800;font-variant-numeric:tabular-nums}
 
   <!-- ============ 合計 ============ -->
   <section>
-    <div class="sec-head"><h2>このシーズンの合計</h2></div>
+    <div class="sec-head">
+      <h2>1日の合計</h2>
+      <span class="hint">上の1〜7回目を足したもの</span>
+    </div>
     <div class="sec-body"><div class="outs" id="totals" style="border-top:none;padding-top:0;margin-top:0"></div></div>
   </section>
 
@@ -614,7 +617,10 @@ function render(){
     + o("灌水量 合計", fmt(sum("V"),2), "L/㎡")
     + o("設定倍率（平均）", fmt(baiAvg,0), "倍")
     + o("灌水倍率", fmt(fert.bai * baiAvg,0), "倍")
-    + o("1週間で流れるN量", fmt(dSum * num(c.coef),3), "kg/10a");
+    // Excel の W3 は =D3*X3（日射センサーの係数6.5）になっていたが、
+    // 見出しのとおり「1日ぶん×7日」が正しいので 7 を掛ける。
+    // このセルはブック内のどこからも参照されていないことを確認済み。
+    + o("1週間で流れるN量<br>（1日ぶん×7日）", fmt(dSum * 7,3), "kg/10a");
 
   // ---- 手計算 ----
   const zenN = dSum * (num(c.area) / 1000);      // レシピぶん（全体 kg）
