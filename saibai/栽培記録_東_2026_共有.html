@@ -341,6 +341,284 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
 .note-body h4 { margin: 12px 0 2px; font-size: 12.5px; color: var(--ink-soft); font-weight: 500; }
 .note-body p { margin: 0; white-space: pre-wrap; font-size: 14px; }
 .printhint { font-size: 12px; color: var(--ink-faint); }
+
+/* ====================================================================
+   ここから下は、書き出しページだけの見た目の上書きです。
+   static/style.css（アプリ本体の画面）には手を入れていません。
+
+   読む人は、ふだんパソコンを使わない方が中心です。そのため
+     ・文字を大きく、行間を広く
+     ・丸ゴシックで、かたい印象を減らす
+     ・数字より先に「何の数字か」が目に入るように
+     ・スクロールしても見出しと軸が消えないように
+   という方針でそろえています。
+   ==================================================================== */
+
+:root {
+  --paper: #F2F6F0;
+  --panel: #FFFFFF;
+  --panel-sunk: #F6FAF4;
+  --line: #DCE6D9;
+  --line-soft: #EBF1E8;
+  --ink: #23291F;
+  --ink-soft: #5D6957;
+  --ink-faint: #8A9686;
+
+  --day: #E0700C;      /* 日中 */
+  --night: #2A8FA8;    /* 夜間 */
+  --leaf: #3E8F58;
+  --head-bg: #E9F0E6;  /* 表の見出しの帯 */
+
+  --r: 18px;
+  --shadow: 0 1px 0 rgba(35,41,31,.04), 0 8px 22px -14px rgba(35,41,31,.4);
+}
+
+body {
+  font-family: "Hiragino Maru Gothic ProN", "ヒラギノ丸ゴ ProN W4",
+               "Zen Maru Gothic", "Quicksand", "Hiragino Kaku Gothic ProN",
+               "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+/* ---------- 見出し ---------- */
+.topbar { border-bottom: 3px solid var(--leaf); }
+.topbar-inner { padding: 16px 20px; }
+.brand {
+  font-family: inherit;
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.brand small {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--ink-soft);
+  margin-top: 3px;
+}
+
+.panel {
+  border: 2px solid var(--line);
+  border-radius: var(--r);
+  padding: 20px 18px 22px;
+  margin: 16px 0;
+  box-shadow: var(--shadow);
+}
+.panel > h2 {
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  margin: 0 0 6px;
+  padding-left: 13px;
+  border-left: 6px solid var(--leaf);
+  line-height: 1.4;
+}
+.panel > .sub {
+  margin: 0 0 15px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+/* ---------- シーズンの合計 ---------- */
+.stat-row {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.stat {
+  border-left: none;
+  padding: 12px 10px;
+  background: var(--panel-sunk);
+  border: 1.5px solid var(--line-soft);
+  border-radius: 14px;
+  text-align: center;
+}
+.stat b {
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  color: var(--leaf);
+  line-height: 1.3;
+}
+.stat span {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* ---------- 温度帯の図 ---------- */
+/* 縦軸はスクロールする箱の外に置いて、左端に貼りつかせる */
+.ribbon-outer { position: relative; }
+.ribbon-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.ribbon-axis {
+  position: absolute;
+  left: 0; top: 0; bottom: 4px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(to right,
+              var(--panel) 0, var(--panel) 72%, rgba(255,255,255,0) 100%);
+  padding-right: 8px;
+}
+.ribbon-axis-svg { display: block; height: 100%; width: auto; }
+.ribbon-axis-svg .tick {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  fill: var(--ink-soft);
+}
+.ribbon-axis-svg .axis-unit {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  fill: var(--leaf);
+}
+.ribbon .bar-span { fill: #CBDCCF; }
+/* 温度帯の図だけ、中の目盛りを消して「貼りつく軸」にまかせる。
+   重油の図には貼りつく軸が無いので、そちらの目盛りは残す */
+.ribbon:not(.fuelchart) .tick { opacity: 0; }
+.ribbon .wlabel, .ribbon .wdate { font-family: inherit; font-weight: 700; }
+.ribbon .wlabel { font-size: 11px; }
+.ribbon .wdate { font-size: 10px; }
+
+.legend {
+  font-size: 13.5px;
+  font-weight: 700;
+  gap: 8px 16px;
+  margin-top: 14px;
+}
+.legend span {
+  background: var(--panel-sunk);
+  border: 1.5px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 3px 12px;
+}
+.legend i { width: 16px; height: 4px; }
+
+/* ---------- 表 ---------- */
+/* 縦にもスクロールする箱にすることで、見出しの行が貼りつくようになる。
+   （横スクロールだけだと、貼りつく相手が画面ではなく箱になってしまい効かない） */
+.tablewrap {
+  overflow: auto;
+  max-height: min(66vh, 540px);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  -webkit-overflow-scrolling: touch;
+}
+table { font-size: 15px; }
+th, td { padding: 9px 13px; }
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--head-bg);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.3;
+  border-bottom: 2px solid var(--line);
+  vertical-align: bottom;
+}
+/* 単位は見出しの下に小さく置く */
+thead th span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-left: 0;
+}
+
+/* 週の列は左に貼りつかせる。横に流しても、どの週か分かるように */
+th:first-child, td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--panel);
+  box-shadow: 1px 0 0 var(--line-soft);
+}
+thead th:first-child { z-index: 4; background: var(--head-bg); }
+
+tbody tr:nth-child(even) td { background: var(--panel-sunk); }
+tbody tr:nth-child(even) td:first-child { background: #EFF4EC; }
+tbody tr:hover td { background: #E8F1E5; }
+tbody tr:hover td:first-child { background: #E2EDDE; }
+
+td.num { font-family: inherit; font-weight: 700; }
+td.day { color: var(--day); }
+td.night { color: var(--night); }
+.wk {
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.wk span {
+  display: block;
+  margin-left: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+/* ---------- 週ごとのおぼえがき ---------- */
+details {
+  border: 1.5px solid var(--line-soft);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  background: var(--panel-sunk);
+}
+details:last-of-type { border-bottom: 1.5px solid var(--line-soft); }
+details[open] { background: var(--panel); border-color: var(--line); }
+summary {
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+summary::before {
+  content: "＋";
+  color: var(--leaf);
+  font-size: 15px;
+  font-weight: 800;
+}
+details[open] summary::before { content: "−"; }
+summary b { font-family: inherit; font-weight: 800; font-size: 16px; }
+summary em { font-size: 13px; font-weight: 700; }
+.note-body { padding: 2px 16px 16px 34px; }
+.note-body h4 {
+  margin: 14px 0 3px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--leaf);
+}
+.note-body p { font-size: 15px; line-height: 1.85; }
+
+/* ---------- 下のほう ---------- */
+.meta { font-size: 13px; font-weight: 600; }
+.printhint { font-size: 13px; font-weight: 600; }
+.empty { font-size: 14px; font-weight: 700; }
+
+@media (max-width: 560px) {
+  body { font-size: 16px; }
+  .wrap { padding: 0 12px 60px; }
+  .panel { padding: 16px 13px 18px; border-radius: 15px; }
+  .panel > h2 { font-size: 18px; }
+  .brand { font-size: 21px; }
+  table { font-size: 14px; }
+  th, td { padding: 8px 10px; }
+  .stat b { font-size: 23px; }
+}
 </style>
 </head>
 <body>
@@ -354,8 +632,12 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
 
 <section class="panel">
   <h2>シーズンの温度帯</h2>
-  <p class="sub">バー1本が1週間。上端が日中平均、下端が夜間平均で、長さが DIF です。</p>
-  <div class="ribbon-scroll"><svg class="ribbon" viewBox="0 0 710 234" preserveAspectRatio="xMinYMid meet" role="img" aria-label="週別の日中・夜間平均気温"><line class="grid" x1="32" y1="204.0" x2="698" y2="204.0"/><text class="tick" x="28" y="207.5" text-anchor="end">10</text><line class="grid" x1="32" y1="166.0" x2="698" y2="166.0"/><text class="tick" x="28" y="169.5" text-anchor="end">15</text><line class="grid" x1="32" y1="128.0" x2="698" y2="128.0"/><text class="tick" x="28" y="131.5" text-anchor="end">20</text><line class="grid" x1="32" y1="90.0" x2="698" y2="90.0"/><text class="tick" x="28" y="93.5" text-anchor="end">25</text><line class="grid" x1="32" y1="52.0" x2="698" y2="52.0"/><text class="tick" x="28" y="55.5" text-anchor="end">30</text><line class="grid" x1="32" y1="14.0" x2="698" y2="14.0"/><text class="tick" x="28" y="17.5" text-anchor="end">35</text><g class="bar-link"><title>Week36（9/1〜）
+  <p class="sub">バー1本が1週間です。上のはしが日中の平均、下のはしが夜間の平均で、
+    バーの長さがそのまま「日中と夜間の差（DIF）」になります。横にスワイプできます。</p>
+  
+  <div class="ribbon-outer">
+    <div class="ribbon-axis"><svg class="ribbon-axis-svg" viewBox="0 0 38 234" preserveAspectRatio="xMinYMid meet" aria-hidden="true"><text class="tick" x="28" y="207.5" text-anchor="end">10</text><text class="tick" x="28" y="169.5" text-anchor="end">15</text><text class="tick" x="28" y="131.5" text-anchor="end">20</text><text class="tick" x="28" y="93.5" text-anchor="end">25</text><text class="tick" x="28" y="55.5" text-anchor="end">30</text><text class="tick" x="28" y="17.5" text-anchor="end">35</text><text class="axis-unit" x="28" y="11" text-anchor="end">℃</text></svg></div>
+    <div class="ribbon-scroll"><svg class="ribbon" viewBox="0 0 710 234" preserveAspectRatio="xMinYMid meet" role="img" aria-label="週別の日中・夜間平均気温"><line class="grid" x1="32" y1="204.0" x2="698" y2="204.0"/><text class="tick" x="28" y="207.5" text-anchor="end">10</text><line class="grid" x1="32" y1="166.0" x2="698" y2="166.0"/><text class="tick" x="28" y="169.5" text-anchor="end">15</text><line class="grid" x1="32" y1="128.0" x2="698" y2="128.0"/><text class="tick" x="28" y="131.5" text-anchor="end">20</text><line class="grid" x1="32" y1="90.0" x2="698" y2="90.0"/><text class="tick" x="28" y="93.5" text-anchor="end">25</text><line class="grid" x1="32" y1="52.0" x2="698" y2="52.0"/><text class="tick" x="28" y="55.5" text-anchor="end">30</text><line class="grid" x1="32" y1="14.0" x2="698" y2="14.0"/><text class="tick" x="28" y="17.5" text-anchor="end">35</text><g class="bar-link"><title>Week36（9/1〜）
 日中 30.4℃ / 夜間 25.1℃ / DIF 5.3℃
 24H 28.0℃</title><rect class="bar-hit" x="36.0" y="14" width="15" height="190"/><rect class="bar-span" x="38" y="48.7" width="11" height="40.3" rx="2"/><rect class="cap-day" x="38" y="48.7" width="11" height="3" rx="1.5"/><rect class="cap-night" x="38" y="86.1" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="38" y1="67.2" x2="49" y2="67.2"/></g><g class="bar-link"><title>Week37（9/8〜）
 日中 28.6℃ / 夜間 25.4℃ / DIF 3.2℃
@@ -444,11 +726,12 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
 24H 22.4℃</title><rect class="bar-hit" x="666.0" y="14" width="15" height="190"/><rect class="bar-span" x="668" y="100.7" width="11" height="24.4" rx="2"/><rect class="cap-day" x="668" y="100.7" width="11" height="3" rx="1.5"/><rect class="cap-night" x="668" y="122.1" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="668" y1="109.9" x2="679" y2="109.9"/></g><g class="bar-link"><title>Week27（6/29〜）
 日中 26.9℃ / 夜間 22.0℃ / DIF 5.0℃
 24H 25.1℃</title><rect class="bar-hit" x="681.0" y="14" width="15" height="190"/><rect class="bar-span" x="683" y="75.2" width="11" height="37.7" rx="2"/><rect class="cap-day" x="683" y="75.2" width="11" height="3" rx="1.5"/><rect class="cap-night" x="683" y="109.9" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="683" y1="89.4" x2="694" y2="89.4"/></g><text class="wlabel" x="43.5" y="220" text-anchor="middle">36</text><text class="wdate" x="43.5" y="231" text-anchor="middle">9/1</text><text class="wlabel" x="103.5" y="220" text-anchor="middle">40</text><text class="wdate" x="103.5" y="231" text-anchor="middle">9/29</text><text class="wlabel" x="163.5" y="220" text-anchor="middle">44</text><text class="wdate" x="163.5" y="231" text-anchor="middle">10/27</text><text class="wlabel" x="223.5" y="220" text-anchor="middle">48</text><text class="wdate" x="223.5" y="231" text-anchor="middle">11/24</text><text class="wlabel" x="283.5" y="220" text-anchor="middle">52</text><text class="wdate" x="283.5" y="231" text-anchor="middle">12/22</text><text class="wlabel" x="343.5" y="220" text-anchor="middle">4</text><text class="wdate" x="343.5" y="231" text-anchor="middle">1/19</text><text class="wlabel" x="403.5" y="220" text-anchor="middle">8</text><text class="wdate" x="403.5" y="231" text-anchor="middle">2/16</text><text class="wlabel" x="463.5" y="220" text-anchor="middle">12</text><text class="wdate" x="463.5" y="231" text-anchor="middle">3/16</text><text class="wlabel" x="523.5" y="220" text-anchor="middle">16</text><text class="wdate" x="523.5" y="231" text-anchor="middle">4/13</text><text class="wlabel" x="583.5" y="220" text-anchor="middle">20</text><text class="wdate" x="583.5" y="231" text-anchor="middle">5/11</text><text class="wlabel" x="643.5" y="220" text-anchor="middle">24</text><text class="wdate" x="643.5" y="231" text-anchor="middle">6/8</text></svg></div>
+  </div>
   <div class="legend">
-    <span><i class="d"></i>日中平均</span>
-    <span><i class="n"></i>夜間平均</span>
-    <span><i class="h"></i>24時間平均</span>
-    <span>縦軸は℃</span>
+    <span><i class="d"></i>日中の平均</span>
+    <span><i class="n"></i>夜間の平均</span>
+    <span><i class="h"></i>24時間の平均</span>
+    <span>たてじくは ℃</span>
   </div>
 </section>
 
@@ -469,11 +752,16 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
 
 <section class="panel">
   <h2>環境データ</h2>
+  <p class="sub">ハウスの中の 気温と 日射です。表は 横にも 縦にも スワイプできます。</p>
   <div class="tablewrap">
     <table>
       <thead><tr>
-        <th>週</th><th>日中</th><th>夜間</th><th>DIF</th><th>24H</th>
-        <th>日射（内）</th><th>日射（実際）</th><th>日射（宇都宮）</th>
+        <th>週</th>
+        <th>日中<span>℃</span></th><th>夜間<span>℃</span></th>
+        <th>DIF<span>℃</span></th><th>24時間<span>℃</span></th>
+        <th>日射（内）<span>MJ/㎡</span></th>
+        <th>日射（実際）<span>MJ/㎡</span></th>
+        <th>日射（宇都宮）<span>MJ/㎡</span></th>
       </tr></thead>
       <tbody>
       
@@ -968,17 +1256,21 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
 
 <section class="panel">
   <h2>管理データ</h2>
+  <p class="sub">水やり・肥料・収穫量です。「累計」は シーズンのはじめからの 合計です。</p>
   <div class="tablewrap">
     <table>
       <thead><tr>
-        <th>週</th><th>潅水量 L/㎡</th><th>L/MJ㎡</th>
-        <th>N kg/10a</th><th>K kg/10a</th><th>N累計</th><th>K累計</th>
-        <th>収穫量 kg/10a</th><th>収穫量累計</th><th>N充足率</th>
+        <th>週</th>
+        <th>潅水量<span>L/㎡</span></th><th>日射あたり潅水<span>L/MJ㎡</span></th>
+        <th>チッ素 N<span>kg/10a</span></th><th>カリ K<span>kg/10a</span></th>
+        <th>N 累計<span>kg/10a</span></th><th>K 累計<span>kg/10a</span></th>
+        <th>収穫量<span>kg/10a</span></th><th>収穫量 累計<span>kg/10a</span></th>
+        <th>N 充足率<span>％</span></th>
       </tr></thead>
       <tbody>
       
         <tr>
-          <td class="wk">Week36</td>
+          <td class="wk">Week36<span>9/1</span></td>
           <td class="num">0.34</td>
           <td class="num">0.21</td>
           <td class="num">0.160</td>
@@ -991,7 +1283,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week37</td>
+          <td class="wk">Week37<span>9/8</span></td>
           <td class="num">0.41</td>
           <td class="num">0.40</td>
           <td class="num">0.201</td>
@@ -1004,7 +1296,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week38</td>
+          <td class="wk">Week38<span>9/15</span></td>
           <td class="num">1.31</td>
           <td class="num">1.08</td>
           <td class="num">0.575</td>
@@ -1017,7 +1309,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week39</td>
+          <td class="wk">Week39<span>9/22</span></td>
           <td class="num">1.83</td>
           <td class="num">1.22</td>
           <td class="num">0.846</td>
@@ -1030,7 +1322,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week40</td>
+          <td class="wk">Week40<span>9/29</span></td>
           <td class="num">1.28</td>
           <td class="num">1.35</td>
           <td class="num">0.611</td>
@@ -1043,7 +1335,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week41</td>
+          <td class="wk">Week41<span>10/6</span></td>
           <td class="num">1.24</td>
           <td class="num">1.44</td>
           <td class="num">0.614</td>
@@ -1056,7 +1348,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week42</td>
+          <td class="wk">Week42<span>10/13</span></td>
           <td class="num">1.16</td>
           <td class="num">1.55</td>
           <td class="num">0.643</td>
@@ -1069,7 +1361,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week43</td>
+          <td class="wk">Week43<span>10/20</span></td>
           <td class="num">0.74</td>
           <td class="num">1.22</td>
           <td class="num">0.487</td>
@@ -1082,7 +1374,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week44</td>
+          <td class="wk">Week44<span>10/27</span></td>
           <td class="num">1.70</td>
           <td class="num">1.65</td>
           <td class="num">1.148</td>
@@ -1095,7 +1387,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week45</td>
+          <td class="wk">Week45<span>11/3</span></td>
           <td class="num">1.48</td>
           <td class="num">1.57</td>
           <td class="num">0.995</td>
@@ -1108,7 +1400,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week46</td>
+          <td class="wk">Week46<span>11/10</span></td>
           <td class="num">2.03</td>
           <td class="num">2.03</td>
           <td class="num">1.351</td>
@@ -1121,7 +1413,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week47</td>
+          <td class="wk">Week47<span>11/17</span></td>
           <td class="num">1.77</td>
           <td class="num">1.82</td>
           <td class="num">1.208</td>
@@ -1134,7 +1426,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week48</td>
+          <td class="wk">Week48<span>11/24</span></td>
           <td class="num">1.27</td>
           <td class="num">1.57</td>
           <td class="num">0.995</td>
@@ -1147,7 +1439,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week49</td>
+          <td class="wk">Week49<span>12/1</span></td>
           <td class="num">1.15</td>
           <td class="num">1.39</td>
           <td class="num">1.056</td>
@@ -1160,7 +1452,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week50</td>
+          <td class="wk">Week50<span>12/8</span></td>
           <td class="num">1.06</td>
           <td class="num">1.26</td>
           <td class="num">1.049</td>
@@ -1173,7 +1465,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week51</td>
+          <td class="wk">Week51<span>12/15</span></td>
           <td class="num">1.06</td>
           <td class="num">1.29</td>
           <td class="num">1.049</td>
@@ -1186,7 +1478,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week52</td>
+          <td class="wk">Week52<span>12/22</span></td>
           <td class="num">1.11</td>
           <td class="num">1.41</td>
           <td class="num">1.119</td>
@@ -1199,7 +1491,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week53</td>
+          <td class="wk">Week53<span>12/29</span></td>
           <td class="num">1.23</td>
           <td class="num">1.30</td>
           <td class="num">1.152</td>
@@ -1212,7 +1504,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week2</td>
+          <td class="wk">Week2<span>1/5</span></td>
           <td class="num">1.49</td>
           <td class="num">1.56</td>
           <td class="num">1.260</td>
@@ -1225,7 +1517,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week3</td>
+          <td class="wk">Week3<span>1/12</span></td>
           <td class="num">1.79</td>
           <td class="num">1.62</td>
           <td class="num">1.495</td>
@@ -1238,7 +1530,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week4</td>
+          <td class="wk">Week4<span>1/19</span></td>
           <td class="num">1.80</td>
           <td class="num">1.68</td>
           <td class="num">1.203</td>
@@ -1251,7 +1543,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week5</td>
+          <td class="wk">Week5<span>1/26</span></td>
           <td class="num">2.66</td>
           <td class="num">2.14</td>
           <td class="num">1.682</td>
@@ -1264,7 +1556,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week6</td>
+          <td class="wk">Week6<span>2/2</span></td>
           <td class="num">1.91</td>
           <td class="num">1.71</td>
           <td class="num">1.201</td>
@@ -1277,7 +1569,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week7</td>
+          <td class="wk">Week7<span>2/9</span></td>
           <td class="num">2.55</td>
           <td class="num">2.02</td>
           <td class="num">1.441</td>
@@ -1290,7 +1582,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week8</td>
+          <td class="wk">Week8<span>2/16</span></td>
           <td class="num">2.92</td>
           <td class="num">2.15</td>
           <td class="num">1.467</td>
@@ -1303,7 +1595,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week9</td>
+          <td class="wk">Week9<span>2/23</span></td>
           <td class="num">2.35</td>
           <td class="num">2.29</td>
           <td class="num">0.959</td>
@@ -1316,7 +1608,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week10</td>
+          <td class="wk">Week10<span>3/2</span></td>
           <td class="num">2.73</td>
           <td class="num">2.02</td>
           <td class="num">0.971</td>
@@ -1329,7 +1621,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week11</td>
+          <td class="wk">Week11<span>3/9</span></td>
           <td class="num">3.52</td>
           <td class="num">1.90</td>
           <td class="num">1.063</td>
@@ -1342,7 +1634,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week12</td>
+          <td class="wk">Week12<span>3/16</span></td>
           <td class="num">3.38</td>
           <td class="num">2.25</td>
           <td class="num">0.876</td>
@@ -1355,7 +1647,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week13</td>
+          <td class="wk">Week13<span>3/23</span></td>
           <td class="num">3.58</td>
           <td class="num">2.40</td>
           <td class="num">0.942</td>
@@ -1368,7 +1660,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week14</td>
+          <td class="wk">Week14<span>3/30</span></td>
           <td class="num">2.89</td>
           <td class="num">2.70</td>
           <td class="num">0.697</td>
@@ -1381,7 +1673,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week15</td>
+          <td class="wk">Week15<span>4/6</span></td>
           <td class="num">5.34</td>
           <td class="num">3.02</td>
           <td class="num">1.349</td>
@@ -1394,7 +1686,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week16</td>
+          <td class="wk">Week16<span>4/13</span></td>
           <td class="num">7.37</td>
           <td class="num">3.54</td>
           <td class="num">1.335</td>
@@ -1407,7 +1699,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week17</td>
+          <td class="wk">Week17<span>4/20</span></td>
           <td class="num">5.76</td>
           <td class="num">2.96</td>
           <td class="num">0.871</td>
@@ -1420,7 +1712,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week18</td>
+          <td class="wk">Week18<span>4/27</span></td>
           <td class="num">3.63</td>
           <td class="num">2.88</td>
           <td class="num">0.813</td>
@@ -1433,7 +1725,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week19</td>
+          <td class="wk">Week19<span>5/4</span></td>
           <td class="num">8.54</td>
           <td class="num">3.89</td>
           <td class="num">1.219</td>
@@ -1446,7 +1738,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week20</td>
+          <td class="wk">Week20<span>5/11</span></td>
           <td class="num">9.35</td>
           <td class="num">3.92</td>
           <td class="num">1.182</td>
@@ -1459,7 +1751,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week21</td>
+          <td class="wk">Week21<span>5/18</span></td>
           <td class="num">5.28</td>
           <td class="num">3.14</td>
           <td class="num">0.646</td>
@@ -1472,7 +1764,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week22</td>
+          <td class="wk">Week22<span>5/25</span></td>
           <td class="num">8.90</td>
           <td class="num">3.76</td>
           <td class="num">1.242</td>
@@ -1485,7 +1777,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week23</td>
+          <td class="wk">Week23<span>6/1</span></td>
           <td class="num">5.61</td>
           <td class="num">3.12</td>
           <td class="num">0.710</td>
@@ -1498,7 +1790,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week24</td>
+          <td class="wk">Week24<span>6/8</span></td>
           <td class="num">5.60</td>
           <td class="num">3.02</td>
           <td class="num">0.713</td>
@@ -1511,7 +1803,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week25</td>
+          <td class="wk">Week25<span>6/15</span></td>
           <td class="num">4.95</td>
           <td class="num">2.72</td>
           <td class="num">0.629</td>
@@ -1524,7 +1816,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week26</td>
+          <td class="wk">Week26<span>6/22</span></td>
           <td class="num">3.96</td>
           <td class="num">3.58</td>
           <td class="num">0.587</td>
@@ -1537,7 +1829,7 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
         </tr>
       
         <tr>
-          <td class="wk">Week27</td>
+          <td class="wk">Week27<span>6/29</span></td>
           <td class="num">5.93</td>
           <td class="num">2.68</td>
           <td class="num">0.168</td>
@@ -1556,230 +1848,250 @@ summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; marg
 
 <section class="panel">
   <h2>生育調査</h2>
+  <p class="sub">毎週はかっている 株のようすです。表は 横にも 縦にも スワイプできます。</p>
   <div class="tablewrap">
     <table>
       <thead><tr>
-        <th>週</th><th>伸長量</th><th>茎径</th><th>葉の数</th><th>総着果数</th><th>開花位置の高さ</th><th>開花段</th><th>収穫段数</th><th>花色</th><th>栽植密度</th>
+        <th>週</th>
+        
+        <th>伸長量<span>cm</span></th>
+        
+        <th>茎径<span>mm</span></th>
+        
+        <th>葉の数<span>枚</span></th>
+        
+        <th>総着果数<span>個</span></th>
+        
+        <th>開花位置の高さ<span>cm</span></th>
+        
+        <th>開花段<span>段</span></th>
+        
+        <th>収穫段数<span>段</span></th>
+        
+        <th>花色</th>
+        
+        <th>栽植密度<span>本/㎡</span></th>
+        
       </tr></thead>
       <tbody>
       
         <tr>
-          <td class="wk">Week36</td>
+          <td class="wk">Week36<span>9/1</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week37</td>
+          <td class="wk">Week37<span>9/8</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week38</td>
+          <td class="wk">Week38<span>9/15</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week39</td>
+          <td class="wk">Week39<span>9/22</span></td>
           <td class="num">—</td><td class="num">2.7</td><td class="num">10.2</td><td class="num">5.2</td><td class="num">5.7</td><td class="num">3.0</td><td class="num">—</td><td class="num">1.0</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week40</td>
+          <td class="wk">Week40<span>9/29</span></td>
           <td class="num">18.3</td><td class="num">3.8</td><td class="num">9.0</td><td class="num">8.5</td><td class="num">5.4</td><td class="num">3.7</td><td class="num">—</td><td class="num">1.0</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week41</td>
+          <td class="wk">Week41<span>10/6</span></td>
           <td class="num">20.5</td><td class="num">3.3</td><td class="num">9.0</td><td class="num">10.0</td><td class="num">7.5</td><td class="num">4.0</td><td class="num">—</td><td class="num">—</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week42</td>
+          <td class="wk">Week42<span>10/13</span></td>
           <td class="num">12.2</td><td class="num">3.1</td><td class="num">7.0</td><td class="num">11.0</td><td class="num">7.7</td><td class="num">5.0</td><td class="num">—</td><td class="num">—</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week43</td>
+          <td class="wk">Week43<span>10/20</span></td>
           <td class="num">16.5</td><td class="num">3.9</td><td class="num">9.0</td><td class="num">12.0</td><td class="num">7.7</td><td class="num">5.3</td><td class="num">1.0</td><td class="num">—</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week44</td>
+          <td class="wk">Week44<span>10/27</span></td>
           <td class="num">12.8</td><td class="num">3.5</td><td class="num">7.0</td><td class="num">11.8</td><td class="num">6.2</td><td class="num">6.0</td><td class="num">1.0</td><td class="num">1.0</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week45</td>
+          <td class="wk">Week45<span>11/3</span></td>
           <td class="num">15.5</td><td class="num">4.6</td><td class="num">6.3</td><td class="num">13.0</td><td class="num">8.1</td><td class="num">6.3</td><td class="num">1.8</td><td class="num">-1.0</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week46</td>
+          <td class="wk">Week46<span>11/10</span></td>
           <td class="num">11.2</td><td class="num">4.1</td><td class="num">7.3</td><td class="num">12.8</td><td class="num">9.2</td><td class="num">7.0</td><td class="num">2.0</td><td class="num">—</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week47</td>
+          <td class="wk">Week47<span>11/17</span></td>
           <td class="num">13.4</td><td class="num">4.3</td><td class="num">6.7</td><td class="num">13.8</td><td class="num">11.0</td><td class="num">7.3</td><td class="num">2.0</td><td class="num">-1.0</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week48</td>
+          <td class="wk">Week48<span>11/24</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week49</td>
+          <td class="wk">Week49<span>12/1</span></td>
           <td class="num">21.8</td><td class="num">4.1</td><td class="num">7.0</td><td class="num">12.8</td><td class="num">9.1</td><td class="num">8.7</td><td class="num">3.2</td><td class="num">—</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week50</td>
+          <td class="wk">Week50<span>12/8</span></td>
           <td class="num">14.3</td><td class="num">4.2</td><td class="num">6.0</td><td class="num">13.7</td><td class="num">9.0</td><td class="num">9.3</td><td class="num">3.7</td><td class="num">—</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week51</td>
+          <td class="wk">Week51<span>12/15</span></td>
           <td class="num">12.5</td><td class="num">4.0</td><td class="num">7.5</td><td class="num">13.3</td><td class="num">12.3</td><td class="num">9.8</td><td class="num">4.0</td><td class="num">1.0</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week52</td>
+          <td class="wk">Week52<span>12/22</span></td>
           <td class="num">12.6</td><td class="num">4.1</td><td class="num">8.3</td><td class="num">31.3</td><td class="num">7.7</td><td class="num">10.3</td><td class="num">4.5</td><td class="num">-1.0</td><td class="num">2.2</td>
         </tr>
       
         <tr>
-          <td class="wk">Week53</td>
+          <td class="wk">Week53<span>12/29</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week2</td>
+          <td class="wk">Week2<span>1/5</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week3</td>
+          <td class="wk">Week3<span>1/12</span></td>
           <td class="num">43.8</td><td class="num">3.7</td><td class="num">9.2</td><td class="num">15.0</td><td class="num">6.4</td><td class="num">12.3</td><td class="num">6.3</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week4</td>
+          <td class="wk">Week4<span>1/19</span></td>
           <td class="num">12.1</td><td class="num">3.7</td><td class="num">7.2</td><td class="num">15.7</td><td class="num">10.0</td><td class="num">12.7</td><td class="num">6.5</td><td class="num">—</td><td class="num">2.7</td>
         </tr>
       
         <tr>
-          <td class="wk">Week5</td>
+          <td class="wk">Week5<span>1/26</span></td>
           <td class="num">13.2</td><td class="num">4.0</td><td class="num">8.7</td><td class="num">16.2</td><td class="num">9.4</td><td class="num">13.2</td><td class="num">7.0</td><td class="num">—</td><td class="num">2.7</td>
         </tr>
       
         <tr>
-          <td class="wk">Week6</td>
+          <td class="wk">Week6<span>2/2</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week7</td>
+          <td class="wk">Week7<span>2/9</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week8</td>
+          <td class="wk">Week8<span>2/16</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week9</td>
+          <td class="wk">Week9<span>2/23</span></td>
           <td class="num">—</td><td class="num">3.6</td><td class="num">8.8</td><td class="num">19.8</td><td class="num">10.3</td><td class="num">15.7</td><td class="num">9.5</td><td class="num">-1.0</td><td class="num">2.7</td>
         </tr>
       
         <tr>
-          <td class="wk">Week10</td>
+          <td class="wk">Week10<span>3/2</span></td>
           <td class="num">—</td><td class="num">3.8</td><td class="num">8.0</td><td class="num">17.5</td><td class="num">6.1</td><td class="num">16.5</td><td class="num">10.2</td><td class="num">1.0</td><td class="num">3.3</td>
         </tr>
       
         <tr>
-          <td class="wk">Week11</td>
+          <td class="wk">Week11<span>3/9</span></td>
           <td class="num">—</td><td class="num">3.5</td><td class="num">7.5</td><td class="num">19.8</td><td class="num">9.2</td><td class="num">16.7</td><td class="num">10.5</td><td class="num">—</td><td class="num">3.3</td>
         </tr>
       
         <tr>
-          <td class="wk">Week12</td>
+          <td class="wk">Week12<span>3/16</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week13</td>
+          <td class="wk">Week13<span>3/23</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week14</td>
+          <td class="wk">Week14<span>3/30</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week15</td>
+          <td class="wk">Week15<span>4/6</span></td>
           <td class="num">—</td><td class="num">3.3</td><td class="num">11.7</td><td class="num">22.3</td><td class="num">7.6</td><td class="num">19.3</td><td class="num">12.8</td><td class="num">1.0</td><td class="num">3.3</td>
         </tr>
       
         <tr>
-          <td class="wk">Week16</td>
+          <td class="wk">Week16<span>4/13</span></td>
           <td class="num">—</td><td class="num">3.4</td><td class="num">11.3</td><td class="num">23.0</td><td class="num">6.3</td><td class="num">19.8</td><td class="num">13.3</td><td class="num">—</td><td class="num">3.3</td>
         </tr>
       
         <tr>
-          <td class="wk">Week17</td>
+          <td class="wk">Week17<span>4/20</span></td>
           <td class="num">—</td><td class="num">3.3</td><td class="num">13.3</td><td class="num">21.8</td><td class="num">6.9</td><td class="num">20.7</td><td class="num">14.7</td><td class="num">1.0</td><td class="num">3.3</td>
         </tr>
       
         <tr>
-          <td class="wk">Week18</td>
+          <td class="wk">Week18<span>4/27</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week19</td>
+          <td class="wk">Week19<span>5/4</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week20</td>
+          <td class="wk">Week20<span>5/11</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week21</td>
+          <td class="wk">Week21<span>5/18</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week22</td>
+          <td class="wk">Week22<span>5/25</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week23</td>
+          <td class="wk">Week23<span>6/1</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week24</td>
+          <td class="wk">Week24<span>6/8</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week25</td>
+          <td class="wk">Week25<span>6/15</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week26</td>
+          <td class="wk">Week26<span>6/22</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
         <tr>
-          <td class="wk">Week27</td>
+          <td class="wk">Week27<span>6/29</span></td>
           <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
         </tr>
       
@@ -1995,7 +2307,7 @@ HK
 <section class="panel">
   <h2>この書き出しについて</h2>
   <div class="meta">
-    <span><b>作成</b> 2026年8月12日 13:22</span>
+    <span><b>作成</b> 2026年8月12日 15:22</span>
     <span><b>作業記録</b> 作業記録/2027作業記録.xlsx</span><span><b>センサーCSV</b> 10ファイル（4週記録東_202509.csv 〜 4週記録東_202606.csv）</span><span><b>日の出日の入</b> 日の出日の入 シート</span><span><b>収量記録</b> バックアップ/2027収量記録_20260810_150601.xlsx</span>
   </div>
   <p class="printhint" style="margin-top:10px">このファイルは単独で開けます。Dropbox に置けばスマホからそのまま閲覧できます。</p>
