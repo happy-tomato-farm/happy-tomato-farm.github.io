@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>栽培記録 東 2026シーズン</title>
+<style>
+:root {
+  --paper: #edf1ec;
+  --panel: #ffffff;
+  --panel-sunk: #f5f8f4;
+  --line: #d3dcd2;
+  --line-soft: #e4ebe3;
+  --ink: #16241c;
+  --ink-soft: #5c6b60;
+  --ink-faint: #8b968d;
+  --day: #c2610f;
+  --night: #2c6e7f;
+  --leaf: #1f5c3d;
+  --alert: #9a3412;
+  --alert-bg: #fdf3ec;
+
+  --serif: &#34;Hiragino Mincho ProN&#34;, &#34;Yu Mincho&#34;, YuMincho, &#34;Noto Serif JP&#34;, &#34;MS PMincho&#34;, serif;
+  --sans: &#34;Hiragino Sans&#34;, &#34;Yu Gothic UI&#34;, &#34;Yu Gothic&#34;, YuGothic, &#34;Noto Sans JP&#34;, Meiryo, sans-serif;
+  --mono: ui-monospace, &#34;SF Mono&#34;, Menlo, Consolas, &#34;Roboto Mono&#34;, monospace;
+
+  --r: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--leaf); }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px 72px; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 20px;
+}
+.brand {
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+.brand small {
+  display: block;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+}
+.topbar form { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+
+/* ---------- controls ---------- */
+select, input[type=&#34;text&#34;], input[type=&#34;number&#34;], textarea {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 6px 9px;
+}
+textarea { width: 100%; resize: vertical; line-height: 1.7; }
+input[type=&#34;number&#34;] { font-family: var(--mono); }
+select:focus, input:focus, textarea:focus, button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--leaf);
+  outline-offset: 1px;
+}
+
+.btn {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 15px;
+  border-radius: var(--r);
+  border: 1px solid var(--leaf);
+  background: var(--leaf);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn.ghost { background: transparent; color: var(--leaf); }
+.btn:hover { filter: brightness(1.08); }
+
+/* ---------- panels ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px 22px;
+  margin: 20px 0;
+}
+.panel &gt; h2 {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin: 0 0 4px;
+}
+.panel &gt; .sub {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.notice { border-color: #e6c9a8; background: var(--alert-bg); }
+.notice h2 { color: var(--alert); }
+.notice ul { margin: 8px 0 0; padding-left: 20px; }
+.notice li { font-size: 14px; margin-bottom: 4px; }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.meta b { font-weight: 500; color: var(--ink); }
+
+/* ---------- ribbon ---------- */
+.ribbon-scroll { overflow-x: auto; padding-bottom: 4px; }
+.ribbon { display: block; min-width: 700px; width: 100%; height: auto; }
+.ribbon .grid { stroke: var(--line-soft); stroke-width: 1; }
+.ribbon .tick, .ribbon .wlabel, .ribbon .wdate {
+  font-family: var(--mono);
+  fill: var(--ink-faint);
+}
+.ribbon .tick { font-size: 10px; }
+.ribbon .wlabel { font-size: 10px; fill: var(--ink-soft); }
+.ribbon .wdate { font-size: 9px; }
+.ribbon .bar-span { fill: #cfdcd2; }
+.ribbon .bar-empty { fill: var(--line); }
+.ribbon .cap-day { fill: var(--day); }
+.ribbon .cap-night { fill: var(--night); }
+.ribbon .mark-24h { stroke: var(--ink); stroke-width: 1; opacity: 0.55; }
+.ribbon .bar-hit { fill: transparent; }
+.ribbon .bar-link { cursor: pointer; }
+.ribbon .bar-link:hover .bar-span { fill: #b9cdc0; }
+.ribbon .bar-link:hover .bar-hit { fill: rgba(31, 92, 61, 0.06); }
+
+.legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-top: 12px;
+}
+.legend i {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.legend .d { background: var(--day); }
+.legend .n { background: var(--night); }
+.legend .h { background: var(--ink); opacity: 0.55; }
+
+/* ---------- tables ---------- */
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: right;
+  white-space: nowrap;
+}
+th {
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+}
+th:first-child, td:first-child { text-align: left; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: var(--panel-sunk); }
+td.day { color: var(--day); }
+td.night { color: var(--night); }
+.wk { font-family: var(--mono); font-size: 12.5px; }
+.wk a { text-decoration: none; font-weight: 500; }
+.wk span { color: var(--ink-faint); margin-left: 6px; font-size: 11.5px; }
+.empty { color: var(--ink-faint); }
+
+/* ---------- week detail ---------- */
+.weekhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.weekhead h1 {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin: 24px 0 0;
+}
+.weekhead .range { color: var(--ink-soft); font-size: 14px; }
+.weeknav { margin-left: auto; display: flex; gap: 8px; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.growth-table input { width: 100%; text-align: right; }
+.growth-table td { padding: 4px 5px; }
+.growth-table th:first-child, .growth-table td:first-child { min-width: 110px; }
+.avg { font-family: var(--mono); color: var(--leaf); font-weight: 500; }
+
+.savebar {
+  position: sticky;
+  bottom: 0;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.saved { color: var(--leaf); font-size: 13px; }
+
+.pill {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  margin-left: 8px;
+}
+
+@media (max-width: 760px) {
+  .wrap { padding: 0 14px 60px; }
+  .panel { padding: 16px 14px; border-radius: 8px; }
+  .grid2 { grid-template-columns: 1fr; }
+  .topbar form { width: 100%; margin-left: 0; }
+  .weekhead h1 { font-size: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ---------- 入力への導線 ---------- */
+.entry { border-color: var(--leaf); }
+.entry-in { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; }
+.entry-in &gt; div { flex: 1 1 320px; }
+.entry-in .sub { margin-bottom: 0; }
+.btn.big { font-size: 15px; padding: 11px 22px; white-space: nowrap; }
+a.mini {
+  font-size: 12px;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 11px;
+  color: var(--leaf);
+  white-space: nowrap;
+}
+a.mini:hover { background: var(--panel-sunk); }
+
+/* ---------- 重油 ---------- */
+.fuelchart .fuel-bar { fill: var(--day); opacity: 0.82; }
+.fuelchart g:hover .fuel-bar { opacity: 1; }
+.fuelchart .fuel-temp { fill: none; stroke: var(--night); stroke-width: 1.8; stroke-linejoin: round; }
+.fuelchart .fuel-house { fill: none; stroke: var(--ink-faint); stroke-width: 1.2; stroke-dasharray: 3 3; stroke-linejoin: round; }
+.fuelchart .freeze { stroke: var(--night); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.5; }
+.fuelchart .tick.night { fill: var(--night); text-anchor: start; }
+.legend .f { background: var(--day); height: 8px; border-radius: 2px; }
+.legend .t { background: var(--night); }
+.total-row td { font-weight: 600; border-top: 1px solid var(--line); border-bottom: none; background: var(--panel-sunk); }
+
+.legend .h2 { background: var(--ink-faint); height: 2px; }
+.corr { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: 14px; font-size: 13.5px; }
+.corr div { border-left: 2px solid var(--line); padding-left: 11px; }
+.corr b { font-family: var(--mono); font-size: 16px; font-weight: 500; display: block; }
+.corr span { font-size: 12px; color: var(--ink-soft); }
+.corr .weak b { color: var(--ink-faint); }
+
+/* ---------- 前年比 ---------- */
+.dlt {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-style: normal;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--ink-faint);
+}
+.dlt.up { color: var(--day); }
+.dlt.dn { color: var(--night); }
+tbody tr td { vertical-align: top; }
+.cmp-on { background: var(--leaf); color: #fff; border-color: var(--leaf); }
+.cmp-note { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 14px; }
+
+.wrap { padding-bottom: 40px; }
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px 20px; }
+.stat { border-left: 2px solid var(--line); padding-left: 12px; }
+.stat b { display: block; font-family: var(--mono); font-size: 20px; font-weight: 500; letter-spacing: -0.01em; }
+.stat span { font-size: 12px; color: var(--ink-soft); }
+details { border-top: 1px solid var(--line-soft); }
+details:last-of-type { border-bottom: 1px solid var(--line-soft); }
+summary { cursor: pointer; padding: 11px 2px; font-size: 14px; display: flex; gap: 10px; align-items: baseline; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "＋"; color: var(--ink-faint); font-size: 12px; }
+details[open] summary::before { content: "−"; }
+summary b { font-family: var(--mono); font-weight: 500; }
+summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; margin-left: auto; text-align: right; }
+.note-body { padding: 4px 0 18px 22px; }
+.note-body h4 { margin: 12px 0 2px; font-size: 12.5px; color: var(--ink-soft); font-weight: 500; }
+.note-body p { margin: 0; white-space: pre-wrap; font-size: 14px; }
+.printhint { font-size: 12px; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <h1 class="brand">栽培記録<small>東ハウス ／ 2026シーズン</small></h1>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section class="panel">
+  <h2>シーズンの温度帯</h2>
+  <p class="sub">バー1本が1週間。上端が日中平均、下端が夜間平均で、長さが DIF です。</p>
+  <div class="ribbon-scroll"><svg class="ribbon" viewBox="0 0 710 234" preserveAspectRatio="xMinYMid meet" role="img" aria-label="週別の日中・夜間平均気温"><line class="grid" x1="32" y1="204.0" x2="698" y2="204.0"/><text class="tick" x="28" y="207.5" text-anchor="end">10</text><line class="grid" x1="32" y1="166.0" x2="698" y2="166.0"/><text class="tick" x="28" y="169.5" text-anchor="end">15</text><line class="grid" x1="32" y1="128.0" x2="698" y2="128.0"/><text class="tick" x="28" y="131.5" text-anchor="end">20</text><line class="grid" x1="32" y1="90.0" x2="698" y2="90.0"/><text class="tick" x="28" y="93.5" text-anchor="end">25</text><line class="grid" x1="32" y1="52.0" x2="698" y2="52.0"/><text class="tick" x="28" y="55.5" text-anchor="end">30</text><line class="grid" x1="32" y1="14.0" x2="698" y2="14.0"/><text class="tick" x="28" y="17.5" text-anchor="end">35</text><g class="bar-link"><title>Week36（9/1〜）
+日中 30.4℃ / 夜間 25.1℃ / DIF 5.3℃
+24H 28.0℃</title><rect class="bar-hit" x="36.0" y="14" width="15" height="190"/><rect class="bar-span" x="38" y="48.7" width="11" height="40.3" rx="2"/><rect class="cap-day" x="38" y="48.7" width="11" height="3" rx="1.5"/><rect class="cap-night" x="38" y="86.1" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="38" y1="67.2" x2="49" y2="67.2"/></g><g class="bar-link"><title>Week37（9/8〜）
+日中 28.6℃ / 夜間 25.4℃ / DIF 3.2℃
+24H 27.0℃</title><rect class="bar-hit" x="51.0" y="14" width="15" height="190"/><rect class="bar-span" x="53" y="63.0" width="11" height="24.4" rx="2"/><rect class="cap-day" x="53" y="63.0" width="11" height="3" rx="1.5"/><rect class="cap-night" x="53" y="84.3" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="53" y1="74.9" x2="64" y2="74.9"/></g><g class="bar-link"><title>Week38（9/15〜）
+日中 27.7℃ / 夜間 23.5℃ / DIF 4.2℃
+24H 25.6℃</title><rect class="bar-hit" x="66.0" y="14" width="15" height="190"/><rect class="bar-span" x="68" y="69.5" width="11" height="31.8" rx="2"/><rect class="cap-day" x="68" y="69.5" width="11" height="3" rx="1.5"/><rect class="cap-night" x="68" y="98.3" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="68" y1="85.4" x2="79" y2="85.4"/></g><g class="bar-link"><title>Week39（9/22〜）
+日中 25.8℃ / 夜間 20.2℃ / DIF 5.5℃
+24H 23.0℃</title><rect class="bar-hit" x="81.0" y="14" width="15" height="190"/><rect class="bar-span" x="83" y="84.3" width="11" height="41.9" rx="2"/><rect class="cap-day" x="83" y="84.3" width="11" height="3" rx="1.5"/><rect class="cap-night" x="83" y="123.2" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="83" y1="105.2" x2="94" y2="105.2"/></g><g class="bar-link"><title>Week40（9/29〜）
+日中 24.3℃ / 夜間 19.9℃ / DIF 4.4℃
+24H 22.1℃</title><rect class="bar-hit" x="96.0" y="14" width="15" height="190"/><rect class="bar-span" x="98" y="95.5" width="11" height="33.3" rx="2"/><rect class="cap-day" x="98" y="95.5" width="11" height="3" rx="1.5"/><rect class="cap-night" x="98" y="125.8" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="98" y1="112.1" x2="109" y2="112.1"/></g><g class="bar-link"><title>Week41（10/6〜）
+日中 22.1℃ / 夜間 18.8℃ / DIF 3.2℃
+24H 20.4℃</title><rect class="bar-hit" x="111.0" y="14" width="15" height="190"/><rect class="bar-span" x="113" y="112.4" width="11" height="24.5" rx="2"/><rect class="cap-day" x="113" y="112.4" width="11" height="3" rx="1.5"/><rect class="cap-night" x="113" y="134.0" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="113" y1="124.7" x2="124" y2="124.7"/></g><g class="bar-link"><title>Week42（10/13〜）
+日中 21.5℃ / 夜間 17.4℃ / DIF 4.1℃
+24H 19.4℃</title><rect class="bar-hit" x="126.0" y="14" width="15" height="190"/><rect class="bar-span" x="128" y="117.0" width="11" height="30.8" rx="2"/><rect class="cap-day" x="128" y="117.0" width="11" height="3" rx="1.5"/><rect class="cap-night" x="128" y="144.8" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="128" y1="132.4" x2="139" y2="132.4"/></g><g class="bar-link"><title>Week43（10/20〜）
+日中 19.3℃ / 夜間 15.2℃ / DIF 4.1℃
+24H 17.1℃</title><rect class="bar-hit" x="141.0" y="14" width="15" height="190"/><rect class="bar-span" x="143" y="133.1" width="11" height="31.2" rx="2"/><rect class="cap-day" x="143" y="133.1" width="11" height="3" rx="1.5"/><rect class="cap-night" x="143" y="161.3" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="143" y1="150.0" x2="154" y2="150.0"/></g><g class="bar-link"><title>Week44（10/27〜）
+日中 21.3℃ / 夜間 14.7℃ / DIF 6.6℃
+24H 17.6℃</title><rect class="bar-hit" x="156.0" y="14" width="15" height="190"/><rect class="bar-span" x="158" y="117.8" width="11" height="50.3" rx="2"/><rect class="cap-day" x="158" y="117.8" width="11" height="3" rx="1.5"/><rect class="cap-night" x="158" y="165.1" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="158" y1="146.5" x2="169" y2="146.5"/></g><g class="bar-link"><title>Week45（11/3〜）
+日中 20.4℃ / 夜間 13.7℃ / DIF 6.6℃
+24H 16.5℃</title><rect class="bar-hit" x="171.0" y="14" width="15" height="190"/><rect class="bar-span" x="173" y="125.3" width="11" height="50.2" rx="2"/><rect class="cap-day" x="173" y="125.3" width="11" height="3" rx="1.5"/><rect class="cap-night" x="173" y="172.5" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="173" y1="154.6" x2="184" y2="154.6"/></g><g class="bar-link"><title>Week46（11/10〜）
+日中 20.6℃ / 夜間 13.6℃ / DIF 6.9℃
+24H 16.5℃</title><rect class="bar-hit" x="186.0" y="14" width="15" height="190"/><rect class="bar-span" x="188" y="123.5" width="11" height="52.8" rx="2"/><rect class="cap-day" x="188" y="123.5" width="11" height="3" rx="1.5"/><rect class="cap-night" x="188" y="173.3" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="188" y1="154.3" x2="199" y2="154.3"/></g><g class="bar-link"><title>Week47（11/17〜）
+日中 20.2℃ / 夜間 13.3℃ / DIF 7.0℃
+24H 16.2℃</title><rect class="bar-hit" x="201.0" y="14" width="15" height="190"/><rect class="bar-span" x="203" y="126.2" width="11" height="53.1" rx="2"/><rect class="cap-day" x="203" y="126.2" width="11" height="3" rx="1.5"/><rect class="cap-night" x="203" y="176.3" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="203" y1="157.2" x2="214" y2="157.2"/></g><g class="bar-link"><title>Week48（11/24〜）
+日中 19.9℃ / 夜間 13.4℃ / DIF 6.5℃
+24H 16.1℃</title><rect class="bar-hit" x="216.0" y="14" width="15" height="190"/><rect class="bar-span" x="218" y="129.0" width="11" height="49.4" rx="2"/><rect class="cap-day" x="218" y="129.0" width="11" height="3" rx="1.5"/><rect class="cap-night" x="218" y="175.4" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="218" y1="157.8" x2="229" y2="157.8"/></g><g class="bar-link"><title>Week49（12/1〜）
+日中 19.4℃ / 夜間 13.5℃ / DIF 5.9℃
+24H 16.0℃</title><rect class="bar-hit" x="231.0" y="14" width="15" height="190"/><rect class="bar-span" x="233" y="132.4" width="11" height="44.9" rx="2"/><rect class="cap-day" x="233" y="132.4" width="11" height="3" rx="1.5"/><rect class="cap-night" x="233" y="174.3" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="233" y1="158.6" x2="244" y2="158.6"/></g><g class="bar-link"><title>Week50（12/8〜）
+日中 19.6℃ / 夜間 14.0℃ / DIF 5.6℃
+24H 16.3℃</title><rect class="bar-hit" x="246.0" y="14" width="15" height="190"/><rect class="bar-span" x="248" y="131.0" width="11" height="42.6" rx="2"/><rect class="cap-day" x="248" y="131.0" width="11" height="3" rx="1.5"/><rect class="cap-night" x="248" y="170.6" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="248" y1="155.9" x2="259" y2="155.9"/></g><g class="bar-link"><title>Week51（12/15〜）
+日中 19.6℃ / 夜間 14.0℃ / DIF 5.6℃
+24H 16.3℃</title><rect class="bar-hit" x="261.0" y="14" width="15" height="190"/><rect class="bar-span" x="263" y="130.9" width="11" height="42.8" rx="2"/><rect class="cap-day" x="263" y="130.9" width="11" height="3" rx="1.5"/><rect class="cap-night" x="263" y="170.6" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="263" y1="155.8" x2="274" y2="155.8"/></g><g class="bar-link"><title>Week52（12/22〜）
+日中 19.0℃ / 夜間 13.5℃ / DIF 5.5℃
+24H 15.8℃</title><rect class="bar-hit" x="276.0" y="14" width="15" height="190"/><rect class="bar-span" x="278" y="135.3" width="11" height="41.8" rx="2"/><rect class="cap-day" x="278" y="135.3" width="11" height="3" rx="1.5"/><rect class="cap-night" x="278" y="174.1" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="278" y1="159.7" x2="289" y2="159.7"/></g><g class="bar-link"><title>Week53（12/29〜）
+日中 19.4℃ / 夜間 13.8℃ / DIF 5.6℃
+24H 16.1℃</title><rect class="bar-hit" x="291.0" y="14" width="15" height="190"/><rect class="bar-span" x="293" y="132.7" width="11" height="42.7" rx="2"/><rect class="cap-day" x="293" y="132.7" width="11" height="3" rx="1.5"/><rect class="cap-night" x="293" y="172.4" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="293" y1="157.6" x2="304" y2="157.6"/></g><g class="bar-link"><title>Week2（1/5〜）
+日中 19.5℃ / 夜間 13.9℃ / DIF 5.6℃
+24H 16.2℃</title><rect class="bar-hit" x="306.0" y="14" width="15" height="190"/><rect class="bar-span" x="308" y="131.9" width="11" height="42.6" rx="2"/><rect class="cap-day" x="308" y="131.9" width="11" height="3" rx="1.5"/><rect class="cap-night" x="308" y="171.6" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="308" y1="156.8" x2="319" y2="156.8"/></g><g class="bar-link"><title>Week3（1/12〜）
+日中 20.3℃ / 夜間 14.1℃ / DIF 6.2℃
+24H 16.7℃</title><rect class="bar-hit" x="321.0" y="14" width="15" height="190"/><rect class="bar-span" x="323" y="125.6" width="11" height="47.0" rx="2"/><rect class="cap-day" x="323" y="125.6" width="11" height="3" rx="1.5"/><rect class="cap-night" x="323" y="169.6" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="323" y1="153.0" x2="334" y2="153.0"/></g><g class="bar-link"><title>Week4（1/19〜）
+日中 19.4℃ / 夜間 13.7℃ / DIF 5.7℃
+24H 16.1℃</title><rect class="bar-hit" x="336.0" y="14" width="15" height="190"/><rect class="bar-span" x="338" y="132.2" width="11" height="43.5" rx="2"/><rect class="cap-day" x="338" y="132.2" width="11" height="3" rx="1.5"/><rect class="cap-night" x="338" y="172.7" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="338" y1="157.6" x2="349" y2="157.6"/></g><g class="bar-link"><title>Week5（1/26〜）
+日中 20.0℃ / 夜間 14.0℃ / DIF 5.9℃
+24H 16.7℃</title><rect class="bar-hit" x="351.0" y="14" width="15" height="190"/><rect class="bar-span" x="353" y="128.4" width="11" height="45.0" rx="2"/><rect class="cap-day" x="353" y="128.4" width="11" height="3" rx="1.5"/><rect class="cap-night" x="353" y="170.3" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="353" y1="153.0" x2="364" y2="153.0"/></g><g class="bar-link"><title>Week6（2/2〜）
+日中 19.6℃ / 夜間 14.6℃ / DIF 4.9℃
+24H 16.9℃</title><rect class="bar-hit" x="366.0" y="14" width="15" height="190"/><rect class="bar-span" x="368" y="131.2" width="11" height="37.5" rx="2"/><rect class="cap-day" x="368" y="131.2" width="11" height="3" rx="1.5"/><rect class="cap-night" x="368" y="165.7" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="368" y1="151.5" x2="379" y2="151.5"/></g><g class="bar-link"><title>Week7（2/9〜）
+日中 20.3℃ / 夜間 14.6℃ / DIF 5.7℃
+24H 17.2℃</title><rect class="bar-hit" x="381.0" y="14" width="15" height="190"/><rect class="bar-span" x="383" y="126.0" width="11" height="43.2" rx="2"/><rect class="cap-day" x="383" y="126.0" width="11" height="3" rx="1.5"/><rect class="cap-night" x="383" y="166.3" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="383" y1="149.4" x2="394" y2="149.4"/></g><g class="bar-link"><title>Week8（2/16〜）
+日中 20.7℃ / 夜間 15.0℃ / DIF 5.8℃
+24H 17.6℃</title><rect class="bar-hit" x="396.0" y="14" width="15" height="190"/><rect class="bar-span" x="398" y="122.5" width="11" height="43.8" rx="2"/><rect class="cap-day" x="398" y="122.5" width="11" height="3" rx="1.5"/><rect class="cap-night" x="398" y="163.3" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="398" y1="146.2" x2="409" y2="146.2"/></g><g class="bar-link"><title>Week9（2/23〜）
+日中 19.6℃ / 夜間 14.2℃ / DIF 5.4℃
+24H 16.7℃</title><rect class="bar-hit" x="411.0" y="14" width="15" height="190"/><rect class="bar-span" x="413" y="130.7" width="11" height="41.3" rx="2"/><rect class="cap-day" x="413" y="130.7" width="11" height="3" rx="1.5"/><rect class="cap-night" x="413" y="169.0" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="413" y1="153.1" x2="424" y2="153.1"/></g><g class="bar-link"><title>Week10（3/2〜）
+日中 20.1℃ / 夜間 14.3℃ / DIF 5.8℃
+24H 17.0℃</title><rect class="bar-hit" x="426.0" y="14" width="15" height="190"/><rect class="bar-span" x="428" y="127.0" width="11" height="44.3" rx="2"/><rect class="cap-day" x="428" y="127.0" width="11" height="3" rx="1.5"/><rect class="cap-night" x="428" y="168.3" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="428" y1="151.0" x2="439" y2="151.0"/></g><g class="bar-link"><title>Week11（3/9〜）
+日中 20.5℃ / 夜間 14.5℃ / DIF 6.0℃
+24H 17.4℃</title><rect class="bar-hit" x="441.0" y="14" width="15" height="190"/><rect class="bar-span" x="443" y="124.3" width="11" height="45.4" rx="2"/><rect class="cap-day" x="443" y="124.3" width="11" height="3" rx="1.5"/><rect class="cap-night" x="443" y="166.8" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="443" y1="147.5" x2="454" y2="147.5"/></g><g class="bar-link"><title>Week12（3/16〜）
+日中 20.2℃ / 夜間 14.7℃ / DIF 5.5℃
+24H 17.5℃</title><rect class="bar-hit" x="456.0" y="14" width="15" height="190"/><rect class="bar-span" x="458" y="126.4" width="11" height="41.5" rx="2"/><rect class="cap-day" x="458" y="126.4" width="11" height="3" rx="1.5"/><rect class="cap-night" x="458" y="164.9" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="458" y1="147.1" x2="469" y2="147.1"/></g><g class="bar-link"><title>Week13（3/23〜）
+日中 20.3℃ / 夜間 14.1℃ / DIF 6.1℃
+24H 17.2℃</title><rect class="bar-hit" x="471.0" y="14" width="15" height="190"/><rect class="bar-span" x="473" y="126.1" width="11" height="46.5" rx="2"/><rect class="cap-day" x="473" y="126.1" width="11" height="3" rx="1.5"/><rect class="cap-night" x="473" y="169.5" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="473" y1="149.3" x2="484" y2="149.3"/></g><g class="bar-link"><title>Week14（3/30〜）
+日中 19.6℃ / 夜間 14.4℃ / DIF 5.1℃
+24H 17.2℃</title><rect class="bar-hit" x="486.0" y="14" width="15" height="190"/><rect class="bar-span" x="488" y="131.4" width="11" height="39.0" rx="2"/><rect class="cap-day" x="488" y="131.4" width="11" height="3" rx="1.5"/><rect class="cap-night" x="488" y="167.4" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="488" y1="149.3" x2="499" y2="149.3"/></g><g class="bar-link"><title>Week15（4/6〜）
+日中 21.0℃ / 夜間 14.0℃ / DIF 7.0℃
+24H 17.7℃</title><rect class="bar-hit" x="501.0" y="14" width="15" height="190"/><rect class="bar-span" x="503" y="120.8" width="11" height="53.1" rx="2"/><rect class="cap-day" x="503" y="120.8" width="11" height="3" rx="1.5"/><rect class="cap-night" x="503" y="170.9" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="503" y1="145.1" x2="514" y2="145.1"/></g><g class="bar-link"><title>Week16（4/13〜）
+日中 22.0℃ / 夜間 13.8℃ / DIF 8.2℃
+24H 18.3℃</title><rect class="bar-hit" x="516.0" y="14" width="15" height="190"/><rect class="bar-span" x="518" y="112.8" width="11" height="62.2" rx="2"/><rect class="cap-day" x="518" y="112.8" width="11" height="3" rx="1.5"/><rect class="cap-night" x="518" y="172.0" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="518" y1="141.3" x2="529" y2="141.3"/></g><g class="bar-link"><title>Week17（4/20〜）
+日中 19.9℃ / 夜間 13.1℃ / DIF 6.8℃
+24H 17.0℃</title><rect class="bar-hit" x="531.0" y="14" width="15" height="190"/><rect class="bar-span" x="533" y="128.7" width="11" height="51.4" rx="2"/><rect class="cap-day" x="533" y="128.7" width="11" height="3" rx="1.5"/><rect class="cap-night" x="533" y="177.1" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="533" y1="150.8" x2="544" y2="150.8"/></g><g class="bar-link"><title>Week18（4/27〜）
+日中 19.0℃ / 夜間 14.1℃ / DIF 4.9℃
+24H 16.9℃</title><rect class="bar-hit" x="546.0" y="14" width="15" height="190"/><rect class="bar-span" x="548" y="136.0" width="11" height="37.1" rx="2"/><rect class="cap-day" x="548" y="136.0" width="11" height="3" rx="1.5"/><rect class="cap-night" x="548" y="170.0" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="548" y1="151.4" x2="559" y2="151.4"/></g><g class="bar-link"><title>Week19（5/4〜）
+日中 21.5℃ / 夜間 15.0℃ / DIF 6.5℃
+24H 18.8℃</title><rect class="bar-hit" x="561.0" y="14" width="15" height="190"/><rect class="bar-span" x="563" y="116.4" width="11" height="49.3" rx="2"/><rect class="cap-day" x="563" y="116.4" width="11" height="3" rx="1.5"/><rect class="cap-night" x="563" y="162.7" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="563" y1="137.0" x2="574" y2="137.0"/></g><g class="bar-link"><title>Week20（5/11〜）
+日中 23.1℃ / 夜間 15.2℃ / DIF 7.9℃
+24H 19.8℃</title><rect class="bar-hit" x="576.0" y="14" width="15" height="190"/><rect class="bar-span" x="578" y="104.5" width="11" height="60.0" rx="2"/><rect class="cap-day" x="578" y="104.5" width="11" height="3" rx="1.5"/><rect class="cap-night" x="578" y="161.5" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="578" y1="129.5" x2="589" y2="129.5"/></g><g class="bar-link"><title>Week21（5/18〜）
+日中 22.0℃ / 夜間 16.8℃ / DIF 5.2℃
+24H 19.8℃</title><rect class="bar-hit" x="591.0" y="14" width="15" height="190"/><rect class="bar-span" x="593" y="112.8" width="11" height="39.3" rx="2"/><rect class="cap-day" x="593" y="112.8" width="11" height="3" rx="1.5"/><rect class="cap-night" x="593" y="149.1" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="593" y1="129.2" x2="604" y2="129.2"/></g><g class="bar-link"><title>Week22（5/25〜）
+日中 25.8℃ / 夜間 19.9℃ / DIF 5.9℃
+24H 23.3℃</title><rect class="bar-hit" x="606.0" y="14" width="15" height="190"/><rect class="bar-span" x="608" y="84.0" width="11" height="45.1" rx="2"/><rect class="cap-day" x="608" y="84.0" width="11" height="3" rx="1.5"/><rect class="cap-night" x="608" y="126.0" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="608" y1="102.7" x2="619" y2="102.7"/></g><g class="bar-link"><title>Week23（6/1〜）
+日中 22.6℃ / 夜間 18.2℃ / DIF 4.3℃
+24H 20.8℃</title><rect class="bar-hit" x="621.0" y="14" width="15" height="190"/><rect class="bar-span" x="623" y="108.4" width="11" height="32.9" rx="2"/><rect class="cap-day" x="623" y="108.4" width="11" height="3" rx="1.5"/><rect class="cap-night" x="623" y="138.4" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="623" y1="122.2" x2="634" y2="122.2"/></g><g class="bar-link"><title>Week24（6/8〜）
+日中 23.3℃ / 夜間 19.1℃ / DIF 4.2℃
+24H 21.6℃</title><rect class="bar-hit" x="636.0" y="14" width="15" height="190"/><rect class="bar-span" x="638" y="102.9" width="11" height="32.3" rx="2"/><rect class="cap-day" x="638" y="102.9" width="11" height="3" rx="1.5"/><rect class="cap-night" x="638" y="132.2" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="638" y1="116.1" x2="649" y2="116.1"/></g><g class="bar-link"><title>Week25（6/15〜）
+日中 24.2℃ / 夜間 20.3℃ / DIF 3.9℃
+24H 22.7℃</title><rect class="bar-hit" x="651.0" y="14" width="15" height="190"/><rect class="bar-span" x="653" y="96.0" width="11" height="29.9" rx="2"/><rect class="cap-day" x="653" y="96.0" width="11" height="3" rx="1.5"/><rect class="cap-night" x="653" y="122.9" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="653" y1="107.2" x2="664" y2="107.2"/></g><g class="bar-link"><title>Week26（6/22〜）
+日中 23.6℃ / 夜間 20.4℃ / DIF 3.2℃
+24H 22.4℃</title><rect class="bar-hit" x="666.0" y="14" width="15" height="190"/><rect class="bar-span" x="668" y="100.7" width="11" height="24.4" rx="2"/><rect class="cap-day" x="668" y="100.7" width="11" height="3" rx="1.5"/><rect class="cap-night" x="668" y="122.1" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="668" y1="109.9" x2="679" y2="109.9"/></g><g class="bar-link"><title>Week27（6/29〜）
+日中 26.9℃ / 夜間 22.0℃ / DIF 5.0℃
+24H 25.1℃</title><rect class="bar-hit" x="681.0" y="14" width="15" height="190"/><rect class="bar-span" x="683" y="75.2" width="11" height="37.7" rx="2"/><rect class="cap-day" x="683" y="75.2" width="11" height="3" rx="1.5"/><rect class="cap-night" x="683" y="109.9" width="11" height="3" rx="1.5"/><line class="mark-24h" x1="683" y1="89.4" x2="694" y2="89.4"/></g><text class="wlabel" x="43.5" y="220" text-anchor="middle">36</text><text class="wdate" x="43.5" y="231" text-anchor="middle">9/1</text><text class="wlabel" x="103.5" y="220" text-anchor="middle">40</text><text class="wdate" x="103.5" y="231" text-anchor="middle">9/29</text><text class="wlabel" x="163.5" y="220" text-anchor="middle">44</text><text class="wdate" x="163.5" y="231" text-anchor="middle">10/27</text><text class="wlabel" x="223.5" y="220" text-anchor="middle">48</text><text class="wdate" x="223.5" y="231" text-anchor="middle">11/24</text><text class="wlabel" x="283.5" y="220" text-anchor="middle">52</text><text class="wdate" x="283.5" y="231" text-anchor="middle">12/22</text><text class="wlabel" x="343.5" y="220" text-anchor="middle">4</text><text class="wdate" x="343.5" y="231" text-anchor="middle">1/19</text><text class="wlabel" x="403.5" y="220" text-anchor="middle">8</text><text class="wdate" x="403.5" y="231" text-anchor="middle">2/16</text><text class="wlabel" x="463.5" y="220" text-anchor="middle">12</text><text class="wdate" x="463.5" y="231" text-anchor="middle">3/16</text><text class="wlabel" x="523.5" y="220" text-anchor="middle">16</text><text class="wdate" x="523.5" y="231" text-anchor="middle">4/13</text><text class="wlabel" x="583.5" y="220" text-anchor="middle">20</text><text class="wdate" x="583.5" y="231" text-anchor="middle">5/11</text><text class="wlabel" x="643.5" y="220" text-anchor="middle">24</text><text class="wdate" x="643.5" y="231" text-anchor="middle">6/8</text></svg></div>
+  <div class="legend">
+    <span><i class="d"></i>日中平均</span>
+    <span><i class="n"></i>夜間平均</span>
+    <span><i class="h"></i>24時間平均</span>
+    <span>縦軸は℃</span>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>シーズンの合計</h2>
+  <div class="stat-row">
+    <div class="stat"><b>44</b><span>記録のある週</span></div>
+    <div class="stat"><b>31,398</b><span>収穫量 kg/10a</span></div>
+    <div class="stat"><b>42.0</b><span>N 累計 kg/10a</span></div>
+    <div class="stat"><b>112.0</b><span>K 累計 kg/10a</span></div>
+    <div class="stat"><b>5.5</b><span>DIF 平均 ℃</span></div>
+    
+  </div>
+</section>
+
+
+
+
+<section class="panel">
+  <h2>環境データ</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>週</th><th>日中</th><th>夜間</th><th>DIF</th><th>24H</th>
+        <th>日射（内）</th><th>日射（実際）</th><th>日射（宇都宮）</th>
+      </tr></thead>
+      <tbody>
+      
+        <tr>
+          <td class="wk">Week36<span>9/1</span></td>
+          <td class="num day">30.43</td>
+          <td class="num night">25.12</td>
+          <td class="num">5.31</td>
+          <td class="num">28.00</td>
+          <td class="num">11.38</td>
+          <td class="num">16.26</td>
+          <td class="num">16.61</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week37<span>9/8</span></td>
+          <td class="num day">28.56</td>
+          <td class="num night">25.35</td>
+          <td class="num">3.20</td>
+          <td class="num">26.98</td>
+          <td class="num">7.31</td>
+          <td class="num">10.44</td>
+          <td class="num">10.63</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week38<span>9/15</span></td>
+          <td class="num day">27.70</td>
+          <td class="num night">23.51</td>
+          <td class="num">4.19</td>
+          <td class="num">25.61</td>
+          <td class="num">8.45</td>
+          <td class="num">12.08</td>
+          <td class="num">13.07</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week39<span>9/22</span></td>
+          <td class="num day">25.76</td>
+          <td class="num night">20.24</td>
+          <td class="num">5.51</td>
+          <td class="num">23.00</td>
+          <td class="num">10.44</td>
+          <td class="num">14.92</td>
+          <td class="num">15.44</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week40<span>9/29</span></td>
+          <td class="num day">24.28</td>
+          <td class="num night">19.90</td>
+          <td class="num">4.38</td>
+          <td class="num">22.09</td>
+          <td class="num">6.62</td>
+          <td class="num">9.45</td>
+          <td class="num">11.27</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week41<span>10/6</span></td>
+          <td class="num day">22.05</td>
+          <td class="num night">18.82</td>
+          <td class="num">3.23</td>
+          <td class="num">20.44</td>
+          <td class="num">6.02</td>
+          <td class="num">8.60</td>
+          <td class="num">10.67</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week42<span>10/13</span></td>
+          <td class="num day">21.45</td>
+          <td class="num night">17.40</td>
+          <td class="num">4.05</td>
+          <td class="num">19.43</td>
+          <td class="num">5.23</td>
+          <td class="num">7.47</td>
+          <td class="num">8.27</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week43<span>10/20</span></td>
+          <td class="num day">19.33</td>
+          <td class="num night">15.22</td>
+          <td class="num">4.11</td>
+          <td class="num">17.10</td>
+          <td class="num">4.24</td>
+          <td class="num">6.06</td>
+          <td class="num">7.47</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week44<span>10/27</span></td>
+          <td class="num day">21.34</td>
+          <td class="num night">14.72</td>
+          <td class="num">6.62</td>
+          <td class="num">17.57</td>
+          <td class="num">7.23</td>
+          <td class="num">10.32</td>
+          <td class="num">11.80</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week45<span>11/3</span></td>
+          <td class="num day">20.35</td>
+          <td class="num night">13.75</td>
+          <td class="num">6.61</td>
+          <td class="num">16.50</td>
+          <td class="num">6.59</td>
+          <td class="num">9.41</td>
+          <td class="num">10.11</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week46<span>11/10</span></td>
+          <td class="num day">20.59</td>
+          <td class="num night">13.64</td>
+          <td class="num">6.95</td>
+          <td class="num">16.54</td>
+          <td class="num">6.97</td>
+          <td class="num">9.96</td>
+          <td class="num">11.45</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week47<span>11/17</span></td>
+          <td class="num day">20.23</td>
+          <td class="num night">13.25</td>
+          <td class="num">6.98</td>
+          <td class="num">16.16</td>
+          <td class="num">6.82</td>
+          <td class="num">9.74</td>
+          <td class="num">11.07</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week48<span>11/24</span></td>
+          <td class="num day">19.87</td>
+          <td class="num night">13.37</td>
+          <td class="num">6.50</td>
+          <td class="num">16.08</td>
+          <td class="num">5.66</td>
+          <td class="num">8.08</td>
+          <td class="num">9.36</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week49<span>12/1</span></td>
+          <td class="num day">19.41</td>
+          <td class="num night">13.51</td>
+          <td class="num">5.91</td>
+          <td class="num">15.97</td>
+          <td class="num">5.80</td>
+          <td class="num">8.29</td>
+          <td class="num">8.88</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week50<span>12/8</span></td>
+          <td class="num day">19.61</td>
+          <td class="num night">14.00</td>
+          <td class="num">5.61</td>
+          <td class="num">16.33</td>
+          <td class="num">5.86</td>
+          <td class="num">8.38</td>
+          <td class="num">9.40</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week51<span>12/15</span></td>
+          <td class="num day">19.62</td>
+          <td class="num night">14.00</td>
+          <td class="num">5.63</td>
+          <td class="num">16.34</td>
+          <td class="num">5.72</td>
+          <td class="num">8.18</td>
+          <td class="num">9.05</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week52<span>12/22</span></td>
+          <td class="num day">19.04</td>
+          <td class="num night">13.54</td>
+          <td class="num">5.50</td>
+          <td class="num">15.83</td>
+          <td class="num">5.51</td>
+          <td class="num">7.88</td>
+          <td class="num">8.06</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week53<span>12/29</span></td>
+          <td class="num day">19.39</td>
+          <td class="num night">13.77</td>
+          <td class="num">5.62</td>
+          <td class="num">16.11</td>
+          <td class="num">6.67</td>
+          <td class="num">9.52</td>
+          <td class="num">10.24</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week2<span>1/5</span></td>
+          <td class="num day">19.49</td>
+          <td class="num night">13.87</td>
+          <td class="num">5.61</td>
+          <td class="num">16.21</td>
+          <td class="num">6.68</td>
+          <td class="num">9.55</td>
+          <td class="num">9.95</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week3<span>1/12</span></td>
+          <td class="num day">20.32</td>
+          <td class="num night">14.13</td>
+          <td class="num">6.19</td>
+          <td class="num">16.71</td>
+          <td class="num">7.71</td>
+          <td class="num">11.02</td>
+          <td class="num">11.88</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week4<span>1/19</span></td>
+          <td class="num day">19.45</td>
+          <td class="num night">13.72</td>
+          <td class="num">5.73</td>
+          <td class="num">16.11</td>
+          <td class="num">7.53</td>
+          <td class="num">10.75</td>
+          <td class="num">11.37</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week5<span>1/26</span></td>
+          <td class="num day">19.95</td>
+          <td class="num night">14.04</td>
+          <td class="num">5.91</td>
+          <td class="num">16.71</td>
+          <td class="num">8.71</td>
+          <td class="num">12.44</td>
+          <td class="num">13.35</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week6<span>2/2</span></td>
+          <td class="num day">19.58</td>
+          <td class="num night">14.65</td>
+          <td class="num">4.93</td>
+          <td class="num">16.91</td>
+          <td class="num">7.82</td>
+          <td class="num">11.17</td>
+          <td class="num">12.00</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week7<span>2/9</span></td>
+          <td class="num day">20.26</td>
+          <td class="num night">14.57</td>
+          <td class="num">5.69</td>
+          <td class="num">17.18</td>
+          <td class="num">8.84</td>
+          <td class="num">12.63</td>
+          <td class="num">13.61</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week8<span>2/16</span></td>
+          <td class="num day">20.73</td>
+          <td class="num night">14.97</td>
+          <td class="num">5.76</td>
+          <td class="num">17.61</td>
+          <td class="num">9.51</td>
+          <td class="num">13.58</td>
+          <td class="num">15.23</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week9<span>2/23</span></td>
+          <td class="num day">19.64</td>
+          <td class="num night">14.21</td>
+          <td class="num">5.43</td>
+          <td class="num">16.70</td>
+          <td class="num">7.18</td>
+          <td class="num">10.26</td>
+          <td class="num">11.23</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week10<span>3/2</span></td>
+          <td class="num day">20.13</td>
+          <td class="num night">14.30</td>
+          <td class="num">5.83</td>
+          <td class="num">16.97</td>
+          <td class="num">9.46</td>
+          <td class="num">13.51</td>
+          <td class="num">13.90</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week11<span>3/9</span></td>
+          <td class="num day">20.48</td>
+          <td class="num night">14.51</td>
+          <td class="num">5.98</td>
+          <td class="num">17.43</td>
+          <td class="num">12.93</td>
+          <td class="num">18.48</td>
+          <td class="num">18.40</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week12<span>3/16</span></td>
+          <td class="num day">20.21</td>
+          <td class="num night">14.75</td>
+          <td class="num">5.46</td>
+          <td class="num">17.48</td>
+          <td class="num">10.50</td>
+          <td class="num">15.00</td>
+          <td class="num">14.79</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week13<span>3/23</span></td>
+          <td class="num day">20.25</td>
+          <td class="num night">14.14</td>
+          <td class="num">6.11</td>
+          <td class="num">17.20</td>
+          <td class="num">10.41</td>
+          <td class="num">14.88</td>
+          <td class="num">15.05</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week14<span>3/30</span></td>
+          <td class="num day">19.56</td>
+          <td class="num night">14.42</td>
+          <td class="num">5.14</td>
+          <td class="num">17.20</td>
+          <td class="num">7.52</td>
+          <td class="num">10.74</td>
+          <td class="num">11.38</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week15<span>4/6</span></td>
+          <td class="num day">20.95</td>
+          <td class="num night">13.96</td>
+          <td class="num">6.99</td>
+          <td class="num">17.75</td>
+          <td class="num">12.37</td>
+          <td class="num">17.68</td>
+          <td class="num">17.64</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week16<span>4/13</span></td>
+          <td class="num day">22.01</td>
+          <td class="num night">13.82</td>
+          <td class="num">8.19</td>
+          <td class="num">18.25</td>
+          <td class="num">14.58</td>
+          <td class="num">20.83</td>
+          <td class="num">21.43</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week17<span>4/20</span></td>
+          <td class="num day">19.90</td>
+          <td class="num night">13.15</td>
+          <td class="num">6.76</td>
+          <td class="num">17.00</td>
+          <td class="num">13.64</td>
+          <td class="num">19.49</td>
+          <td class="num">19.56</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week18<span>4/27</span></td>
+          <td class="num day">18.95</td>
+          <td class="num night">14.07</td>
+          <td class="num">4.88</td>
+          <td class="num">16.92</td>
+          <td class="num">8.84</td>
+          <td class="num">12.63</td>
+          <td class="num">12.90</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week19<span>5/4</span></td>
+          <td class="num day">21.52</td>
+          <td class="num night">15.04</td>
+          <td class="num">6.48</td>
+          <td class="num">18.82</td>
+          <td class="num">15.37</td>
+          <td class="num">21.95</td>
+          <td class="num">21.58</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week20<span>5/11</span></td>
+          <td class="num day">23.09</td>
+          <td class="num night">15.19</td>
+          <td class="num">7.90</td>
+          <td class="num">19.80</td>
+          <td class="num">16.70</td>
+          <td class="num">23.85</td>
+          <td class="num">24.80</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week21<span>5/18</span></td>
+          <td class="num day">22.00</td>
+          <td class="num night">16.83</td>
+          <td class="num">5.17</td>
+          <td class="num">19.84</td>
+          <td class="num">11.78</td>
+          <td class="num">16.83</td>
+          <td class="num">18.07</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week22<span>5/25</span></td>
+          <td class="num day">25.80</td>
+          <td class="num night">19.87</td>
+          <td class="num">5.93</td>
+          <td class="num">23.32</td>
+          <td class="num">16.59</td>
+          <td class="num">23.69</td>
+          <td class="num">22.81</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week23<span>6/1</span></td>
+          <td class="num day">22.57</td>
+          <td class="num night">18.24</td>
+          <td class="num">4.33</td>
+          <td class="num">20.77</td>
+          <td class="num">12.58</td>
+          <td class="num">17.97</td>
+          <td class="num">16.84</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week24<span>6/8</span></td>
+          <td class="num day">23.30</td>
+          <td class="num night">19.05</td>
+          <td class="num">4.25</td>
+          <td class="num">21.56</td>
+          <td class="num">12.99</td>
+          <td class="num">18.56</td>
+          <td class="num">16.88</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week25<span>6/15</span></td>
+          <td class="num day">24.21</td>
+          <td class="num night">20.28</td>
+          <td class="num">3.93</td>
+          <td class="num">22.74</td>
+          <td class="num">12.71</td>
+          <td class="num">18.16</td>
+          <td class="num">17.45</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week26<span>6/22</span></td>
+          <td class="num day">23.59</td>
+          <td class="num night">20.38</td>
+          <td class="num">3.21</td>
+          <td class="num">22.38</td>
+          <td class="num">7.75</td>
+          <td class="num">11.07</td>
+          <td class="num">10.76</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week27<span>6/29</span></td>
+          <td class="num day">26.94</td>
+          <td class="num night">21.99</td>
+          <td class="num">4.96</td>
+          <td class="num">25.08</td>
+          <td class="num">15.51</td>
+          <td class="num">22.16</td>
+          <td class="num">—</td>
+        </tr>
+      
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>管理データ</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>週</th><th>潅水量 L/㎡</th><th>L/MJ㎡</th>
+        <th>N kg/10a</th><th>K kg/10a</th><th>N累計</th><th>K累計</th>
+        <th>収穫量 kg/10a</th><th>収穫量累計</th><th>N充足率</th>
+      </tr></thead>
+      <tbody>
+      
+        <tr>
+          <td class="wk">Week36</td>
+          <td class="num">0.34</td>
+          <td class="num">0.21</td>
+          <td class="num">0.160</td>
+          <td class="num">0.479</td>
+          <td class="num">0.16</td>
+          <td class="num">0.48</td>
+          <td class="num">—</td>
+          <td class="num">0</td>
+          <td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week37</td>
+          <td class="num">0.41</td>
+          <td class="num">0.40</td>
+          <td class="num">0.201</td>
+          <td class="num">0.603</td>
+          <td class="num">0.36</td>
+          <td class="num">1.08</td>
+          <td class="num">—</td>
+          <td class="num">0</td>
+          <td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week38</td>
+          <td class="num">1.31</td>
+          <td class="num">1.08</td>
+          <td class="num">0.575</td>
+          <td class="num">1.724</td>
+          <td class="num">0.94</td>
+          <td class="num">2.81</td>
+          <td class="num">—</td>
+          <td class="num">0</td>
+          <td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week39</td>
+          <td class="num">1.83</td>
+          <td class="num">1.22</td>
+          <td class="num">0.846</td>
+          <td class="num">2.538</td>
+          <td class="num">1.78</td>
+          <td class="num">5.34</td>
+          <td class="num">—</td>
+          <td class="num">0</td>
+          <td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week40</td>
+          <td class="num">1.28</td>
+          <td class="num">1.35</td>
+          <td class="num">0.611</td>
+          <td class="num">1.833</td>
+          <td class="num">2.39</td>
+          <td class="num">7.18</td>
+          <td class="num">0.0</td>
+          <td class="num">0</td>
+          <td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week41</td>
+          <td class="num">1.24</td>
+          <td class="num">1.44</td>
+          <td class="num">0.614</td>
+          <td class="num">1.843</td>
+          <td class="num">3.01</td>
+          <td class="num">9.02</td>
+          <td class="num">0.0</td>
+          <td class="num">0</td>
+          <td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week42</td>
+          <td class="num">1.16</td>
+          <td class="num">1.55</td>
+          <td class="num">0.643</td>
+          <td class="num">1.928</td>
+          <td class="num">3.65</td>
+          <td class="num">10.95</td>
+          <td class="num">138.3</td>
+          <td class="num">138</td>
+          <td class="num">1,099%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week43</td>
+          <td class="num">0.74</td>
+          <td class="num">1.22</td>
+          <td class="num">0.487</td>
+          <td class="num">1.462</td>
+          <td class="num">4.14</td>
+          <td class="num">12.41</td>
+          <td class="num">369.2</td>
+          <td class="num">508</td>
+          <td class="num">340%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week44</td>
+          <td class="num">1.70</td>
+          <td class="num">1.65</td>
+          <td class="num">1.148</td>
+          <td class="num">3.445</td>
+          <td class="num">5.29</td>
+          <td class="num">15.86</td>
+          <td class="num">546.4</td>
+          <td class="num">1,054</td>
+          <td class="num">209%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week45</td>
+          <td class="num">1.48</td>
+          <td class="num">1.57</td>
+          <td class="num">0.995</td>
+          <td class="num">2.984</td>
+          <td class="num">6.28</td>
+          <td class="num">18.84</td>
+          <td class="num">315.4</td>
+          <td class="num">1,369</td>
+          <td class="num">191%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week46</td>
+          <td class="num">2.03</td>
+          <td class="num">2.03</td>
+          <td class="num">1.351</td>
+          <td class="num">4.052</td>
+          <td class="num">7.63</td>
+          <td class="num">22.89</td>
+          <td class="num">329.5</td>
+          <td class="num">1,699</td>
+          <td class="num">187%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week47</td>
+          <td class="num">1.77</td>
+          <td class="num">1.82</td>
+          <td class="num">1.208</td>
+          <td class="num">3.624</td>
+          <td class="num">8.84</td>
+          <td class="num">26.52</td>
+          <td class="num">580.4</td>
+          <td class="num">2,279</td>
+          <td class="num">162%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week48</td>
+          <td class="num">1.27</td>
+          <td class="num">1.57</td>
+          <td class="num">0.995</td>
+          <td class="num">2.984</td>
+          <td class="num">9.83</td>
+          <td class="num">29.50</td>
+          <td class="num">443.1</td>
+          <td class="num">2,722</td>
+          <td class="num">151%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week49</td>
+          <td class="num">1.15</td>
+          <td class="num">1.39</td>
+          <td class="num">1.056</td>
+          <td class="num">3.167</td>
+          <td class="num">10.89</td>
+          <td class="num">32.67</td>
+          <td class="num">477.2</td>
+          <td class="num">3,200</td>
+          <td class="num">142%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week50</td>
+          <td class="num">1.06</td>
+          <td class="num">1.26</td>
+          <td class="num">1.049</td>
+          <td class="num">3.147</td>
+          <td class="num">11.94</td>
+          <td class="num">35.81</td>
+          <td class="num">492.6</td>
+          <td class="num">3,692</td>
+          <td class="num">135%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week51</td>
+          <td class="num">1.06</td>
+          <td class="num">1.29</td>
+          <td class="num">1.049</td>
+          <td class="num">3.147</td>
+          <td class="num">12.99</td>
+          <td class="num">38.96</td>
+          <td class="num">478.0</td>
+          <td class="num">4,170</td>
+          <td class="num">130%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week52</td>
+          <td class="num">1.11</td>
+          <td class="num">1.41</td>
+          <td class="num">1.119</td>
+          <td class="num">3.357</td>
+          <td class="num">14.11</td>
+          <td class="num">42.32</td>
+          <td class="num">566.5</td>
+          <td class="num">4,737</td>
+          <td class="num">124%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week53</td>
+          <td class="num">1.23</td>
+          <td class="num">1.30</td>
+          <td class="num">1.152</td>
+          <td class="num">3.457</td>
+          <td class="num">15.26</td>
+          <td class="num">45.77</td>
+          <td class="num">619.5</td>
+          <td class="num">5,356</td>
+          <td class="num">119%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week2</td>
+          <td class="num">1.49</td>
+          <td class="num">1.56</td>
+          <td class="num">1.260</td>
+          <td class="num">3.781</td>
+          <td class="num">16.52</td>
+          <td class="num">49.56</td>
+          <td class="num">651.7</td>
+          <td class="num">6,008</td>
+          <td class="num">115%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week3</td>
+          <td class="num">1.79</td>
+          <td class="num">1.62</td>
+          <td class="num">1.495</td>
+          <td class="num">4.485</td>
+          <td class="num">18.01</td>
+          <td class="num">54.04</td>
+          <td class="num">433.0</td>
+          <td class="num">6,441</td>
+          <td class="num">117%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week4</td>
+          <td class="num">1.80</td>
+          <td class="num">1.68</td>
+          <td class="num">1.203</td>
+          <td class="num">3.609</td>
+          <td class="num">19.22</td>
+          <td class="num">57.65</td>
+          <td class="num">436.9</td>
+          <td class="num">6,878</td>
+          <td class="num">116%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week5</td>
+          <td class="num">2.66</td>
+          <td class="num">2.14</td>
+          <td class="num">1.682</td>
+          <td class="num">5.045</td>
+          <td class="num">20.90</td>
+          <td class="num">62.69</td>
+          <td class="num">513.1</td>
+          <td class="num">7,391</td>
+          <td class="num">118%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week6</td>
+          <td class="num">1.91</td>
+          <td class="num">1.71</td>
+          <td class="num">1.201</td>
+          <td class="num">3.603</td>
+          <td class="num">22.10</td>
+          <td class="num">66.30</td>
+          <td class="num">598.4</td>
+          <td class="num">7,989</td>
+          <td class="num">115%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week7</td>
+          <td class="num">2.55</td>
+          <td class="num">2.02</td>
+          <td class="num">1.441</td>
+          <td class="num">4.324</td>
+          <td class="num">23.54</td>
+          <td class="num">70.62</td>
+          <td class="num">706.9</td>
+          <td class="num">8,696</td>
+          <td class="num">113%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week8</td>
+          <td class="num">2.92</td>
+          <td class="num">2.15</td>
+          <td class="num">1.467</td>
+          <td class="num">4.400</td>
+          <td class="num">25.01</td>
+          <td class="num">75.02</td>
+          <td class="num">720.4</td>
+          <td class="num">9,417</td>
+          <td class="num">111%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week9</td>
+          <td class="num">2.35</td>
+          <td class="num">2.29</td>
+          <td class="num">0.959</td>
+          <td class="num">2.307</td>
+          <td class="num">25.97</td>
+          <td class="num">77.33</td>
+          <td class="num">695.6</td>
+          <td class="num">10,112</td>
+          <td class="num">107%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week10</td>
+          <td class="num">2.73</td>
+          <td class="num">2.02</td>
+          <td class="num">0.971</td>
+          <td class="num">1.943</td>
+          <td class="num">26.94</td>
+          <td class="num">79.27</td>
+          <td class="num">618.3</td>
+          <td class="num">10,731</td>
+          <td class="num">105%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week11</td>
+          <td class="num">3.52</td>
+          <td class="num">1.90</td>
+          <td class="num">1.063</td>
+          <td class="num">2.125</td>
+          <td class="num">28.00</td>
+          <td class="num">81.40</td>
+          <td class="num">621.7</td>
+          <td class="num">11,352</td>
+          <td class="num">103%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week12</td>
+          <td class="num">3.38</td>
+          <td class="num">2.25</td>
+          <td class="num">0.876</td>
+          <td class="num">1.752</td>
+          <td class="num">28.88</td>
+          <td class="num">83.15</td>
+          <td class="num">765.3</td>
+          <td class="num">12,118</td>
+          <td class="num">99%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week13</td>
+          <td class="num">3.58</td>
+          <td class="num">2.40</td>
+          <td class="num">0.942</td>
+          <td class="num">1.884</td>
+          <td class="num">29.82</td>
+          <td class="num">85.03</td>
+          <td class="num">710.4</td>
+          <td class="num">12,828</td>
+          <td class="num">97%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week14</td>
+          <td class="num">2.89</td>
+          <td class="num">2.70</td>
+          <td class="num">0.697</td>
+          <td class="num">1.393</td>
+          <td class="num">30.51</td>
+          <td class="num">86.43</td>
+          <td class="num">1,134.3</td>
+          <td class="num">13,962</td>
+          <td class="num">91%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week15</td>
+          <td class="num">5.34</td>
+          <td class="num">3.02</td>
+          <td class="num">1.349</td>
+          <td class="num">2.698</td>
+          <td class="num">31.86</td>
+          <td class="num">89.12</td>
+          <td class="num">817.5</td>
+          <td class="num">14,780</td>
+          <td class="num">90%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week16</td>
+          <td class="num">7.37</td>
+          <td class="num">3.54</td>
+          <td class="num">1.335</td>
+          <td class="num">2.670</td>
+          <td class="num">33.20</td>
+          <td class="num">91.79</td>
+          <td class="num">1,488.7</td>
+          <td class="num">16,268</td>
+          <td class="num">85%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week17</td>
+          <td class="num">5.76</td>
+          <td class="num">2.96</td>
+          <td class="num">0.871</td>
+          <td class="num">1.741</td>
+          <td class="num">34.07</td>
+          <td class="num">93.53</td>
+          <td class="num">713.2</td>
+          <td class="num">16,982</td>
+          <td class="num">84%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week18</td>
+          <td class="num">3.63</td>
+          <td class="num">2.88</td>
+          <td class="num">0.813</td>
+          <td class="num">1.625</td>
+          <td class="num">34.88</td>
+          <td class="num">95.16</td>
+          <td class="num">957.9</td>
+          <td class="num">17,940</td>
+          <td class="num">81%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week19</td>
+          <td class="num">8.54</td>
+          <td class="num">3.89</td>
+          <td class="num">1.219</td>
+          <td class="num">2.438</td>
+          <td class="num">36.10</td>
+          <td class="num">97.60</td>
+          <td class="num">872.7</td>
+          <td class="num">18,812</td>
+          <td class="num">80%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week20</td>
+          <td class="num">9.35</td>
+          <td class="num">3.92</td>
+          <td class="num">1.182</td>
+          <td class="num">2.364</td>
+          <td class="num">37.28</td>
+          <td class="num">99.96</td>
+          <td class="num">1,628.6</td>
+          <td class="num">20,441</td>
+          <td class="num">76%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week21</td>
+          <td class="num">5.28</td>
+          <td class="num">3.14</td>
+          <td class="num">0.646</td>
+          <td class="num">1.292</td>
+          <td class="num">37.93</td>
+          <td class="num">101.25</td>
+          <td class="num">1,081.0</td>
+          <td class="num">21,522</td>
+          <td class="num">73%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week22</td>
+          <td class="num">8.90</td>
+          <td class="num">3.76</td>
+          <td class="num">1.242</td>
+          <td class="num">2.484</td>
+          <td class="num">39.17</td>
+          <td class="num">103.74</td>
+          <td class="num">2,092.1</td>
+          <td class="num">23,614</td>
+          <td class="num">69%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week23</td>
+          <td class="num">5.61</td>
+          <td class="num">3.12</td>
+          <td class="num">0.710</td>
+          <td class="num">1.920</td>
+          <td class="num">39.88</td>
+          <td class="num">105.66</td>
+          <td class="num">1,799.0</td>
+          <td class="num">25,413</td>
+          <td class="num">65%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week24</td>
+          <td class="num">5.60</td>
+          <td class="num">3.02</td>
+          <td class="num">0.713</td>
+          <td class="num">2.140</td>
+          <td class="num">40.59</td>
+          <td class="num">107.80</td>
+          <td class="num">1,316.3</td>
+          <td class="num">26,729</td>
+          <td class="num">63%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week25</td>
+          <td class="num">4.95</td>
+          <td class="num">2.72</td>
+          <td class="num">0.629</td>
+          <td class="num">1.888</td>
+          <td class="num">41.22</td>
+          <td class="num">109.68</td>
+          <td class="num">1,220.3</td>
+          <td class="num">27,949</td>
+          <td class="num">61%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week26</td>
+          <td class="num">3.96</td>
+          <td class="num">3.58</td>
+          <td class="num">0.587</td>
+          <td class="num">1.762</td>
+          <td class="num">41.81</td>
+          <td class="num">111.45</td>
+          <td class="num">2,165.5</td>
+          <td class="num">30,115</td>
+          <td class="num">58%</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week27</td>
+          <td class="num">5.93</td>
+          <td class="num">2.68</td>
+          <td class="num">0.168</td>
+          <td class="num">0.503</td>
+          <td class="num">41.98</td>
+          <td class="num">111.95</td>
+          <td class="num">1,282.8</td>
+          <td class="num">31,398</td>
+          <td class="num">56%</td>
+        </tr>
+      
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>生育調査</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>週</th><th>伸長量</th><th>茎径</th><th>葉の数</th><th>総着果数</th><th>開花位置の高さ</th><th>開花段</th><th>収穫段数</th><th>花色</th><th>栽植密度</th>
+      </tr></thead>
+      <tbody>
+      
+        <tr>
+          <td class="wk">Week36</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week37</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week38</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week39</td>
+          <td class="num">—</td><td class="num">2.7</td><td class="num">10.2</td><td class="num">5.2</td><td class="num">5.7</td><td class="num">3.0</td><td class="num">—</td><td class="num">1.0</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week40</td>
+          <td class="num">18.3</td><td class="num">3.8</td><td class="num">9.0</td><td class="num">8.5</td><td class="num">5.4</td><td class="num">3.7</td><td class="num">—</td><td class="num">1.0</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week41</td>
+          <td class="num">20.5</td><td class="num">3.3</td><td class="num">9.0</td><td class="num">10.0</td><td class="num">7.5</td><td class="num">4.0</td><td class="num">—</td><td class="num">—</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week42</td>
+          <td class="num">12.2</td><td class="num">3.1</td><td class="num">7.0</td><td class="num">11.0</td><td class="num">7.7</td><td class="num">5.0</td><td class="num">—</td><td class="num">—</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week43</td>
+          <td class="num">16.5</td><td class="num">3.9</td><td class="num">9.0</td><td class="num">12.0</td><td class="num">7.7</td><td class="num">5.3</td><td class="num">1.0</td><td class="num">—</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week44</td>
+          <td class="num">12.8</td><td class="num">3.5</td><td class="num">7.0</td><td class="num">11.8</td><td class="num">6.2</td><td class="num">6.0</td><td class="num">1.0</td><td class="num">1.0</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week45</td>
+          <td class="num">15.5</td><td class="num">4.6</td><td class="num">6.3</td><td class="num">13.0</td><td class="num">8.1</td><td class="num">6.3</td><td class="num">1.8</td><td class="num">-1.0</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week46</td>
+          <td class="num">11.2</td><td class="num">4.1</td><td class="num">7.3</td><td class="num">12.8</td><td class="num">9.2</td><td class="num">7.0</td><td class="num">2.0</td><td class="num">—</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week47</td>
+          <td class="num">13.4</td><td class="num">4.3</td><td class="num">6.7</td><td class="num">13.8</td><td class="num">11.0</td><td class="num">7.3</td><td class="num">2.0</td><td class="num">-1.0</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week48</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week49</td>
+          <td class="num">21.8</td><td class="num">4.1</td><td class="num">7.0</td><td class="num">12.8</td><td class="num">9.1</td><td class="num">8.7</td><td class="num">3.2</td><td class="num">—</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week50</td>
+          <td class="num">14.3</td><td class="num">4.2</td><td class="num">6.0</td><td class="num">13.7</td><td class="num">9.0</td><td class="num">9.3</td><td class="num">3.7</td><td class="num">—</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week51</td>
+          <td class="num">12.5</td><td class="num">4.0</td><td class="num">7.5</td><td class="num">13.3</td><td class="num">12.3</td><td class="num">9.8</td><td class="num">4.0</td><td class="num">1.0</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week52</td>
+          <td class="num">12.6</td><td class="num">4.1</td><td class="num">8.3</td><td class="num">31.3</td><td class="num">7.7</td><td class="num">10.3</td><td class="num">4.5</td><td class="num">-1.0</td><td class="num">2.2</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week53</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week2</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week3</td>
+          <td class="num">43.8</td><td class="num">3.7</td><td class="num">9.2</td><td class="num">15.0</td><td class="num">6.4</td><td class="num">12.3</td><td class="num">6.3</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week4</td>
+          <td class="num">12.1</td><td class="num">3.7</td><td class="num">7.2</td><td class="num">15.7</td><td class="num">10.0</td><td class="num">12.7</td><td class="num">6.5</td><td class="num">—</td><td class="num">2.7</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week5</td>
+          <td class="num">13.2</td><td class="num">4.0</td><td class="num">8.7</td><td class="num">16.2</td><td class="num">9.4</td><td class="num">13.2</td><td class="num">7.0</td><td class="num">—</td><td class="num">2.7</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week6</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week7</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week8</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week9</td>
+          <td class="num">—</td><td class="num">3.6</td><td class="num">8.8</td><td class="num">19.8</td><td class="num">10.3</td><td class="num">15.7</td><td class="num">9.5</td><td class="num">-1.0</td><td class="num">2.7</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week10</td>
+          <td class="num">—</td><td class="num">3.8</td><td class="num">8.0</td><td class="num">17.5</td><td class="num">6.1</td><td class="num">16.5</td><td class="num">10.2</td><td class="num">1.0</td><td class="num">3.3</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week11</td>
+          <td class="num">—</td><td class="num">3.5</td><td class="num">7.5</td><td class="num">19.8</td><td class="num">9.2</td><td class="num">16.7</td><td class="num">10.5</td><td class="num">—</td><td class="num">3.3</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week12</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week13</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week14</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week15</td>
+          <td class="num">—</td><td class="num">3.3</td><td class="num">11.7</td><td class="num">22.3</td><td class="num">7.6</td><td class="num">19.3</td><td class="num">12.8</td><td class="num">1.0</td><td class="num">3.3</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week16</td>
+          <td class="num">—</td><td class="num">3.4</td><td class="num">11.3</td><td class="num">23.0</td><td class="num">6.3</td><td class="num">19.8</td><td class="num">13.3</td><td class="num">—</td><td class="num">3.3</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week17</td>
+          <td class="num">—</td><td class="num">3.3</td><td class="num">13.3</td><td class="num">21.8</td><td class="num">6.9</td><td class="num">20.7</td><td class="num">14.7</td><td class="num">1.0</td><td class="num">3.3</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week18</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week19</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week20</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week21</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week22</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week23</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week24</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week25</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week26</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+        <tr>
+          <td class="wk">Week27</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+
+
+<section class="panel">
+  <h2>栽培・制御の記録</h2>
+  <p class="sub">週を押すと本文が開きます。</p>
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+    <details>
+      <summary>
+        <b>Week48</b>
+        <span>11/24〜11/30</span>
+        <em>日中 19.9℃ ／ 夜間 13.4℃</em>
+      </summary>
+      <div class="note-body">
+        
+        <h4>その他</h4><p>℃
+HP
+HK
+グロウ
+重油コスト</p>
+        
+        
+        
+      </div>
+    </details>
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+    
+    
+    
+  
+</section>
+
+<section class="panel">
+  <h2>この書き出しについて</h2>
+  <div class="meta">
+    <span><b>作成</b> 2026年8月12日 13:22</span>
+    <span><b>作業記録</b> 作業記録/2027作業記録.xlsx</span><span><b>センサーCSV</b> 10ファイル（4週記録東_202509.csv 〜 4週記録東_202606.csv）</span><span><b>日の出日の入</b> 日の出日の入 シート</span><span><b>収量記録</b> バックアップ/2027収量記録_20260810_150601.xlsx</span>
+  </div>
+  <p class="printhint" style="margin-top:10px">このファイルは単独で開けます。Dropbox に置けばスマホからそのまま閲覧できます。</p>
+</section>
+
+</main>
+</body>
+</html>
