@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>栽培記録 中央 2027シーズン</title>
+<style>
+:root {
+  --paper: #edf1ec;
+  --panel: #ffffff;
+  --panel-sunk: #f5f8f4;
+  --line: #d3dcd2;
+  --line-soft: #e4ebe3;
+  --ink: #16241c;
+  --ink-soft: #5c6b60;
+  --ink-faint: #8b968d;
+  --day: #c2610f;
+  --night: #2c6e7f;
+  --leaf: #1f5c3d;
+  --alert: #9a3412;
+  --alert-bg: #fdf3ec;
+
+  --serif: &#34;Hiragino Mincho ProN&#34;, &#34;Yu Mincho&#34;, YuMincho, &#34;Noto Serif JP&#34;, &#34;MS PMincho&#34;, serif;
+  --sans: &#34;Hiragino Sans&#34;, &#34;Yu Gothic UI&#34;, &#34;Yu Gothic&#34;, YuGothic, &#34;Noto Sans JP&#34;, Meiryo, sans-serif;
+  --mono: ui-monospace, &#34;SF Mono&#34;, Menlo, Consolas, &#34;Roboto Mono&#34;, monospace;
+
+  --r: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--leaf); }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px 72px; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 20px;
+}
+.brand {
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+.brand small {
+  display: block;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+}
+.topbar form { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+
+/* ---------- controls ---------- */
+select, input[type=&#34;text&#34;], input[type=&#34;number&#34;], textarea {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 6px 9px;
+}
+textarea { width: 100%; resize: vertical; line-height: 1.7; }
+input[type=&#34;number&#34;] { font-family: var(--mono); }
+select:focus, input:focus, textarea:focus, button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--leaf);
+  outline-offset: 1px;
+}
+
+.btn {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 15px;
+  border-radius: var(--r);
+  border: 1px solid var(--leaf);
+  background: var(--leaf);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn.ghost { background: transparent; color: var(--leaf); }
+.btn:hover { filter: brightness(1.08); }
+
+/* ---------- panels ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px 22px;
+  margin: 20px 0;
+}
+.panel &gt; h2 {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin: 0 0 4px;
+}
+.panel &gt; .sub {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.notice { border-color: #e6c9a8; background: var(--alert-bg); }
+.notice h2 { color: var(--alert); }
+.notice ul { margin: 8px 0 0; padding-left: 20px; }
+.notice li { font-size: 14px; margin-bottom: 4px; }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.meta b { font-weight: 500; color: var(--ink); }
+
+/* ---------- ribbon ---------- */
+.ribbon-scroll { overflow-x: auto; padding-bottom: 4px; }
+.ribbon { display: block; min-width: 700px; width: 100%; height: auto; }
+.ribbon .grid { stroke: var(--line-soft); stroke-width: 1; }
+.ribbon .tick, .ribbon .wlabel, .ribbon .wdate {
+  font-family: var(--mono);
+  fill: var(--ink-faint);
+}
+.ribbon .tick { font-size: 10px; }
+.ribbon .wlabel { font-size: 10px; fill: var(--ink-soft); }
+.ribbon .wdate { font-size: 9px; }
+.ribbon .bar-span { fill: #cfdcd2; }
+.ribbon .bar-empty { fill: var(--line); }
+.ribbon .cap-day { fill: var(--day); }
+.ribbon .cap-night { fill: var(--night); }
+.ribbon .mark-24h { stroke: var(--ink); stroke-width: 1; opacity: 0.55; }
+.ribbon .bar-hit { fill: transparent; }
+.ribbon .bar-link { cursor: pointer; }
+.ribbon .bar-link:hover .bar-span { fill: #b9cdc0; }
+.ribbon .bar-link:hover .bar-hit { fill: rgba(31, 92, 61, 0.06); }
+
+.legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-top: 12px;
+}
+.legend i {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.legend .d { background: var(--day); }
+.legend .n { background: var(--night); }
+.legend .h { background: var(--ink); opacity: 0.55; }
+
+/* ---------- tables ---------- */
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: right;
+  white-space: nowrap;
+}
+th {
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+}
+th:first-child, td:first-child { text-align: left; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: var(--panel-sunk); }
+td.day { color: var(--day); }
+td.night { color: var(--night); }
+.wk { font-family: var(--mono); font-size: 12.5px; }
+.wk a { text-decoration: none; font-weight: 500; }
+.wk span { color: var(--ink-faint); margin-left: 6px; font-size: 11.5px; }
+.empty { color: var(--ink-faint); }
+
+/* ---------- week detail ---------- */
+.weekhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.weekhead h1 {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin: 24px 0 0;
+}
+.weekhead .range { color: var(--ink-soft); font-size: 14px; }
+.weeknav { margin-left: auto; display: flex; gap: 8px; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.growth-table input { width: 100%; text-align: right; }
+.growth-table td { padding: 4px 5px; }
+.growth-table th:first-child, .growth-table td:first-child { min-width: 110px; }
+.avg { font-family: var(--mono); color: var(--leaf); font-weight: 500; }
+
+.savebar {
+  position: sticky;
+  bottom: 0;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.saved { color: var(--leaf); font-size: 13px; }
+
+.pill {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  margin-left: 8px;
+}
+
+@media (max-width: 760px) {
+  .wrap { padding: 0 14px 60px; }
+  .panel { padding: 16px 14px; border-radius: 8px; }
+  .grid2 { grid-template-columns: 1fr; }
+  .topbar form { width: 100%; margin-left: 0; }
+  .weekhead h1 { font-size: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ---------- 入力への導線 ---------- */
+.entry { border-color: var(--leaf); }
+.entry-in { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; }
+.entry-in &gt; div { flex: 1 1 320px; }
+.entry-in .sub { margin-bottom: 0; }
+.btn.big { font-size: 15px; padding: 11px 22px; white-space: nowrap; }
+a.mini {
+  font-size: 12px;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 11px;
+  color: var(--leaf);
+  white-space: nowrap;
+}
+a.mini:hover { background: var(--panel-sunk); }
+
+/* ---------- 重油 ---------- */
+.fuelchart .fuel-bar { fill: var(--day); opacity: 0.82; }
+.fuelchart g:hover .fuel-bar { opacity: 1; }
+.fuelchart .fuel-temp { fill: none; stroke: var(--night); stroke-width: 1.8; stroke-linejoin: round; }
+.fuelchart .fuel-house { fill: none; stroke: var(--ink-faint); stroke-width: 1.2; stroke-dasharray: 3 3; stroke-linejoin: round; }
+.fuelchart .freeze { stroke: var(--night); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.5; }
+.fuelchart .tick.night { fill: var(--night); text-anchor: start; }
+.legend .f { background: var(--day); height: 8px; border-radius: 2px; }
+.legend .t { background: var(--night); }
+.total-row td { font-weight: 600; border-top: 1px solid var(--line); border-bottom: none; background: var(--panel-sunk); }
+
+.legend .h2 { background: var(--ink-faint); height: 2px; }
+.corr { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: 14px; font-size: 13.5px; }
+.corr div { border-left: 2px solid var(--line); padding-left: 11px; }
+.corr b { font-family: var(--mono); font-size: 16px; font-weight: 500; display: block; }
+.corr span { font-size: 12px; color: var(--ink-soft); }
+.corr .weak b { color: var(--ink-faint); }
+
+/* ---------- 前年比 ---------- */
+.dlt {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-style: normal;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--ink-faint);
+}
+.dlt.up { color: var(--day); }
+.dlt.dn { color: var(--night); }
+tbody tr td { vertical-align: top; }
+.cmp-on { background: var(--leaf); color: #fff; border-color: var(--leaf); }
+.cmp-note { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 14px; }
+
+.wrap { padding-bottom: 40px; }
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px 20px; }
+.stat { border-left: 2px solid var(--line); padding-left: 12px; }
+.stat b { display: block; font-family: var(--mono); font-size: 20px; font-weight: 500; letter-spacing: -0.01em; }
+.stat span { font-size: 12px; color: var(--ink-soft); }
+details { border-top: 1px solid var(--line-soft); }
+details:last-of-type { border-bottom: 1px solid var(--line-soft); }
+summary { cursor: pointer; padding: 11px 2px; font-size: 14px; display: flex; gap: 10px; align-items: baseline; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "＋"; color: var(--ink-faint); font-size: 12px; }
+details[open] summary::before { content: "−"; }
+summary b { font-family: var(--mono); font-weight: 500; }
+summary em { font-style: normal; color: var(--ink-soft); font-size: 12.5px; margin-left: auto; text-align: right; }
+.note-body { padding: 4px 0 18px 22px; }
+.note-body h4 { margin: 12px 0 2px; font-size: 12.5px; color: var(--ink-soft); font-weight: 500; }
+.note-body p { margin: 0; white-space: pre-wrap; font-size: 14px; }
+.printhint { font-size: 12px; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <h1 class="brand">栽培記録<small>中央ハウス ／ 2027シーズン</small></h1>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section class="panel">
+  <h2>シーズンの温度帯</h2>
+  <p class="sub">バー1本が1週間。上端が日中平均、下端が夜間平均で、長さが DIF です。</p>
+  <div class="ribbon-scroll"><svg class="ribbon" viewBox="0 0 710 234" preserveAspectRatio="xMinYMid meet" role="img" aria-label="週別の日中・夜間平均気温"><line class="grid" x1="32" y1="204.0" x2="698" y2="204.0"/><text class="tick" x="28" y="207.5" text-anchor="end">5</text><line class="grid" x1="32" y1="166.0" x2="698" y2="166.0"/><text class="tick" x="28" y="169.5" text-anchor="end">10</text><line class="grid" x1="32" y1="128.0" x2="698" y2="128.0"/><text class="tick" x="28" y="131.5" text-anchor="end">15</text><line class="grid" x1="32" y1="90.0" x2="698" y2="90.0"/><text class="tick" x="28" y="93.5" text-anchor="end">20</text><line class="grid" x1="32" y1="52.0" x2="698" y2="52.0"/><text class="tick" x="28" y="55.5" text-anchor="end">25</text><line class="grid" x1="32" y1="14.0" x2="698" y2="14.0"/><text class="tick" x="28" y="17.5" text-anchor="end">30</text><rect class="bar-empty" x="38" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="53" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="68" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="83" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="98" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="113" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="128" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="143" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="158" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="173" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="188" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="203" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="218" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="233" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="248" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="263" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="278" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="293" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="308" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="323" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="338" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="353" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="368" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="383" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="398" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="413" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="428" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="443" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="458" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="473" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="488" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="503" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="518" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="533" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="548" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="563" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="578" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="593" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="608" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="623" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="638" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="653" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="668" y="200" width="11" height="4" rx="1"/><rect class="bar-empty" x="683" y="200" width="11" height="4" rx="1"/><text class="wlabel" x="43.5" y="220" text-anchor="middle">37</text><text class="wdate" x="43.5" y="231" text-anchor="middle">9/7</text><text class="wlabel" x="103.5" y="220" text-anchor="middle">41</text><text class="wdate" x="103.5" y="231" text-anchor="middle">10/5</text><text class="wlabel" x="163.5" y="220" text-anchor="middle">45</text><text class="wdate" x="163.5" y="231" text-anchor="middle">11/2</text><text class="wlabel" x="223.5" y="220" text-anchor="middle">49</text><text class="wdate" x="223.5" y="231" text-anchor="middle">11/30</text><text class="wlabel" x="283.5" y="220" text-anchor="middle">53</text><text class="wdate" x="283.5" y="231" text-anchor="middle">12/28</text><text class="wlabel" x="343.5" y="220" text-anchor="middle">5</text><text class="wdate" x="343.5" y="231" text-anchor="middle">1/25</text><text class="wlabel" x="403.5" y="220" text-anchor="middle">9</text><text class="wdate" x="403.5" y="231" text-anchor="middle">2/22</text><text class="wlabel" x="463.5" y="220" text-anchor="middle">13</text><text class="wdate" x="463.5" y="231" text-anchor="middle">3/22</text><text class="wlabel" x="523.5" y="220" text-anchor="middle">17</text><text class="wdate" x="523.5" y="231" text-anchor="middle">4/19</text><text class="wlabel" x="583.5" y="220" text-anchor="middle">21</text><text class="wdate" x="583.5" y="231" text-anchor="middle">5/17</text><text class="wlabel" x="643.5" y="220" text-anchor="middle">25</text><text class="wdate" x="643.5" y="231" text-anchor="middle">6/14</text></svg></div>
+  <div class="legend">
+    <span><i class="d"></i>日中平均</span>
+    <span><i class="n"></i>夜間平均</span>
+    <span><i class="h"></i>24時間平均</span>
+    <span>縦軸は℃</span>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>シーズンの合計</h2>
+  <div class="stat-row">
+    <div class="stat"><b>1</b><span>記録のある週</span></div>
+    <div class="stat"><b>0</b><span>収穫量 kg/10a</span></div>
+    <div class="stat"><b>0.0</b><span>N 累計 kg/10a</span></div>
+    <div class="stat"><b>0.0</b><span>K 累計 kg/10a</span></div>
+    <div class="stat"><b>—</b><span>DIF 平均 ℃</span></div>
+    
+  </div>
+</section>
+
+
+
+
+<section class="panel">
+  <h2>環境データ</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>週</th><th>日中</th><th>夜間</th><th>DIF</th><th>24H</th>
+        <th>日射（内）</th><th>日射（実際）</th><th>日射（宇都宮）</th>
+      </tr></thead>
+      <tbody>
+      
+        <tr>
+          <td class="wk">Week51<span>12/14</span></td>
+          <td class="num day">—</td>
+          <td class="num night">—</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+        </tr>
+      
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>管理データ</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>週</th><th>潅水量 L/㎡</th><th>L/MJ㎡</th>
+        <th>N kg/10a</th><th>K kg/10a</th><th>N累計</th><th>K累計</th>
+        <th>収穫量 kg/10a</th><th>収穫量累計</th><th>N充足率</th>
+      </tr></thead>
+      <tbody>
+      
+        <tr>
+          <td class="wk">Week51</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num">0.00</td>
+          <td class="num">0.00</td>
+          <td class="num">0.0</td>
+          <td class="num">0</td>
+          <td class="num">—</td>
+        </tr>
+      
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>生育調査</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>週</th><th>伸長量</th><th>茎径</th><th>葉の数</th><th>総着果数</th><th>開花位置の高さ</th><th>開花段</th><th>収穫段数</th><th>花色</th><th>栽植密度</th>
+      </tr></thead>
+      <tbody>
+      
+        <tr>
+          <td class="wk">Week51</td>
+          <td class="num">—</td><td class="num">-3.0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+        </tr>
+      
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+
+
+<section class="panel">
+  <h2>栽培・制御の記録</h2>
+  <p class="sub">週を押すと本文が開きます。</p>
+  
+    
+    
+    
+  
+</section>
+
+<section class="panel">
+  <h2>この書き出しについて</h2>
+  <div class="meta">
+    <span><b>作成</b> 2026年8月12日 13:22</span>
+    <span><b>作業記録</b> 作業記録/2027作業記録.xlsx</span><span><b>センサーCSV</b> 12ファイル（4週記録中央_202507.csv 〜 4週記録中央_202606.csv）</span><span><b>日の出日の入</b> 日の出日の入 シート</span><span><b>収量記録</b> バックアップ/2027収量記録_20260810_150601.xlsx</span>
+  </div>
+  <p class="printhint" style="margin-top:10px">このファイルは単独で開けます。Dropbox に置けばスマホからそのまま閲覧できます。</p>
+</section>
+
+</main>
+</body>
+</html>
