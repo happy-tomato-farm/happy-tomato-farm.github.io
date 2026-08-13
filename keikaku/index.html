@@ -299,8 +299,8 @@ tr.now td{background:color-mix(in srgb, var(--sun) 15%, transparent)}
 
     <div class="chart">
       <div class="legend">
-        <span><i style="background:#E8863C"></i>昼のめやす</span>
-        <span><i style="background:#2F6FB2"></i>夜のめやす</span>
+        <span><i style="background:#E8863C"></i>ひる平均</span>
+        <span><i style="background:#2F6FB2"></i>よる平均</span>
       </div>
       <canvas id="c_temp" width="660" height="330"></canvas>
       <div class="cap">ハウスの温度のめやす（℃）。たてじくは 10℃ から始めています。
@@ -544,8 +544,8 @@ function renderCards(){
   if(has(w.temp_day) || has(w.temp_night) || has(w.temp_avg)){
     html += card("", "var(--peach)", "temp", "ハウスの 温度のめやす", "この温度になるように 調整します",
         '<div class="vals">'
-      +   valBox("ひる", w.temp_day, "℃")
-      +   valBox("よる", w.temp_night, "℃")
+      +   valBox("ひる平均", w.temp_day, "℃")
+      +   valBox("よる平均", w.temp_night, "℃")
       +   valBox("1日平均", w.temp_avg, "℃")
       +   valBox("ひる夜の差", w.temp_dif, "℃")
       + '</div>'
@@ -805,7 +805,7 @@ function drawAll(){
    ============================================================ */
 function renderTable(){
   var head = '<thead><tr>'
-    + '<th class="wk">週</th><th>ひる℃</th><th>よる℃</th><th>平均℃</th><th>差℃</th>'
+    + '<th class="wk">週</th><th>ひる平均℃</th><th>よる平均℃</th><th>1日平均℃</th><th>差℃</th>'
     + '<th>日射<br>平均</th><th>日射<br>最高</th><th>葉<br>1株</th><th>葉<br>1㎡</th>'
     + '<th>花の段</th><th>摘果</th><th>本/㎡</th><th class="wk">ポイント</th>'
     + '</tr></thead>';
