@@ -144,6 +144,15 @@ details.fold[open] > summary .hint::after{content:"　▲"}
 .o .v{display:block;font-size:17px;font-weight:800;line-height:1.35;font-variant-numeric:tabular-nums}
 .o .v em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--muted);margin-left:2px}
 .o .v.sa{color:var(--amber)}
+.o .v.hi{color:var(--aqua)}
+
+/* 日射の読みかえ（ハウスセンサー → 外の日射） */
+.nissha{margin-top:12px;border-radius:12px;padding:10px 13px 12px;
+        background:color-mix(in srgb,var(--aqua) 8%,var(--card));
+        border:1.5px solid color-mix(in srgb,var(--aqua) 30%,transparent)}
+.nissha .outs{margin-top:0;padding-top:0;border-top:none}
+.nissha .shiki{font-size:11.5px;font-weight:700;color:var(--muted);
+               margin-top:9px;line-height:1.7}
 
 .btn{
   font-family:inherit;font-size:14.5px;font-weight:800;border-radius:12px;
@@ -240,6 +249,11 @@ details.fold[open] > summary .hint::after{content:"　▲"}
           <input id="i-bai" type="number" step="1" inputmode="decimal">
           <span class="u">倍（薄くしたいときはここを上げる）</span>
         </div>
+      </div>
+
+      <div class="nissha">
+        <div class="outs" id="nissha-out"></div>
+        <div class="shiki" id="nissha-shiki"></div>
       </div>
 
       <div class="big">
@@ -527,11 +541,12 @@ function matome(house, date){
   const nkai = Math.min(Math.max(Math.round(num(dd.nkai))||1,1),MAXKAI);
   const yE = num(dd.eday)/nkai;
 
-  let V=0, D=0, R=0, P=0;
+  let V=0, D=0, R=0, P=0, E=0;
   for(let i=0;i<nkai;i++){
     const row = dd.rows[i] || {e:"",p:""};
-    const r = kaiCalc(c,f,T0, has(row.e)?num(row.e):yE, row.p);
-    V+=r.V; D+=r.D; R+=r.R; P+=r.P;
+    const e = has(row.e) ? num(row.e) : yE;
+    const r = kaiCalc(c,f,T0,e,row.p);
+    V+=r.V; D+=r.D; R+=r.R; P+=r.P; E+=e;
   }
   const zenN = D*num(c.area)/1000;              // ハウス全体のN量 kg
 
@@ -541,6 +556,8 @@ function matome(house, date){
     kg: f.m.n ? zenN/f.m.n : 0,                 // 肥料の使用量 kg
     fert: fg.fert,
     D: D, R: R, P: P, eday: num(dd.eday), nkai: nkai, bai: T0,
+    Ehouse: E,                                  // その日の日射合計（ハウスセンサー）
+    Esoto: num(c.coef) ? E*10/num(c.coef) : 0,  // 外の日射の近似
     "in": { eday:dd.eday, nkai:nkai, nday:dd.nday, bai:dd.bai, master:dd.master,
             rows: dd.rows.slice(0,nkai) },
     conf: Object.assign({}, c, { fert:{ fert:fg.fert, bags:fg.bags, made:fg.made } }),
@@ -735,6 +752,25 @@ function render(){
     + o("含有N量",fmt(f.m.n*100,1),"％") + o("液肥N量",fmt(f.n100,3),"kg/100L")
     + o("溶解倍率",fmt(f.bai,1),"倍");
 
+  // ---- 日射の読みかえ（ハウスセンサー → 外の日射）----
+  // ハウスセンサーは屋根の下で測っているので、外の日射より小さく出る。
+  // 係数 6.5 は「ハウス内 ＝ 外の 65％」を表しているので、
+  //   外の日射 ＝ センサー値 × 10 ÷ 係数 （＝ ÷0.65）
+  // で外の実測値を近似できる。フィルム劣化はここでは掛けない
+  // （劣化は「作物が受けた光」の補正であって、外の日射そのものではないため）。
+  const tokaritsu = num(c.coef)*10;                       // 透過率 ％
+  const sotoE = num(c.coef) ? num(d.eday)*10/num(c.coef) : 0;   // 外の日射 MJ/㎡
+  const jisshitsu = sotoE*num(c.film);                    // 実質日射（計算に使う）
+  $("#nissha-out").innerHTML =
+      o("ハウスセンサー", fmt(num(d.eday),1), "MJ/㎡")
+    + o("外の日射（近似）", fmt(sotoE,1), "MJ/㎡", "hi")
+    + o("実質日射（計算に使う）", fmt(jisshitsu,1), "MJ/㎡")
+    + o("フィルムの透過率", fmt(tokaritsu,0), "％");
+  $("#nissha-shiki").innerHTML =
+      `外の日射 ＝ ${fmt(num(d.eday),1)} × 10 ÷ 係数 ${fmt(num(c.coef),1)}`
+    + `　＝ ${fmt(num(d.eday),1)} ÷ ${fmt(tokaritsu/100,2)}（透過率）<br>`
+    + `実質日射 ＝ 外の日射 × フィルム劣化 ${fmt(num(c.film),2)}。潅水量はこちらから決まります。`;
+
   // ---- 朝の予定（均等割り）----
   const yoteiE = num(d.eday)/nkai;
   const yotei  = kaiCalc(c,f,T0,yoteiE,null);
@@ -797,12 +833,17 @@ function render(){
   // 追肥管理に写すのは「1日の潅水量」と「いま使っている肥料の使用量」の2つ
   const zenN = jD*num(c.area)/1000;              // ハウス全体のN量 kg
   const shiyo = f.m.n ? zenN/f.m.n : 0;          // その肥料の使用量 kg
+  // 途中で回ごとを変えた日は、朝の予測と実際の日射がずれる。実際のほうを出す
+  const jE = rs.reduce((a,r)=>a+r.e,0);                    // ハウスセンサー 合計
+  const jSoto = num(c.coef) ? jE*10/num(c.coef) : 0;       // 外の日射（近似）
   $("#today-out").innerHTML =
       o("1日の潅水量", fmt(jV,2), "L/㎡")
     + o(`${f.m.name}<br>の使用量`, fmt(shiyo,2), "kg")
     + o("1日のN量", fmt(jD,4), "kg/10a")
     + o("液肥の使用量", fmt(jR,1), "L")
-    + o("灌水時間 合計", hms(rs.reduce((a,r)=>a+r.P,0)));
+    + o("灌水時間 合計", hms(rs.reduce((a,r)=>a+r.P,0)))
+    + o("日射（ハウス）", fmt(jE,1), "MJ/㎡")
+    + o("日射（外・近似）", fmt(jSoto,1), "MJ/㎡", "hi");
   $("#usenote").innerHTML =
     `使用量 ＝ ハウス全体のN量 ${fmt(zenN,3)} kg ÷ 含有N率 ${fmt(f.m.n*100,1)}％。`
     + `　肥料を変えるときは「液肥のもと」で選びなおしてください。`;
