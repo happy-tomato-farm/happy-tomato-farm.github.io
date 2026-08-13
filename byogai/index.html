@@ -494,6 +494,18 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     });
   };
 
+  /* つながらなかったときに、少し待ってから送り直す。
+     ★ 何度送っても結果が同じ指示にだけ使うこと。
+       記録の追加（addPest）に使うと、同じ記録が二重に入る。
+       ＝ 送れなかったように見えても、向こうでは通っていることがあるため。 */
+  var sendAgain = function(payload, nokori){
+    return send(payload).catch(function(e){
+      if(nokori <= 0) throw e;
+      return new Promise(function(res){ setTimeout(res, 2500); })
+        .then(function(){ return sendAgain(payload, nokori - 1); });
+    });
+  };
+
   var gazoURL = function(id, w){
     return "https://drive.google.com/thumbnail?id=" + encodeURIComponent(id) + "&sz=w" + (w || 800);
   };
@@ -983,10 +995,18 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
         '記録に写真をつけると「図鑑に登録」からのせられます</p>';
 
     if(zkEditing){
+      /* 前に保存できなかった書きかけがあれば、そちらを出す */
+      var nokori = draftYomu()[name];
+      if(nokori){
+        h += '<p class="hint" style="color:var(--tomato)">' +
+             '前に保存できなかった書きかけが残っています。' +
+             'このまま「保存する」を押してください</p>';
+      }
       ZSEC.forEach(function(s){
+        var atai = nokori && nokori[s.k] !== undefined ? nokori[s.k] : (z[s.k] || "");
         h += '<label class="field"><span>' + esc(s.t) + '</span>' +
              '<textarea id="zk-' + s.k + '" placeholder="' + esc(s.ph) + '">' +
-             esc(z[s.k] || "") + '</textarea></label>';
+             esc(atai) + '</textarea></label>';
       });
       h += '<div class="sheet-actions">' +
         '<button type="button" class="btn" id="zk-cancel">やめる</button>' +
@@ -1026,26 +1046,46 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     }
   };
 
+  /* 書きかけの控え。
+     つながらなかったときに書いた文章が消えないよう、この端末に残しておく。
+     保存できたら消す */
+  var ZDRAFT = "htf_zukan_draft";
+
+  var draftYomu = function(){
+    try{ return JSON.parse(localStorage.getItem(ZDRAFT) || "{}"); }catch(e){ return {}; }
+  };
+  var draftKaku = function(name, obj){
+    var d = draftYomu();
+    if(obj) d[name] = obj; else delete d[name];
+    try{ localStorage.setItem(ZDRAFT, JSON.stringify(d)); }catch(e){}
+  };
+
   var saveZukan = function(name){
     var z = zukanOf(name);
     /* 写真はこの画面では触らないので、いまのものをそのまま送り返す */
     var payload = { action:"saveZukan", name:name, images:(z.images || []).slice() };
     ZSEC.forEach(function(s){ payload[s.k] = $("#zk-" + s.k).value.trim(); });
 
+    /* 先に控えを残す。送るのはそのあと */
+    draftKaku(name, { body:payload.body, miwake:payload.miwake,
+                      toki:payload.toki, taio:payload.taio });
+
     $("#zk-save").disabled = true;
     bar("保存しています…");
 
-    send(payload).then(function(j){
+    sendAgain(payload, 2).then(function(j){
       ZUKAN[name] = {
         name:name, body:payload.body, miwake:payload.miwake,
         toki:payload.toki, taio:payload.taio, images:j.images || []
       };
+      draftKaku(name, null);
       zkEditing = false;
       renderZukan(name);
       bar("保存しました");
     }).catch(function(e){
       $("#zk-save").disabled = false;
-      bar(e.message, true);
+      bar("保存できませんでした。書いた文章はこの端末に残してあります。"
+          + "しばらくしてからもう一度「保存する」を押してください", true);
     });
   };
 
@@ -1108,7 +1148,7 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
         $("#zr-ok").disabled = true;
         bar("登録しています…");
 
-        send({ action:"addZukanImage", name:name, images:eranda.slice() })
+        sendAgain({ action:"addZukanImage", name:name, images:eranda.slice() }, 2)
           .then(function(j){
             var z = zukanOf(name);
             z.name = name;
@@ -1146,24 +1186,41 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     });
   };
 
-  /* ---- 起動 ---- */
-  fetch(API + "?want=pests&t=" + Date.now())
-    .then(function(r){ return r.json(); })
-    .then(function(j){
-      if(!j.ok) throw new Error(j.error || "読み込めませんでした");
-      ITEMS = j.pests || [];
-      (j.zukan || []).forEach(function(z){ if(z.name) ZUKAN[z.name] = z; });
-      ITEMS.forEach(function(n){
-        (n.pest || []).forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
+  /* ---- 起動 ----
+     つながらないことがまれにあるので、何度かためしてから
+     「もう一度」ボタンを出す。読むだけなので何度ためしても害はない */
+  var yomikomi = function(nokori){
+    fetch(API + "?want=pests&t=" + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(!j.ok) throw new Error(j.error || "読み込めませんでした");
+        ITEMS = j.pests || [];
+        (j.zukan || []).forEach(function(z){ if(z.name) ZUKAN[z.name] = z; });
+        ITEMS.forEach(function(n){
+          (n.pest || []).forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
+        });
+        /* 図鑑にだけある名前も、えらべるようにしておく */
+        Object.keys(ZUKAN).forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
+        renderFilters();
+        renderAll();
+      })
+      .catch(function(e){
+        if(nokori > 0){
+          $("#loading").textContent = "つながりません。もう一度ためしています…";
+          setTimeout(function(){ yomikomi(nokori - 1); }, 3000);
+          return;
+        }
+        $("#loading").innerHTML =
+          'いま読み込めません<br>' +
+          '<span style="font-size:13px">時間をおくと直ることがほとんどです</span><br>' +
+          '<button class="more" type="button" id="retry">もう一度ためす</button>';
+        $("#retry").addEventListener("click", function(){
+          $("#loading").textContent = "読み込んでいます…";
+          yomikomi(3);
+        });
       });
-      /* 図鑑にだけある名前も、えらべるようにしておく */
-      Object.keys(ZUKAN).forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
-      renderFilters();
-      renderAll();
-    })
-    .catch(function(e){
-      $("#loading").innerHTML = '読み込めませんでした<br><span style="font-size:13px">' + esc(e.message) + '</span>';
-    });
+  };
+  yomikomi(3);
 })();
 </script>
 </body>
