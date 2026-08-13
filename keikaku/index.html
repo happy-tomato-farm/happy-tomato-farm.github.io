@@ -197,6 +197,13 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
   background:var(--card-sub);border:2px dashed var(--line);
   border-radius:var(--r-card);padding:20px 16px;
 }
+.empty button{
+  display:inline-block;margin-top:11px;font-family:inherit;
+  background:var(--card);border:2px solid var(--leaf);color:var(--leaf);
+  border-radius:var(--r-chip);padding:7px 17px;
+  font-size:13.5px;font-weight:800;cursor:pointer;
+}
+.empty button:hover{background:var(--leaf);color:#fff}
 
 /* ===== グラフ ===== */
 .sec{margin-top:26px}
@@ -508,6 +515,21 @@ function memoHtml(text){
   }).join("") + '</ul>';
 }
 
+/* その週に見せる中身が1つでもあるか */
+function hasPlan(w){
+  return !!(w.memo || has(w.temp_day) || has(w.temp_night) || has(w.temp_avg)
+            || has(w.sun_avg) || has(w.sun_max) || has(w.leaf_plant) || has(w.leaf_m2)
+            || has(w.kabou) || has(w.tekika) || has(w.density));
+}
+
+/* いまの週より後ろで、いちばん近い「予定がある週」を探す。無ければ -1 */
+function nextPlannedIndex(from){
+  for(var i = from + 1; i < weeks.length; i++){
+    if(hasPlan(weeks[i])) return i;
+  }
+  return -1;
+}
+
 /* ---------- えらんだ週のカードをぜんぶ描く ---------- */
 function renderCards(){
   var w = weeks[current];
@@ -575,10 +597,16 @@ function renderCards(){
       + '<span class="u">本 / ㎡</span></div>');
   }
 
-  /* 備考カード（必ず出る）以外に中身が無ければ、その旨を伝える */
-  if(!w.memo && !has(w.temp_day) && !has(w.sun_avg) && !has(w.leaf_plant)
-     && !has(w.kabou) && !has(w.tekika) && !has(w.density)){
-    html += '<div class="empty">この週は まだ 予定が 入っていません。</div>';
+  /* 中身が何も無い週は、その旨を伝えて、次に予定がある週へ行けるようにする */
+  if(!hasPlan(w)){
+    var nx = nextPlannedIndex(current);
+    html += '<div class="empty">この週は まだ 予定が 入っていません。'
+          + (nx >= 0
+              ? '<br><button type="button" id="jumpnext" data-i="' + nx + '">'
+                + '第' + fmt(weeks[nx].week_no) + '週（' + esc(weeks[nx].date || "")
+                + '）を 見る ›</button>'
+              : '')
+          + '</div>';
   }
 
   elCards.innerHTML = html;
@@ -617,6 +645,15 @@ document.getElementById("backtoday").addEventListener("click", function(){ go(to
 elChips.addEventListener("click", function(ev){
   var b = ev.target.closest(".chip");
   if(b) go(parseInt(b.getAttribute("data-i"), 10));
+});
+/* 「予定がある週を見る」ボタン。カードは描き直されるので、
+   親（.cards）でクリックを受け取る形にしている */
+elCards.addEventListener("click", function(ev){
+  var b = ev.target.closest("#jumpnext");
+  if(b){
+    go(parseInt(b.getAttribute("data-i"), 10));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 });
 /* キーボードの左右でも動かせるようにしておく（パソコンで見るとき用） */
 document.addEventListener("keydown", function(ev){
