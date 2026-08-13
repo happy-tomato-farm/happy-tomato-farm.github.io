@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#EE5340">
+<title>今週のめやす｜ハッピートマトファーム</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23EE5340'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%234E9A5A' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   色の設定。みんなのノート（minna.html）と同じ考え方でそろえている。
+   :root にふつうの色、暗い画面のときの色を下の2か所で上書きする。
+   ※ここで決めた色は「画面の飾り」用。グラフの色は JavaScript 側に
+     直接書いてある（CSS変数から読むと失敗しても気づけないため）
+   ============================================================ */
+:root{
+  --ground:#F2F6F0;
+  --card:#FFFFFF;
+  --card-sub:#F7FAF6;
+  --ink:#24291F;
+  --muted:#6D7768;
+  --line:#DFE7DB;
+  --line-soft:#EDF2EA;
+
+  --tomato:#EE5340;
+  --leaf:#4E9A5A;
+  --grape:#8A5CC4;
+  --sun:#D9960F;
+  --teal:#2A8FA8;
+  --forest:#1F5C3D;
+  --sky:#3E7BD1;
+  --peach:#E8746A;
+  --memo:#F6C544;
+
+  --shadow:0 1px 0 rgba(36,41,31,.04), 0 6px 18px -10px rgba(36,41,31,.28);
+  --shadow-lift:0 2px 0 rgba(36,41,31,.05), 0 16px 32px -14px rgba(36,41,31,.4);
+
+  --r-card:22px;
+  --r-chip:999px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+    --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+    --tomato:#FF6E5B; --leaf:#6FBB7B; --grape:#B189E8; --sun:#F0BC4E;
+    --teal:#5FBDD4; --forest:#6FBB7B; --sky:#7AA9EE; --peach:#FF9086; --memo:#F2CE63;
+    --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+    --shadow-lift:0 2px 0 rgba(0,0,0,.3), 0 16px 32px -14px rgba(0,0,0,.85);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+  --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+  --tomato:#FF6E5B; --leaf:#6FBB7B; --grape:#B189E8; --sun:#F0BC4E;
+  --teal:#5FBDD4; --forest:#6FBB7B; --sky:#7AA9EE; --peach:#FF9086; --memo:#F2CE63;
+  --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+  --shadow-lift:0 2px 0 rgba(0,0,0,.3), 0 16px 32px -14px rgba(0,0,0,.85);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Zen Maru Gothic",
+              "Quicksand","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",
+              system-ui,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px 70px}
+
+/* ===== 見出し ===== */
+header{padding:26px 0 4px;text-align:center}
+.logo{width:58px;height:58px;margin:0 auto 10px;display:block}
+h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
+.farm{display:block;margin-top:5px;font-size:12px;color:var(--muted);
+      font-weight:700;letter-spacing:.1em}
+
+/* ===== 週をえらぶところ ===== */
+.picker{
+  position:sticky; top:0; z-index:20;
+  margin:16px -16px 0; padding:10px 16px 8px;
+  background:color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter:blur(8px);
+  border-bottom:2px solid var(--line-soft);
+}
+.nav{display:flex;align-items:center;gap:10px}
+.nav button.arrow{
+  flex:none;width:46px;height:46px;border-radius:50%;
+  border:2px solid var(--line); background:var(--card); color:var(--ink);
+  font-size:22px;font-weight:800;line-height:1;cursor:pointer;
+  box-shadow:var(--shadow);
+  transition:transform .12s ease, border-color .12s ease;
+}
+.nav button.arrow:hover:not(:disabled){border-color:var(--tomato);transform:translateY(-1px)}
+.nav button.arrow:active:not(:disabled){transform:scale(.93)}
+.nav button.arrow:disabled{opacity:.3;cursor:default}
+.nav .now{
+  flex:1;text-align:center;background:var(--card);
+  border:2px solid var(--line);border-radius:var(--r-card);
+  padding:6px 8px;box-shadow:var(--shadow);
+}
+.nav .now .wk{display:block;font-size:19px;font-weight:800;line-height:1.3}
+.nav .now .dt{display:block;font-size:12.5px;color:var(--muted);font-weight:700}
+.nav .now .badge{
+  display:inline-block;margin-left:6px;vertical-align:2px;
+  background:var(--tomato);color:#fff;font-size:11px;font-weight:800;
+  border-radius:var(--r-chip);padding:1px 8px;letter-spacing:.05em;
+}
+
+/* 週の丸チップを横に並べたもの */
+.chips{
+  display:flex;gap:7px;overflow-x:auto;padding:9px 2px 3px;
+  scrollbar-width:none;
+}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none;border:2px solid var(--line);background:var(--card);
+  color:var(--muted);border-radius:var(--r-chip);
+  padding:3px 11px;font-size:12.5px;font-weight:800;cursor:pointer;
+  white-space:nowrap;transition:all .12s ease;
+}
+.chip:hover{border-color:var(--leaf);color:var(--ink)}
+.chip.on{background:var(--tomato);border-color:var(--tomato);color:#fff}
+.chip.today{box-shadow:0 0 0 3px color-mix(in srgb, var(--sun) 45%, transparent)}
+
+.backtoday{
+  display:block;margin:8px auto 0;border:none;background:none;
+  color:var(--teal);font-size:13px;font-weight:800;cursor:pointer;
+  font-family:inherit;padding:2px 8px;border-radius:var(--r-chip);
+}
+.backtoday:hover{background:var(--card-sub)}
+
+/* ===== カード ===== */
+.cards{display:flex;flex-direction:column;gap:14px;margin-top:18px}
+
+.card{
+  background:var(--card);border:2px solid var(--line);
+  border-radius:var(--r-card);padding:15px 16px 16px;
+  box-shadow:var(--shadow);
+  animation:pop .26s ease both;
+}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.card{animation:none}}
+
+.card .head{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.card .ic{
+  flex:none;width:40px;height:40px;border-radius:50%;
+  display:grid;place-items:center;
+  background:color-mix(in srgb, var(--c) 16%, var(--card));
+  border:2px solid color-mix(in srgb, var(--c) 38%, transparent);
+}
+.card .ic svg{width:22px;height:22px;display:block}
+.card .ttl{display:block;font-size:16.5px;font-weight:800;letter-spacing:.01em;line-height:1.4}
+.card .sub{display:block;font-size:12px;color:var(--muted);font-weight:700;line-height:1.4}
+
+/* 数字を丸くならべるところ。せまい画面では 2列に折り返す */
+.vals{display:flex;gap:9px;flex-wrap:wrap}
+.val{
+  flex:1 1 calc(50% - 5px);min-width:96px;text-align:center;
+  background:var(--card-sub);border:2px solid var(--line-soft);
+  border-radius:16px;padding:9px 4px 8px;
+}
+.val .k{display:block;font-size:11.5px;color:var(--muted);font-weight:800;letter-spacing:.02em}
+.val .n{display:block;font-size:27px;font-weight:800;line-height:1.15;color:var(--c);
+        font-feature-settings:"tnum"}
+.val .u{font-size:12.5px;font-weight:800;color:var(--muted);margin-left:1px}
+.val.big .n{font-size:34px}
+
+/* 大きい1つだけの数字 */
+.solo{display:flex;align-items:baseline;justify-content:center;gap:6px;
+      background:var(--card-sub);border:2px solid var(--line-soft);
+      border-radius:16px;padding:12px 8px 10px}
+.solo .n{font-size:40px;font-weight:800;color:var(--c);line-height:1;font-feature-settings:"tnum"}
+.solo .u{font-size:15px;font-weight:800;color:var(--muted)}
+
+.note{margin-top:9px;font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.6}
+
+/* ふせん（今週のポイント） */
+.memo{
+  --c:var(--memo);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--memo) 22%, var(--card)) 0 54px, var(--card) 54px);
+  border-color:color-mix(in srgb, var(--memo) 45%, var(--line));
+}
+.memo .body{
+  font-size:16.5px;font-weight:700;line-height:1.85;white-space:pre-wrap;
+  word-break:break-word;
+}
+.memo .body.none{color:var(--muted);font-weight:700;font-size:14.5px}
+.memo ul{margin:0;padding-left:1.25em}
+.memo li{margin-bottom:6px}
+
+/* データが無い週の案内 */
+.empty{
+  text-align:center;color:var(--muted);font-weight:700;font-size:14px;
+  background:var(--card-sub);border:2px dashed var(--line);
+  border-radius:var(--r-card);padding:20px 16px;
+}
+
+/* ===== グラフ ===== */
+.sec{margin-top:26px}
+.sec h2{
+  font-size:15px;font-weight:800;margin:0 0 10px;
+  display:flex;align-items:center;gap:8px;
+}
+.sec h2::before{
+  content:"";width:9px;height:9px;border-radius:50%;
+  background:var(--leaf);flex:none;
+}
+.chart{background:var(--card);border:2px solid var(--line);border-radius:var(--r-card);
+       padding:12px 12px 10px;box-shadow:var(--shadow);margin-bottom:12px}
+.chart canvas{width:100%;height:auto;display:block}
+.chart .cap{font-size:12px;color:var(--muted);font-weight:700;margin-top:6px;line-height:1.55}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:7px}
+.legend span{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:800;color:var(--muted)}
+.legend i{width:15px;height:5px;border-radius:3px;display:block}
+
+/* ===== ぜんぶの表 ===== */
+details.all{
+  margin-top:22px;background:var(--card);border:2px solid var(--line);
+  border-radius:var(--r-card);box-shadow:var(--shadow);overflow:hidden;
+}
+details.all summary{
+  cursor:pointer;padding:14px 16px;font-weight:800;font-size:15px;list-style:none;
+}
+details.all summary::-webkit-details-marker{display:none}
+details.all summary::after{content:"▼";float:right;font-size:11px;color:var(--muted)}
+details.all[open] summary::after{content:"▲"}
+/* 表は 縦にも横にもスクロールする箱に入れる。
+   こうすると見出しの行（th）が上に貼りついたままになり、
+   下のほうの週を見ても どの列か分からなくならない */
+.scroll{overflow:auto;-webkit-overflow-scrolling:touch;max-height:70vh}
+table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:660px}
+th,td{border-top:1px solid var(--line-soft);padding:7px 8px;text-align:right;white-space:nowrap}
+th{background:var(--card-sub);font-weight:800;color:var(--muted);
+   position:sticky;top:0;z-index:1;font-size:11.5px}
+td.wk,th.wk{text-align:left;font-weight:800}
+/* ポイントの文は長いので1行に収める（全文は上のカードで読む）。
+   はみ出した分は「…」になる */
+td.memo-cell{
+  text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis;
+  font-size:12px;color:var(--muted);
+}
+tr.now td{background:color-mix(in srgb, var(--sun) 15%, transparent)}
+
+/* ===== エラーの帯 ===== */
+#err{
+  display:none;margin:14px 0;padding:12px 14px;border-radius:14px;
+  background:#FFE8E4;border:2px solid #EE5340;color:#8C1D0C;
+  font-size:13px;font-weight:700;white-space:pre-wrap;
+}
+
+.foot{margin-top:26px;text-align:center;font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.8}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <!-- トマトのマーク（画像ファイルを使わず、その場で描いている） -->
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="38" r="22" fill="#EE5340"/>
+      <path d="M32 20 L22 10 M32 20 L42 10 M32 20 L32 6"
+            stroke="#4E9A5A" stroke-width="5" stroke-linecap="round" fill="none"/>
+    </svg>
+    <h1>今週のめやす</h1>
+    <span class="farm">ハッピートマトファーム</span>
+  </header>
+
+  <!-- 何か失敗したときに、白い画面にせず理由をここに出す -->
+  <div id="err"></div>
+
+  <!-- 週をえらぶところ。画面をスクロールしても上に残る -->
+  <div class="picker">
+    <div class="nav">
+      <button class="arrow" id="prev" type="button" aria-label="前の週">‹</button>
+      <div class="now" id="nowlabel"></div>
+      <button class="arrow" id="next" type="button" aria-label="次の週">›</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <button class="backtoday" id="backtoday" type="button">きょうの週にもどる</button>
+  </div>
+
+  <!-- えらんだ週の中身。JavaScript がここに書き込む -->
+  <div class="cards" id="cards"></div>
+
+  <!-- シーズン全体の流れ（グラフ） -->
+  <div class="sec">
+    <h2>1年の ながれ</h2>
+
+    <div class="chart">
+      <div class="legend">
+        <span><i style="background:#E8863C"></i>昼のめやす</span>
+        <span><i style="background:#2F6FB2"></i>夜のめやす</span>
+      </div>
+      <canvas id="c_temp" width="660" height="330"></canvas>
+      <div class="cap">ハウスの温度のめやす（℃）。たてじくは 10℃ から始めています。
+        オレンジの線が上に行くほど、昼をあたたかく保つ時期です。</div>
+    </div>
+
+    <div class="chart">
+      <div class="legend">
+        <span><i style="background:#B32424"></i>いちばん多い日</span>
+        <span><i style="background:#E8A33D"></i>ならすと</span>
+      </div>
+      <canvas id="c_sun" width="660" height="330"></canvas>
+      <div class="cap">日ざしの量（MJ/㎡）。2024年の実績（宇都宮気象台）です。
+        冬に落ちて、春に一気にふえるのが分かります。</div>
+    </div>
+
+    <div class="chart">
+      <div class="legend">
+        <span><i style="background:#1E9E76"></i>1株あたりの葉の枚数</span>
+      </div>
+      <canvas id="c_leaf" width="660" height="330"></canvas>
+      <div class="cap">1株に のこす葉の目標（枚）。たてじくは 5枚 から始めています。
+        光がふえる春に向けて、のこす葉をふやしていきます。</div>
+    </div>
+  </div>
+
+  <!-- グラフだけだと正確な数字が読めないので、表もつける -->
+  <details class="all">
+    <summary>ぜんぶの週を 表で見る</summary>
+    <div class="scroll">
+      <table id="alltable"></table>
+    </div>
+  </details>
+
+  <p class="foot" id="foot"></p>
+
+</div>
+
+<script src="keikaku_data.js"></script>
+<script>
+/* ============================================================
+   ここから画面を組み立てる処理。
+   外部のライブラリは一切読まない（電波が弱くても開けるようにするため）
+   ============================================================ */
+
+/* 失敗しても真っ白にならないよう、エラーを画面に出す */
+window.onerror = function(msg, src, line){
+  var box = document.getElementById("err");
+  if(box){
+    box.style.display = "block";
+    box.textContent = "画面の組み立てに失敗しました。\n" + msg + "（" + line + "行目あたり）";
+  }
+  return false;
+};
+
+(function(){
+"use strict";
+
+/* ---------- グラフの色（CSS変数を経由せず、ここに直接書く） ----------
+   Canvas は色の指定に失敗しても黙って前の色を使い続けるので、
+   読み取りに失敗しうる書き方（getComputedStyle）は使わない */
+var COL_DAY   = "#E8863C";   /* 昼の温度 */
+var COL_NIGHT = "#2F6FB2";   /* 夜の温度 */
+var COL_SUNMAX= "#B32424";   /* 日射 いちばん多い日 */
+var COL_SUNAVG= "#E8A33D";   /* 日射 ならすと */
+var COL_LEAF  = "#1E9E76";   /* 葉の枚数 */
+var COL_NOWLN = "#EE5340";   /* 「今週はここ」の縦線 */
+
+/* めもり線と文字の色だけは、明るい画面と暗い画面で変える。
+   線の色をそのままにすると、暗い画面で文字が沈んで読めなくなるため。
+   ここでも CSS変数は使わず、色をそのまま書いている */
+var COL_GRID = "#C9D3C4";
+var COL_TEXT = "#5E6857";
+function updateChartColors(){
+  var attr = document.documentElement.getAttribute("data-theme");
+  var dark = (attr === "dark") ||
+             (attr !== "light" && window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+  COL_GRID = dark ? "#3E4739" : "#C9D3C4";
+  COL_TEXT = dark ? "#A3AE9B" : "#5E6857";
+}
+
+var weeks = (typeof PLAN_DATA !== "undefined" && PLAN_DATA.weeks) ? PLAN_DATA.weeks : [];
+if(!weeks.length){ throw new Error("データ（keikaku_data.js）が読めませんでした"); }
+
+/* ---------- 日付まわり ----------
+   シートの日付は年が古いままなので、月日だけを使って
+   「シーズンの中で何日目か」に直して比べる。
+   8月はじまりのシーズンなので、8月〜12月を前半、1月〜7月を後半として並べる */
+function seasonKey(month, day){
+  var year = (month >= 8) ? 2000 : 2001;      /* 年は比較用の仮の値 */
+  return new Date(year, month - 1, day).getTime();
+}
+function keyOfWeek(w){
+  if(!w.date) return null;
+  var p = String(w.date).split("/");
+  return seasonKey(parseInt(p[0],10), parseInt(p[1],10));
+}
+
+/* きょうが何週目にあたるかを探す。
+   「開始日がきょう以前」の週のうち、いちばん後ろのものを選ぶ */
+function findTodayIndex(){
+  var now = new Date();
+  var today = seasonKey(now.getMonth() + 1, now.getDate());
+  var found = 0;
+  for(var i = 0; i < weeks.length; i++){
+    var k = keyOfWeek(weeks[i]);
+    if(k !== null && k <= today) found = i;
+  }
+  return found;
+}
+
+var todayIndex = findTodayIndex();
+
+/* アドレスの末尾に ?w=41 と付けると、その週を開いた状態で表示する。
+   「41週のところを見ておいて」と伝えるときに使える */
+function indexFromUrl(){
+  var m = /[?&]w=(\d+)/.exec(location.search);
+  if(!m) return null;
+  var no = parseInt(m[1], 10);
+  for(var i = 0; i < weeks.length; i++){
+    if(weeks[i].week_no === no) return i;
+  }
+  return null;
+}
+
+var current = indexFromUrl();
+if(current === null) current = todayIndex;
+
+/* ---------- 小さな道具 ----------- */
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+/* 値があるか（0 は「あり」として扱いたいので、null と undefined だけを弾く） */
+function has(v){ return v !== null && v !== undefined; }
+function fmt(v){ return has(v) ? String(v) : "—"; }
+
+/* 週の終わりの日付をつくる（開始日＋6日）。「8/15〜8/21」と出すため */
+function endLabel(w){
+  if(!w.date) return "";
+  var p = String(w.date).split("/");
+  var d = new Date(2000, parseInt(p[0],10) - 1, parseInt(p[1],10) + 6);
+  return (d.getMonth() + 1) + "/" + d.getDate();
+}
+
+/* ---------- 週をえらぶ部分を描く ---------- */
+var elNow   = document.getElementById("nowlabel");
+var elChips = document.getElementById("chips");
+var elCards = document.getElementById("cards");
+
+function buildChips(){
+  var html = "";
+  for(var i = 0; i < weeks.length; i++){
+    var w = weeks[i];
+    var cls = "chip" + (i === current ? " on" : "") + (i === todayIndex ? " today" : "");
+    html += '<button type="button" class="' + cls + '" data-i="' + i + '">'
+          + esc(w.date || ("第" + w.week_no + "週")) + '</button>';
+  }
+  elChips.innerHTML = html;
+}
+
+/* えらんだチップが画面の中に来るように、横スクロールを動かす */
+function scrollChipIntoView(){
+  var on = elChips.querySelector(".chip.on");
+  if(!on) return;
+  var left = on.offsetLeft - elChips.clientWidth / 2 + on.clientWidth / 2;
+  elChips.scrollTo({ left: left, behavior: "smooth" });
+}
+
+/* ---------- カードの部品 ---------- */
+
+/* アイコン（SVG）。線だけの絵にして、色は入れ物の --c に合わせる */
+var ICONS = {
+  memo:'<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v18H5.5A1.5 1.5 0 0 1 4 19.5z"/><path d="M8 8h7M8 12h7M8 16h4"/>',
+  temp:'<path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v6"/>',
+  sun :'<circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/>',
+  leaf:'<path d="M4 20c0-8 6-14 16-15 0 11-6 16-13 16"/><path d="M4 20c3-4 6-6 10-7.5"/>',
+  flower:'<circle cx="12" cy="12" r="2.6"/><path d="M12 9.4C12 6 13.6 4 15.6 4.6c1.9.6 1.9 3.3-.4 4.8M12 14.6c0 3.4-1.6 5.4-3.6 4.8-1.9-.6-1.9-3.3.4-4.8M9.4 12c-3.4 0-5.4-1.6-4.8-3.6.6-1.9 3.3-1.9 4.8.4M14.6 12c3.4 0 5.4 1.6 4.8 3.6-.6 1.9-3.3 1.9-4.8-.4"/>',
+  cut :'<circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="18" r="2.6"/><path d="M8 16.2 18.5 4M16 16.2 5.5 4"/>',
+  plant:'<path d="M12 21v-7"/><path d="M12 15C12 11.5 9.5 9 6 9c0 3.5 2.5 6 6 6z"/><path d="M12 17c0-3.5 2.5-6 6-6 0 3.5-2.5 6-6 6z"/><path d="M6 21h12"/>'
+};
+
+function card(cls, colorVar, icon, title, sub, inner){
+  return '<div class="card ' + cls + '" style="--c:' + colorVar + '">'
+       +   '<div class="head">'
+       +     '<span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+       +        'stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" '
+       +        'style="color:' + colorVar + '">' + ICONS[icon] + '</svg></span>'
+       +     '<span><span class="ttl">' + title + '</span>'
+       +     (sub ? '<span class="sub">' + sub + '</span>' : '') + '</span>'
+       +   '</div>' + inner
+       + '</div>';
+}
+
+function valBox(key, num, unit){
+  return '<div class="val"><span class="k">' + key + '</span>'
+       + '<span class="n">' + fmt(num) + (has(num) && unit ? '<span class="u">' + unit + '</span>' : '')
+       + '</span></div>';
+}
+
+/* 備考の文章を、改行ごとの箇条書きに直す。
+   エクセルのセルの中で改行して書かれているため */
+function memoHtml(text){
+  var lines = String(text).split("\n")
+      .map(function(s){ return s.replace(/^[・\-\s]+/, "").trim(); })
+      .filter(function(s){ return s.length > 0; });
+  if(lines.length <= 1){
+    return '<div class="body">' + esc(lines[0] || text) + '</div>';
+  }
+  return '<ul class="body">' + lines.map(function(s){
+    return '<li>' + esc(s) + '</li>';
+  }).join("") + '</ul>';
+}
+
+/* ---------- えらんだ週のカードをぜんぶ描く ---------- */
+function renderCards(){
+  var w = weeks[current];
+  var html = "";
+
+  /* 1. 今週のポイント（備考）。いちばん上に大きく置く */
+  html += card("memo", "var(--memo)", "memo", "今週の ポイント", "作業のときに気をつけること",
+      w.memo ? memoHtml(w.memo)
+             : '<div class="body none">この週の とくべつなメモは ありません。</div>');
+
+  /* 2. ハウスの温度 */
+  if(has(w.temp_day) || has(w.temp_night) || has(w.temp_avg)){
+    html += card("", "var(--peach)", "temp", "ハウスの 温度のめやす", "この温度になるように 調整します",
+        '<div class="vals">'
+      +   valBox("ひる", w.temp_day, "℃")
+      +   valBox("よる", w.temp_night, "℃")
+      +   valBox("1日平均", w.temp_avg, "℃")
+      +   valBox("ひる夜の差", w.temp_dif, "℃")
+      + '</div>'
+      + '<div class="note">「ひる夜の差」は 昼と夜の温度の ひらきのことです。'
+      + 'この差があると、実に養分が まわりやすくなります。</div>');
+  }
+
+  /* 3. 日ざしの量 */
+  if(has(w.sun_avg) || has(w.sun_max)){
+    html += card("", "var(--sun)", "sun", "日ざしの量", "2024年の実績（宇都宮気象台）",
+        '<div class="vals">'
+      +   valBox("ならすと", w.sun_avg, "MJ")
+      +   valBox("多い日は", w.sun_max, "MJ")
+      + '</div>'
+      + '<div class="note">1㎡に 1日で とどく光の量です。'
+      + 'この量が多い週ほど、水も肥料も よく必要になります。</div>');
+  }
+
+  /* 4. 葉っぱの枚数 */
+  if(has(w.leaf_plant) || has(w.leaf_m2)){
+    html += card("", "var(--leaf)", "leaf", "葉っぱの 枚数", "摘葉のときの めやす",
+        '<div class="vals">'
+      +   valBox("1株あたり", w.leaf_plant, "枚")
+      +   valBox("1㎡あたり", w.leaf_m2, "枚")
+      + '</div>'
+      + '<div class="note">1株に この枚数が のこるように 下の葉を とります。</div>');
+  }
+
+  /* 5. 花がさく段（開花果房予測の目標） */
+  if(has(w.kabou)){
+    html += card("", "var(--grape)", "flower", "花が さく段（目標）", "下から数えて 何段目か",
+        '<div class="solo"><span class="n">' + fmt(w.kabou) + '</span>'
+      + '<span class="u">段目</span></div>'
+      + '<div class="note">この週に、下から ' + fmt(w.kabou) + ' 段目の花が さいていれば 予定どおりです。</div>');
+  }
+
+  /* 6. 摘果のめやす */
+  if(has(w.tekika)){
+    html += card("", "var(--tomato)", "cut", "摘果の めやす", "1つの房に のこす実の数",
+        '<div class="solo"><span class="n">' + fmt(w.tekika) + '</span>'
+      + '<span class="u">個 のこす</span></div>'
+      + '<div class="note">形の わるい実・小さい実から 先に とります。</div>');
+  }
+
+  /* 7. 植えている本数 */
+  if(has(w.density)){
+    html += card("", "var(--teal)", "plant", "植えている 本数", "栽植密度（中央ハウス）",
+        '<div class="solo"><span class="n">' + fmt(w.density) + '</span>'
+      + '<span class="u">本 / ㎡</span></div>');
+  }
+
+  /* 備考カード（必ず出る）以外に中身が無ければ、その旨を伝える */
+  if(!w.memo && !has(w.temp_day) && !has(w.sun_avg) && !has(w.leaf_plant)
+     && !has(w.kabou) && !has(w.tekika) && !has(w.density)){
+    html += '<div class="empty">この週は まだ 予定が 入っていません。</div>';
+  }
+
+  elCards.innerHTML = html;
+}
+
+/* ---------- 見出し（第◯週）を描く ---------- */
+function renderLabel(){
+  var w = weeks[current];
+  elNow.innerHTML =
+      '<span class="wk">第' + fmt(w.week_no) + '週'
+    + (current === todayIndex ? '<span class="badge">いま</span>' : '') + '</span>'
+    + '<span class="dt">' + esc(w.date || "") + ' 〜 ' + esc(endLabel(w)) + '</span>';
+
+  document.getElementById("prev").disabled = (current === 0);
+  document.getElementById("next").disabled = (current === weeks.length - 1);
+}
+
+/* ---------- 全体を描き直す ---------- */
+function render(){
+  renderLabel();
+  buildChips();
+  renderCards();
+  scrollChipIntoView();
+  drawAll();
+}
+
+/* ---------- ボタンの動き ---------- */
+function go(i){
+  if(i < 0 || i >= weeks.length) return;
+  current = i;
+  render();
+}
+document.getElementById("prev").addEventListener("click", function(){ go(current - 1); });
+document.getElementById("next").addEventListener("click", function(){ go(current + 1); });
+document.getElementById("backtoday").addEventListener("click", function(){ go(todayIndex); });
+elChips.addEventListener("click", function(ev){
+  var b = ev.target.closest(".chip");
+  if(b) go(parseInt(b.getAttribute("data-i"), 10));
+});
+/* キーボードの左右でも動かせるようにしておく（パソコンで見るとき用） */
+document.addEventListener("keydown", function(ev){
+  if(ev.key === "ArrowLeft")  go(current - 1);
+  if(ev.key === "ArrowRight") go(current + 1);
+});
+
+/* ============================================================
+   グラフ（Canvas に自前で描く）
+   ============================================================ */
+
+/* 折れ線を描く。
+   series … [{color:"#...", key:"temp_day"}, ...]
+   yMin   … たてじくの下限（0 にすると線が真ん中に集まって見にくい項目があるため指定する）
+*/
+function lineChart(canvasId, series, yMin){
+  var cv = document.getElementById(canvasId);
+  if(!cv) return;                        /* 要素が無ければ何もしない */
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+
+  /* 右の余白（padR）は、いちばん右の「7月」の文字がはみ出さない分だけ取る */
+  var padL = 62, padR = 30, padT = 14, padB = 44;
+  var plotW = W - padL - padR;
+  var plotH = H - padT - padB;
+
+  /* たてじくの範囲を、データの最大値から決める */
+  var maxV = -Infinity;
+  series.forEach(function(s){
+    weeks.forEach(function(w){
+      var v = w[s.key];
+      if(has(v) && v > maxV) maxV = v;
+    });
+  });
+  if(maxV === -Infinity) return;         /* データが1つも無ければ描かない */
+  /* 上限は 5 の倍数に切り上げる。ちょうど重なるときだけ、さらに 5 上げて
+     いちばん高い点が枠の線に張り付かないようにする */
+  var top = Math.ceil(maxV / 5) * 5;
+  if(top <= maxV) top += 5;
+  var range = top - yMin;
+  if(range <= 0 || weeks.length < 2) return;   /* 0で割らないための保険 */
+
+  function px(i){ return padL + (plotW * i) / (weeks.length - 1); }
+  function py(v){ return padT + plotH - ((v - yMin) / range) * plotH; }
+
+  /* よこの めもり線と数字 */
+  ctx.font = "bold 22px sans-serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  var steps = 5;
+  for(var g = 0; g <= steps; g++){
+    var v = yMin + (range * g) / steps;
+    var y = py(v);
+    ctx.strokeStyle = COL_GRID;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(W - padR, y);
+    ctx.stroke();
+    ctx.fillStyle = COL_TEXT;
+    ctx.fillText(String(Math.round(v)), padL - 8, y);
+  }
+
+  /* たての めもり（月が変わるところ）に月の名前を入れる */
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  var lastMonth = null;
+  for(var i = 0; i < weeks.length; i++){
+    if(!weeks[i].date) continue;
+    var m = parseInt(String(weeks[i].date).split("/")[0], 10);
+    if(m !== lastMonth){
+      lastMonth = m;
+      ctx.strokeStyle = COL_GRID;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px(i), padT);
+      ctx.lineTo(px(i), padT + plotH);
+      ctx.stroke();
+      ctx.fillStyle = COL_TEXT;
+      ctx.font = "bold 21px sans-serif";
+      ctx.fillText(m + "月", px(i), padT + plotH + 8);
+    }
+  }
+
+  /* 「今週はここ」の縦線 */
+  ctx.strokeStyle = COL_NOWLN;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([7, 5]);
+  ctx.beginPath();
+  ctx.moveTo(px(current), padT);
+  ctx.lineTo(px(current), padT + plotH);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* 線そのもの。値が抜けている週は線をつなげずに切る */
+  series.forEach(function(s){
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 4;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    var drawing = false;
+    for(var i = 0; i < weeks.length; i++){
+      var v = weeks[i][s.key];
+      if(!has(v)){ drawing = false; continue; }
+      if(!drawing){ ctx.moveTo(px(i), py(v)); drawing = true; }
+      else        { ctx.lineTo(px(i), py(v)); }
+    }
+    ctx.stroke();
+
+    /* 今週の点だけ、丸を大きく打って目立たせる */
+    var cv2 = weeks[current][s.key];
+    if(has(cv2)){
+      ctx.fillStyle = s.color;
+      ctx.beginPath();
+      ctx.arc(px(current), py(cv2), 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#FFFFFF";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  });
+}
+
+function drawAll(){
+  try{
+    updateChartColors();
+    lineChart("c_temp", [
+      { color: COL_DAY,    key: "temp_day"   },
+      { color: COL_NIGHT,  key: "temp_night" }
+    ], 10);
+    lineChart("c_sun", [
+      { color: COL_SUNMAX, key: "sun_max" },
+      { color: COL_SUNAVG, key: "sun_avg" }
+    ], 0);
+    lineChart("c_leaf", [
+      { color: COL_LEAF, key: "leaf_plant" }
+    ], 5);
+  }catch(e){
+    var box = document.getElementById("err");
+    box.style.display = "block";
+    box.textContent = "グラフを 表示できませんでした。\n" + e.message;
+  }
+}
+
+/* ============================================================
+   ぜんぶの週の表
+   ============================================================ */
+function renderTable(){
+  var head = '<thead><tr>'
+    + '<th class="wk">週</th><th>ひる℃</th><th>よる℃</th><th>平均℃</th><th>差℃</th>'
+    + '<th>日射<br>平均</th><th>日射<br>最高</th><th>葉<br>1株</th><th>葉<br>1㎡</th>'
+    + '<th>花の段</th><th>摘果</th><th>本/㎡</th><th class="wk">ポイント</th>'
+    + '</tr></thead>';
+  var body = weeks.map(function(w, i){
+    return '<tr' + (i === todayIndex ? ' class="now"' : '') + '>'
+      + '<td class="wk">' + fmt(w.week_no) + '週<br><span style="font-weight:600">'
+      + esc(w.date || "") + '</span></td>'
+      + '<td>' + fmt(w.temp_day) + '</td><td>' + fmt(w.temp_night) + '</td>'
+      + '<td>' + fmt(w.temp_avg) + '</td><td>' + fmt(w.temp_dif) + '</td>'
+      + '<td>' + fmt(w.sun_avg) + '</td><td>' + fmt(w.sun_max) + '</td>'
+      + '<td>' + fmt(w.leaf_plant) + '</td><td>' + fmt(w.leaf_m2) + '</td>'
+      + '<td>' + fmt(w.kabou) + '</td><td>' + fmt(w.tekika) + '</td>'
+      + '<td>' + fmt(w.density) + '</td>'
+      /* title を付けておくと、パソコンではマウスを乗せたときに全文が出る */
+      + '<td class="memo-cell" title="' + (w.memo ? esc(w.memo.replace(/\n/g, " / ")) : "") + '">'
+      + (w.memo ? esc(w.memo.replace(/\n/g, " / ")) : "") + '</td>'
+      + '</tr>';
+  }).join("");
+  document.getElementById("alltable").innerHTML = head + '<tbody>' + body + '</tbody>';
+}
+
+/* ---------- 起動 ---------- */
+render();
+renderTable();
+
+/* スマホの設定で 明るい画面／暗い画面 が切り替わったら、
+   グラフのめもりの色も合わせて描き直す */
+if(window.matchMedia){
+  var mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if(mq.addEventListener) mq.addEventListener("change", drawAll);
+}
+
+document.getElementById("foot").textContent =
+    "もとのデータ：" + (PLAN_DATA.source || "") + "　作業計画シート"
+  + "／更新：" + (PLAN_DATA.built_at || "");
+
+})();
+</script>
+
+</body>
+</html>
