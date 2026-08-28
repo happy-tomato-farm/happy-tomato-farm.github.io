@@ -311,6 +311,22 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.01em}
   text-align:center;color:var(--muted);font-weight:700;padding:50px 16px;
   font-size:14px;white-space:pre-line;line-height:1.8;
 }
+.retrybtn{
+  display:inline-block;margin-top:14px;font-family:inherit;font-size:15px;font-weight:800;
+  padding:11px 26px;border:2px solid var(--line);border-radius:var(--r-chip);
+  background:var(--card);color:var(--muted);cursor:pointer;
+}
+.retrybtn:hover{color:var(--ink);border-color:var(--muted)}
+
+/* そっと知らせるための帯 */
+.tell{
+  position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;
+  background:var(--ink);color:var(--ground);border-radius:var(--r-chip);
+  padding:9px 18px;font-size:12.5px;font-weight:800;line-height:1.6;
+  box-shadow:var(--shadow-lift);opacity:0;pointer-events:none;transition:opacity .2s;
+  max-width:92vw;text-align:center;
+}
+.tell.on{opacity:1}
 
 @media (max-width:520px){
   h1{font-size:22px}
@@ -373,6 +389,8 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.01em}
   <div id="loading" class="loading">読み込んでいます…</div>
   <div id="body"></div>
 </div>
+
+<div class="tell" id="tell"></div>
 
 <script>
 /* =====================================================================
@@ -870,33 +888,94 @@ function show(which, msg){
   $("#navbar").hidden  = which !== "app";
   $("#scalebar").classList.toggle("off", which !== "app" || state.mode !== "week");
   $("#body").innerHTML = which === "app" ? $("#body").innerHTML : "";
-  if(which === "loading") $("#loading").textContent = msg || "読み込んでいます…";
+  if(which === "loading") $("#loading").innerHTML = msg || "読み込んでいます…";
   if(which === "gate")    $("#pw-ng").textContent = msg || "";
   measureHead();
 }
 
-function load(pw){
-  show("loading");
-  fetch(API + "?want=shifts&pw=" + encodeURIComponent(pw))
+/* 前に読んだシフトの控え（この端末だけ）。
+   ハウスの中は電波が弱く、Google側が一時的に応答しないこともあるので、
+   まず控えを出してから、裏で新しいものを取りにいく */
+const CACHE_KEY = "htf_shift_cache";
+
+function cacheYomu(){
+  try{
+    const v = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+    return (v && v.length) ? v : null;
+  }catch(e){ return null; }
+}
+function cacheKaku(list){
+  try{ localStorage.setItem(CACHE_KEY, JSON.stringify(list)); }catch(e){ /* いっぱいでも動く */ }
+}
+
+let tellTimer = null;
+function tell(msg){
+  const el = $("#tell");
+  el.innerHTML = msg;
+  el.classList.add("on");
+  clearTimeout(tellTimer);
+  tellTimer = setTimeout(() => el.classList.remove("on"), 5000);
+}
+
+/* 時間切れつきの読み込み。
+   これが無いと、返事が来ないときに「読み込んでいます…」のまま止まる */
+function toruJSON(url, byo){
+  if(!window.AbortController) return fetch(url).then(r => r.json());
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), byo);
+  return fetch(url, { signal: ac.signal })
     .then(r => r.json())
+    .finally(() => clearTimeout(t));
+}
+
+function dasu(list, pw){
+  try{ localStorage.setItem(PW_KEY, pw); }catch(err){ /* 保存できなくても動く */ }
+  setup(list);
+  buildWhoChips();
+  show("app");
+  render();
+}
+
+function load(pw, nokori){
+  if(nokori === undefined) nokori = 3;
+
+  // 控えがあれば先に出してしまう。待たせない
+  const mae = cacheYomu();
+  if(mae) dasu(mae, pw);
+  else    show("loading");
+
+  toruJSON(API + "?want=shifts&pw=" + encodeURIComponent(pw)
+               + "&t=" + Date.now(), 30000)
     .then(j => {
       if(!j.ok){
         if(j.need === "aikotoba"){
           localStorage.removeItem(PW_KEY);
+          localStorage.removeItem(CACHE_KEY);
           show("gate", "あいことばがちがいます");
           return;
         }
         throw new Error(j.error || "読み込めませんでした");
       }
-      try{ localStorage.setItem(PW_KEY, pw); }catch(err){ /* 保存できなくても動く */ }
-      setup(j.shifts || []);
-      buildWhoChips();
-      show("app");
-      render();
+      cacheKaku(j.shifts || []);
+      dasu(j.shifts || [], pw);
     })
-    .catch(err => {
-      show("loading", "読み込めませんでした：" + err.message
-                    + "\n通信を確かめて、画面を開き直してください。");
+    .catch(() => {
+      if(nokori > 0){
+        if(!mae) show("loading", "つながりません。もう一度ためしています…");
+        setTimeout(() => load(pw, nokori - 1), 3000);
+        return;
+      }
+      if(mae){
+        // 見えてはいるので、古いかもしれないことだけ知らせる
+        tell("いま最新を取れませんでした。<br>前に読んだシフトを表示しています");
+        return;
+      }
+      show("loading",
+        'いま読み込めません\n' +
+        '<span style="font-size:13px">少し待つと直ることがほとんどです</span>\n' +
+        '<button id="retry" class="retrybtn" type="button">もう一度ためす</button>');
+      const b = document.getElementById("retry");
+      if(b) b.addEventListener("click", () => load(pw, 3));
     });
 }
 
