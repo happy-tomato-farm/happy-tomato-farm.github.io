@@ -1248,27 +1248,66 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
   };
 
   /* ---- 起動 ----
-     つながらないことがまれにあるので、何度かためしてから
-     「もう一度」ボタンを出す。読むだけなので何度ためしても害はない */
-  var yomikomi = function(nokori){
-    fetch(API + "?want=pests&t=" + Date.now())
+     前に読んだものをこの端末に控えておき、まずそれを出す。
+     ハウスの中は電波が弱く、Google側が一時的に応答しないこともあるため、
+     待たせずに、とりあえず読める状態にしておく */
+  var CACHE_KEY = "htf_byogai_cache";
+
+  var cacheYomu = function(){
+    try{
+      var v = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+      return (v && v.pests) ? v : null;
+    }catch(e){ return null; }
+  };
+  var cacheKaku = function(j){
+    try{
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        pests: j.pests || [], zukan: j.zukan || []
+      }));
+    }catch(e){ /* いっぱいでも動く */ }
+  };
+
+  /* 時間切れつき。これが無いと、返事が来ないとき
+     「読み込んでいます…」のまま止まってしまう */
+  var toruJSON = function(url, byo){
+    if(!window.AbortController) return fetch(url).then(function(r){ return r.json(); });
+    var ac = new AbortController();
+    var t = setTimeout(function(){ ac.abort(); }, byo);
+    return fetch(url, { signal: ac.signal })
       .then(function(r){ return r.json(); })
+      .then(function(j){ clearTimeout(t); return j; },
+            function(e){ clearTimeout(t); throw e; });
+  };
+
+  var tsukau = function(j){
+    ITEMS = j.pests || [];
+    (j.zukan || []).forEach(function(z){ if(z.name) ZUKAN[z.name] = z; });
+    ITEMS.forEach(function(n){
+      (n.pest || []).forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
+    });
+    /* 図鑑にだけある名前も、えらべるようにしておく */
+    Object.keys(ZUKAN).forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
+    renderFilters();
+    renderAll();
+  };
+
+  var MAE = cacheYomu();
+
+  var yomikomi = function(nokori){
+    toruJSON(API + "?want=pests&t=" + Date.now(), 30000)
       .then(function(j){
         if(!j.ok) throw new Error(j.error || "読み込めませんでした");
-        ITEMS = j.pests || [];
-        (j.zukan || []).forEach(function(z){ if(z.name) ZUKAN[z.name] = z; });
-        ITEMS.forEach(function(n){
-          (n.pest || []).forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
-        });
-        /* 図鑑にだけある名前も、えらべるようにしておく */
-        Object.keys(ZUKAN).forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
-        renderFilters();
-        renderAll();
+        cacheKaku(j);
+        tsukau(j);
       })
       .catch(function(e){
         if(nokori > 0){
-          $("#loading").textContent = "つながりません。もう一度ためしています…";
+          if(!MAE) $("#loading").textContent = "つながりません。もう一度ためしています…";
           setTimeout(function(){ yomikomi(nokori - 1); }, 3000);
+          return;
+        }
+        if(MAE){
+          bar("いま最新を取れませんでした。前に読んだものを出しています", true);
           return;
         }
         $("#loading").innerHTML =
@@ -1281,6 +1320,8 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
         });
       });
   };
+
+  if(MAE) tsukau(MAE);      // 控えを先に出す
   yomikomi(3);
 })();
 </script>
