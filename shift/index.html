@@ -452,9 +452,36 @@ let ALL_DATES = [], FIRST = "", LAST = "";
 const colorOf = p => COLOR.get(p) || GRAY;
 const pct = m => ((m - T0) / SPAN) * 100;
 
+/* 退職した人は、画面にだけ出さない。
+   スプレッドシートの記録は消さない（賃金台帳などで過去の勤務を見返すため）。
+
+   このファイルは GitHub で公開されるので、氏名は書かずに
+   下の nameHash() で変換した値だけを置く。名前→値の変換は一方通行なので、
+   ソースを読まれても誰のことか分からない。
+
+   ▼ 増やしたいとき
+     1. 数値を出す:  py -c "..." （手順は下の nameHash と同じ計算）
+     2. その値を RETIRED_HASH に足す
+   ▼ 復帰したとき
+     その行を消すだけでよい */
+const RETIRED_HASH = [
+  "53795450",   // 2026-08 退職
+];
+
+/** 名前を短い値に変換する（FNV-1a 32bit）。同じ名前なら必ず同じ値になる */
+function nameHash(s){
+  let h = 2166136261;
+  for(let i = 0; i < s.length; i++){
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);   // 32bit で掛け算する（桁あふれを切り捨てる）
+  }
+  return (h >>> 0).toString(16);  // 符号なしにして16進の文字列にする
+}
+
 /** 読み込んだデータを、画面が使いやすい形に組み直す */
 function setup(rows){
-  DATA = rows || [];
+  /* 退職者の行を外す。名前が空の行は「その日ぜんいんへのお知らせ」なので残す */
+  DATA = (rows || []).filter(r => !r || !r.p || !RETIRED_HASH.includes(nameHash(r.p)));
 
   byDate = new Map();
   const slot = d => {
@@ -519,7 +546,17 @@ function initCursor(){
   state.cur = monday(new Date());
   state.mon = new Date();
   if(has(state.cur) || !ALL_DATES.length) return;
-  const target = key(new Date()) > LAST ? toDate(LAST) : toDate(FIRST);
+
+  /* 今日からの日数の差がいちばん小さい日を選ぶ。
+     以前は「今日が最終日より後なら最終日、そうでなければ先頭日」としていたが、
+     8月のようにデータが空いている時期だと、先の 9月ではなく
+     1年前の先頭日（2025-09-01）へ飛んでしまっていた */
+  const today = toDate(key(new Date()));
+  let target = toDate(ALL_DATES[0]), best = Infinity;
+  for(const d of ALL_DATES){
+    const diff = Math.abs(toDate(d) - today);
+    if(diff < best){ best = diff; target = toDate(d); }
+  }
   state.cur = monday(target);
   state.mon = new Date(target);
 }
