@@ -54,8 +54,8 @@ main{padding:12px 12px 90px;max-width:820px;margin:0 auto}
 .grid{display:grid;gap:9px}
 .g2{grid-template-columns:1fr 1fr}
 @media(max-width:430px){.g2{grid-template-columns:1fr}}
-label.f{display:block}
-label.f>span{display:block;font-size:11.5px;color:var(--muted);letter-spacing:.05em;margin-bottom:3px;font-weight:600}
+label.f,div.f{display:block}
+.f>span{display:block;font-size:11.5px;color:var(--muted);letter-spacing:.05em;margin-bottom:3px;font-weight:600}
 input[type=date],input[type=text],input[type=number],select,textarea{
   width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
   background:var(--surface2);appearance:none;font-size:15px;
@@ -86,6 +86,17 @@ textarea{min-height:52px;resize:vertical}
 .chip.u植物成長調整剤,.chip.uその他,.chip.u農薬肥料{background:#E9EDE9;color:var(--muted)}
 .chip.rac{background:#152B22;color:#C8E6D6;font-family:var(--mono);letter-spacing:.06em}
 .chip.rac.est{background:#EFEFE6;color:#7A6A12;border:1px dashed #C8BC8A}
+.chip.house{background:var(--leaf-l);color:var(--leaf-d)}
+.chip.mix{background:#F2EFDC;color:var(--olive)}
+
+/* ---------- ハウスの複数選択 ---------- */
+.hsel{display:flex;gap:6px;flex-wrap:wrap}
+.hsel button{border:1px solid var(--line);background:var(--surface2);color:var(--muted);
+  border-radius:8px;padding:9px 14px;font-size:14.5px;font-weight:700;cursor:pointer}
+.hsel button[aria-pressed="true"]{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.hsel button.all{border-style:dashed;font-size:12.5px;font-weight:600;padding:9px 11px}
+.hsel button:active{transform:translateY(1px)}
+.hnone{font-size:12px;color:var(--amber);font-weight:600;line-height:1.5;margin-top:5px}
 
 /* ---------- search ---------- */
 .searchwrap{position:relative}
@@ -130,6 +141,8 @@ textarea{min-height:52px;resize:vertical}
 .pip.now.w{background:var(--amber);border-color:var(--amber);box-shadow:0 0 0 2px var(--amber-l)}
 .pip.over{background:var(--red);border-color:var(--red);box-shadow:0 0 0 2px var(--red-l)}
 .pip.inf{width:auto;height:auto;border:0;background:none;color:var(--muted);font-size:12px}
+.usage .cap{font-size:11px;color:var(--faint);font-weight:700;letter-spacing:.07em;margin:6px 0 1px}
+.usage .cap:first-child{margin-top:0}
 .ucount{font-family:var(--mono);font-size:13px;font-weight:700}
 .alert{margin-top:9px;border-radius:8px;padding:9px 11px;font-size:13px;font-weight:600;line-height:1.5}
 .alert.w{background:var(--amber-l);color:var(--amber);border:1px solid #E5CB93}
@@ -138,6 +151,13 @@ textarea{min-height:52px;resize:vertical}
 .alert b{font-weight:800}
 
 /* ---------- history ---------- */
+/* 同じ日の散布は、この見出しの下にまとめて並べる */
+.dgroup{margin-bottom:18px}
+.dghd{display:flex;align-items:baseline;gap:9px;padding:0 2px 6px;flex-wrap:wrap;
+  border-bottom:2px solid var(--line);margin-bottom:9px}
+.dghd .dg-d{font-family:var(--mono);font-size:17px;font-weight:800;letter-spacing:.02em}
+.dghd .dg-w{font-size:12.5px;color:var(--muted);font-weight:700}
+.dghd .dg-n{font-size:11.5px;color:var(--faint);font-weight:700;margin-left:auto}
 .day{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);margin-bottom:10px;overflow:hidden}
 .dayhd{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--surface2);border-bottom:1px solid var(--line2);flex-wrap:wrap}
 .dayhd .d{font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:.02em}
@@ -192,23 +212,26 @@ hr.s{border:0;border-top:1px solid var(--line2);margin:11px 0}
 <!-- ============ 入力 ============ -->
 <section class="view on" id="v-input">
   <div class="card">
-    <div class="grid g2">
-      <label class="f"><span>散布日</span><input type="date" id="f-date"></label>
-      <label class="f"><span>ハウス</span><select id="f-house"></select></label>
+    <label class="f"><span>散布日</span><input type="date" id="f-date"></label>
+    <div class="f" style="margin-top:11px">
+      <span>かけたハウス（タップで複数選べます）</span>
+      <div class="hsel" id="f-houses"></div>
+      <div class="hnone" id="f-houses-none"></div>
     </div>
-    <div class="grid g2" style="margin-top:9px">
-      <label class="f"><span>散布水量（L）</span><input type="number" id="f-water" inputmode="decimal" placeholder="例 300"></label>
+    <div class="grid g2" style="margin-top:11px">
+      <label class="f"><span>散布水量（L・全体）</span><input type="number" id="f-water" inputmode="decimal" placeholder="例 300"></label>
       <label class="f"><span>展着剤</span><input type="text" id="f-spread" placeholder="例 まくぴか"></label>
     </div>
   </div>
 
   <div class="card">
-    <h2>使用した農薬を追加</h2>
+    <h2 id="mixhd">混用する薬剤を追加</h2>
     <div class="searchwrap">
       <input type="text" id="q" placeholder="名前・成分・登録番号で検索（例: ダコニール / ジノテフラン / 20811）" autocomplete="off">
       <div class="results hide" id="results"></div>
     </div>
-    <p class="note">トマトに登録のある農薬のみ検索できます（「野菜類」登録を含む）。</p>
+    <p class="note">一緒にタンクへ入れた薬剤は、続けて検索して<b>すべてここに追加</b>してください。1回の散布としてまとめて記録され、履歴でも1件にまとまります。<br>
+      トマトに登録のある農薬のみ検索できます（「野菜類」登録を含む）。</p>
   </div>
 
   <div id="items"></div>
@@ -229,6 +252,10 @@ hr.s{border:0;border-top:1px solid var(--line2);margin:11px 0}
 <!-- ============ 使用回数 ============ -->
 <section class="view" id="v-sum">
   <div class="card">
+    <label class="f"><span>ハウス</span><select id="sum-house"></select></label>
+    <p class="note">使用回数は<b>ハウスごと</b>に数えます。登録の使用回数は「その栽培（＝そのハウスの株）に何回かけたか」の制限なので、同じ日に3ハウスへかけた場合は、それぞれのハウスで1回ずつです。</p>
+  </div>
+  <div class="card">
     <h2>本剤ごとの使用回数（今期）</h2>
     <div id="sum-prod"></div>
   </div>
@@ -240,7 +267,8 @@ hr.s{border:0;border-top:1px solid var(--line2);margin:11px 0}
   <div class="card">
     <h2>RACコードの使用順（ローテーション確認）</h2>
     <div id="sum-rac"></div>
-    <p class="note">同じRACコードが連続していないか確認してください。コードが同じなら、成分名が違っても作用機構は同じです。</p>
+    <p class="note">同じRACコードが連続していないか確認してください。コードが同じなら、成分名が違っても作用機構は同じです。<br>
+      ローテーションはハウス単位で組むものなので、上の「ハウス」で1つ選んで見ると正確です。</p>
   </div>
 </section>
 
@@ -257,6 +285,7 @@ hr.s{border:0;border-top:1px solid var(--line2);margin:11px 0}
   <div class="card">
     <h2>ハウス</h2>
     <label class="f"><span>候補（カンマ区切り）</span><input type="text" id="s-houses" placeholder="中央,東"></label>
+    <p class="note">ここに並べた名前が、記録画面のハウス選択ボタンになります。使用回数もこの単位で数えます。</p>
   </div>
   <div class="card">
     <h2>Excelに出す</h2>
@@ -318,10 +347,28 @@ function defSettings(){
   return {start:sy+'-07-01', end:(sy+1)+'-06-30', houses:['中央','東']};
 }
 let S, R;
+
+/* ハウスが選ばれていない記録の置き場所。集計を落とさないための入れ物 */
+const NOHOUSE='（未指定）';
+
+/* 旧形式（house: 文字列ひとつ）を新形式（houses: 配列）に直す。
+   古い記録をそのまま読み続けられるようにするための変換で、
+   読み込んだ時点で1回だけ通し、以降は houses だけを見る。 */
+function migrate(rec){
+  if(!rec||typeof rec!=='object') return null;
+  if(!Array.isArray(rec.houses)) rec.houses = rec.house ? [String(rec.house)] : [];
+  delete rec.house;
+  if(!Array.isArray(rec.items)) rec.items=[];
+  return rec;
+}
+/* その記録が「どのハウスの1回」として数えられるか。未指定は専用の入れ物へ */
+function houseKeys(r){ return (r.houses&&r.houses.length)? r.houses : [NOHOUSE]; }
+
 function load(){
   try{S=Object.assign(defSettings(),JSON.parse(localStorage.getItem(KS)||'{}'));}catch(e){S=defSettings();}
   try{R=JSON.parse(localStorage.getItem(KR)||'[]');}catch(e){R=[];}
   if(!Array.isArray(R))R=[];
+  R=R.map(migrate).filter(Boolean);
 }
 function saveAll(){
   try{localStorage.setItem(KR,JSON.stringify(R));localStorage.setItem(KS,JSON.stringify(S));}
@@ -333,20 +380,28 @@ load();
 const inSeason = d => d>=S.start && d<=S.end;
 function seasonRecords(exceptId){ return R.filter(r=>inSeason(r.date) && r.id!==exceptId); }
 
-/* 回数カウント：本剤×使用方法 / 本剤合計 / 有効成分 */
+/* 回数カウント：本剤×使用方法 / 本剤合計 / 有効成分
+   いずれも「ハウスごと」に数える。登録の使用回数は、その栽培（＝そのハウスの株）に
+   何回かけたかの制限なので、同じ日に2ハウスへかけても、各ハウス1回ずつになる。
+   返す形は  { ハウス名: { キー: 回数 } }  の入れ子。 */
 function countAll(exceptId){
   const byMethod={}, byProd={}, byIng={};
-  for(const r of seasonRecords(exceptId)) for(const it of r.items){
-    byProd[it.reg]=(byProd[it.reg]||0)+1;
-    const k=it.reg+'\u0000'+it.method;
-    byMethod[k]=(byMethod[k]||0)+1;
-    for(const [ing] of (it.rac||[])) byIng[ing]=(byIng[ing]||0)+1;
+  const bump=(o,h,k)=>{ if(!o[h])o[h]={}; o[h][k]=(o[h][k]||0)+1; };
+  for(const r of seasonRecords(exceptId)){
+    const hs=houseKeys(r);
+    for(const it of r.items) for(const h of hs){
+      bump(byProd,h,it.reg);
+      bump(byMethod,h,it.reg+'\u0000'+it.method);
+      for(const [ing] of (it.rac||[])) bump(byIng,h,ing);
+    }
   }
   return {byMethod,byProd,byIng};
 }
+/* 入れ子の集計から1つ取り出す。記録の無いハウスは0回 */
+const cnt=(o,h,k)=> (o[h]&&o[h][k])||0;
 
 /* ---------- 入力中の下書き ---------- */
-let draft = {id:null, date:todayStr(), house:'', water:'', spread:'', memo:'', items:[]};
+let draft = {id:null, date:todayStr(), houses:[], water:'', spread:'', memo:'', items:[]};
 
 /* ---------- 検索 ---------- */
 function search(q){
@@ -449,7 +504,10 @@ function pipRow(label, used, lim, adding){
 function renderItems(){
   const C=countAll(draft.id);
   const box=$('#items');
-  if(!draft.items.length){ box.innerHTML='<div class="card"><div class="empty">まだ農薬が入っていません。<br>上の検索窓から追加してください。</div></div>'; return; }
+  const nItem=draft.items.length;
+  updateSaveLabel();
+  $('#mixhd').textContent = nItem? ('混用する薬剤を追加（いま '+nItem+'剤）') : '混用する薬剤を追加';
+  if(!nItem){ box.innerHTML='<div class="card"><div class="empty">まだ薬剤が入っていません。<br>上の検索窓から追加してください。<br>混用するなら、2剤目・3剤目も続けて追加してください。</div></div>'; return; }
   box.innerHTML = draft.items.map(it=>{
     const p=P[it.pi];
     const pests=pestsFor(p);
@@ -476,27 +534,52 @@ function renderItems(){
         (a.tot&&a.tot.length?'<dt>総使用回数</dt><dd style="font-weight:500;font-size:12.5px">'+a.tot.map(esc).join('<br>')+'</dd>':'')+
         '</dl>';
 
-      const usedM = C.byMethod[it.reg+'\u0000'+it.method]||0;
-      const usedP = C.byProd[it.reg]||0;
-      let rows = pipRow('この使用方法', usedM, it.lim, true);
-      if(usedP!==usedM) rows += pipRow('本剤 合計', usedP, null, true);
+      /* いま選ばれているハウスそれぞれについて、今期すでに何回かけたかを数える。
+         ハウス未選択のときは「（未指定）」1つ分として扱う。 */
+      const hs = draft.houses.length? draft.houses.slice() : [NOHOUSE];
+      const single = hs.length===1;
+      const kM = it.reg+'\u0000'+it.method;
+      const usedM = hs.map(h=>[h, cnt(C.byMethod,h,kM)]);
+      const usedP = hs.map(h=>[h, cnt(C.byProd,h,it.reg)]);
+
+      let rows='';
+      if(single){
+        rows += pipRow('この使用方法', usedM[0][1], it.lim, true);
+        if(usedP[0][1]!==usedM[0][1]) rows += pipRow('本剤 合計', usedP[0][1], null, true);
+      }else{
+        rows += '<div class="cap">この使用方法（ハウスごと）</div>';
+        usedM.forEach(([h,n])=>{ rows += pipRow(h, n, it.lim, true); });
+        if(usedP.some(([,n],i)=>n!==usedM[i][1])){
+          rows += '<div class="cap">本剤 合計（ハウスごと）</div>';
+          usedP.forEach(([h,n])=>{ rows += pipRow(h, n, null, true); });
+        }
+      }
       for(const [ing,code] of (it.rac||[])){
-        const n=(C.byIng[ing]||0)+1;
+        const txt = single ? ('今期 '+(cnt(C.byIng,hs[0],ing)+1)+'回目')
+                           : hs.map(h=>h+' '+(cnt(C.byIng,h,ing)+1)+'回目').join('　');
         rows += '<div class="urow"><span class="lb">'+esc(ing)+'</span>'+
                 '<span class="chip rac'+(it.racsrc==='推定'?' est':'')+'">'+esc((code&&code!=='0')?code:'—')+'</span>'+
-                '<span class="ucount">今期 '+n+'回目</span></div>';
+                '<span class="ucount">'+esc(txt)+'</span></div>';
       }
       usage='<div class="usage">'+rows+'</div>';
 
-      const nowM = usedM+1;
-      if(it.lim!=null && nowM>it.lim){
+      /* 判定は、選んだハウスのうち一番回数が進んでいるものに合わせる。
+         1つでも上限を超えるハウスがあれば、その名前を出して警告する。 */
+      const over  = it.lim==null? [] : usedM.filter(([,n])=>n+1 >  it.lim).map(([h])=>h);
+      const atLim = it.lim==null? [] : usedM.filter(([,n])=>n+1 === it.lim).map(([h])=>h);
+      const maxNow = Math.max.apply(null, usedM.map(([,n])=>n)) + 1;
+      if(over.length){
         klass=' over';
-        alerts += '<div class="alert e">⚠ 使用回数オーバー<br>「'+esc(a.method)+'」での使用が今期 <b>'+nowM+'回目</b>です。登録は <b>'+esc(a.times)+'</b> です。この記録は残せますが、出荷できなくなる可能性があります。</div>';
-      } else if(it.lim!=null && nowM===it.lim){
+        alerts += '<div class="alert e">⚠ 使用回数オーバー<br>'+
+          (single?'':'<b>'+esc(over.join('・'))+'</b> で、')+
+          '「'+esc(a.method)+'」での使用が今期 <b>'+maxNow+'回目</b>です。登録は <b>'+esc(a.times)+'</b> です。この記録は残せますが、出荷できなくなる可能性があります。'+
+          (single?'':'<br>まだ余裕のあるハウスだけを選び直すこともできます。')+'</div>';
+      } else if(atLim.length){
         klass=' warn';
-        alerts += '<div class="alert w">これで上限（'+esc(a.times)+'）に達します。今期はこの使用方法でもう使えません。</div>';
+        alerts += '<div class="alert w">'+(single?'':'<b>'+esc(atLim.join('・'))+'</b> は、')+
+          'これで上限（'+esc(a.times)+'）に達します。今期はこの使用方法でもう使えません。</div>';
       }
-      if(a.tot&&a.tot.length && (it.rac||[]).some(([ing])=>(C.byIng[ing]||0)>=1)){
+      if(a.tot&&a.tot.length && (it.rac||[]).some(([ing])=>hs.some(h=>cnt(C.byIng,h,ing)>=1))){
         alerts += '<div class="alert i">同じ有効成分を今期すでに使っています。総使用回数（'+esc(a.tot[0])+'）は混合剤も合算されます。</div>';
       }
     } else {
@@ -542,59 +625,124 @@ $('#items').addEventListener('click',e=>{
 
 /* ---------- 保存 ---------- */
 function readForm(){
+  /* ハウスはボタンを押した時点で draft.houses に入れているので、ここでは読まない */
   draft.date=$('#f-date').value||todayStr();
-  draft.house=$('#f-house').value;
   draft.water=$('#f-water').value;
   draft.spread=$('#f-spread').value;
   draft.memo=$('#f-memo').value;
 }
 $('#b-save').addEventListener('click',()=>{
   readForm();
-  if(!draft.items.length){toast('農薬が入っていません');return;}
+  if(!draft.items.length){toast('薬剤が入っていません');return;}
   const bad=draft.items.filter(it=>it.ai==null);
   if(bad.length){toast('病害虫と使用方法を選んでください');return;}
+  if(!draft.houses.length &&
+     !confirm('ハウスが選ばれていません。\n「未指定」として記録すると、使用回数をハウスごとに数えられません。\nこのまま記録しますか？')) return;
   if(draft.id){ const i=R.findIndex(r=>r.id===draft.id); R[i]=JSON.parse(JSON.stringify(draft)); }
   else { draft.id=uid(); R.push(JSON.parse(JSON.stringify(draft))); }
   R.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
-  saveAll(); toast('記録しました'); newDraft(); renderHist(); renderSum(); go('hist');
+  const msg='記録しました（'+draft.items.length+'剤'+(draft.houses.length?' × '+draft.houses.length+'ハウス':'')+'）';
+  saveAll(); toast(msg); newDraft(); renderHist(); renderSum(); go('hist');
 });
 function newDraft(){
-  draft={id:null,date:todayStr(),house:S.houses[0]||'',water:'',spread:'',memo:'',items:[]};
+  /* ふだんは全ハウスへかけるので、初めから全部選んだ状態にしておく。
+     一部のハウスだけなら、選ばれているボタンを外して減らす。 */
+  draft={id:null,date:todayStr(),houses:S.houses.slice(),water:'',spread:'',memo:'',items:[]};
   fillForm(); renderItems();
 }
 function fillForm(){
   $('#f-date').value=draft.date; $('#f-water').value=draft.water;
   $('#f-spread').value=draft.spread; $('#f-memo').value=draft.memo;
-  $('#f-house').innerHTML=S.houses.map(h=>'<option'+(draft.house===h?' selected':'')+'>'+esc(h)+'</option>').join('')+'<option value="">（未指定）</option>';
-  $('#f-house').value=draft.house;
+  renderHouseChips();
+}
+/* 記録画面のハウス選択ボタンを描き直す。
+   設定にある候補に加えて、その記録が持っている（設定から消された）ハウス名も出す。
+   そうしないと、古い記録を「直す」ときにハウスが画面から消えてしまう。 */
+function houseButtonList(){ return [...new Set([...S.houses, ...draft.houses])]; }
+function renderHouseChips(){
+  const list=houseButtonList();
+  $('#f-houses').innerHTML =
+    list.map(h=>'<button type="button" data-h="'+esc(h)+'" aria-pressed="'+(draft.houses.includes(h)?'true':'false')+'">'+esc(h)+'</button>').join('')
+    + (list.length>1? '<button type="button" class="all" data-all="1">'+(draft.houses.length===list.length?'すべて外す':'すべて選ぶ')+'</button>' : '');
+  $('#f-houses-none').textContent = draft.houses.length? ''
+    : '※ ハウスが選ばれていません。このまま記録すると「未指定」になり、使用回数をハウスごとに数えられません。';
+  updateSaveLabel();
+}
+$('#f-houses').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  const list=houseButtonList();
+  if(b.dataset.all){
+    draft.houses = (draft.houses.length===list.length)? [] : list.slice();
+  }else{
+    const h=b.dataset.h;
+    const next = draft.houses.includes(h)? draft.houses.filter(x=>x!==h) : [...draft.houses, h];
+    draft.houses = list.filter(x=>next.includes(x));   // 設定の並び順に揃えておく
+  }
+  renderHouseChips();
+  renderItems();          // ハウスが変われば、表示される使用回数も変わる
+});
+/* 保存ボタンに「何剤 × 何ハウス」を出し、混用と複数ハウスを目で確認できるようにする */
+function updateSaveLabel(){
+  const n=draft.items.length, h=draft.houses.length;
+  $('#b-save').textContent = n
+    ? ('この散布を記録する（'+n+'剤'+(h? ' × '+h+'ハウス':'')+'）')
+    : 'この散布を記録する';
 }
 $('#b-clear').addEventListener('click',()=>{ if(draft.items.length&&!confirm('入力中の内容を消しますか？'))return; newDraft(); toast('消しました'); });
 
 /* ---------- 履歴 ---------- */
 function pestLabel(k){ const [c,p]=String(k).split('\u0001'); return p + (c&&c!=='トマト'?'〔'+c+'〕':''); }
+const WDAY=['日','月','火','水','木','金','土'];
+function wdayOf(d){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d||'')); if(!m) return '';
+  return WDAY[new Date(+m[1],+m[2]-1,+m[3]).getDay()];
+}
+/* 1回の散布（＝記録1件）のカード。日付は上のグループ見出しに出すので、ここには出さない */
+function histCard(r){
+  const items=r.items.map(it=>
+    '<div class="hitem"><div class="n">'+esc(it.name)+'</div>'+
+    '<div class="l2"><span class="chip u'+esc(it.use)+'">'+esc(it.use)+'</span>'+
+      '<span class="k">'+esc(pestLabel(it.pest))+'</span><span>'+esc(it.method)+'</span>'+
+      '<span style="font-family:var(--mono)">'+esc(it.actual||it.dose)+'</span>'+
+      (it.rac||[]).map(([ing,c])=>'<span class="chip rac">'+esc(ing)+' '+esc((c&&c!=='0')?c:'—')+'</span>').join('')+
+      (it.note?'<span>'+esc(it.note)+'</span>':'')+
+    '</div></div>').join('');
+  const hs=r.houses||[];
+  return '<div class="day">'+
+    '<div class="dayhd">'+
+      (hs.length? hs.map(h=>'<span class="chip house">'+esc(h)+'</span>').join('')
+                : '<span class="h" style="color:var(--amber)">ハウス未指定</span>')+
+      (r.items.length>1?'<span class="chip mix">混用 '+r.items.length+'剤</span>':'')+
+      (r.water?'<span class="h">'+esc(r.water)+'L</span>':'')+
+      (r.spread?'<span class="h">展着 '+esc(r.spread)+'</span>':'')+
+      '<span class="sp"></span>'+
+      '<button class="btn sm" data-edit="'+r.id+'">直す</button>'+
+      '<button class="btn sm dan" data-rm="'+r.id+'">削除</button></div>'+
+    items + (r.memo?'<div class="daynote">'+esc(r.memo)+'</div>':'')+'</div>';
+}
 function renderHist(){
   const q=nk($('#hq').value||'');
-  const list=R.filter(r=> !q || r.items.some(it=>nk(it.name+it.kind+pestLabel(it.pest)).includes(q)));
+  const list=R.filter(r=> !q
+    || nk((r.houses||[]).join('')).includes(q)
+    || r.items.some(it=>nk(it.name+it.kind+pestLabel(it.pest)).includes(q)));
   const box=$('#histlist');
   if(!list.length){ box.innerHTML='<div class="card"><div class="empty">記録がありません。<br>「記録する」から入力してください。</div></div>'; return; }
-  box.innerHTML=list.map(r=>{
-    const items=r.items.map(it=>
-      '<div class="hitem"><div class="n">'+esc(it.name)+'</div>'+
-      '<div class="l2"><span class="chip u'+esc(it.use)+'">'+esc(it.use)+'</span>'+
-        '<span class="k">'+esc(pestLabel(it.pest))+'</span><span>'+esc(it.method)+'</span>'+
-        '<span style="font-family:var(--mono)">'+esc(it.actual||it.dose)+'</span>'+
-        (it.rac||[]).map(([ing,c])=>'<span class="chip rac">'+esc(ing)+' '+esc((c&&c!=='0')?c:'—')+'</span>').join('')+
-        (it.note?'<span>'+esc(it.note)+'</span>':'')+
-      '</div></div>').join('');
-    return '<div class="day">'+
-      '<div class="dayhd"><span class="d">'+esc(r.date)+'</span>'+
-        (r.house?'<span class="h">'+esc(r.house)+'</span>':'')+
-        (r.water?'<span class="h">'+esc(r.water)+'L</span>':'')+
-        (r.spread?'<span class="h">展着 '+esc(r.spread)+'</span>':'')+
-        '<span class="sp"></span>'+
-        '<button class="btn sm" data-edit="'+r.id+'">直す</button>'+
-        '<button class="btn sm dan" data-rm="'+r.id+'">削除</button></div>'+
-      items + (r.memo?'<div class="daynote">'+esc(r.memo)+'</div>':'')+'</div>';
+  /* 同じ日の散布をひとまとめにする。R は日付の新しい順に並んでいるので、
+     頭から順に見て、日付が変わったところで区切ればよい。 */
+  const groups=[];
+  for(const r of list){
+    const g=groups[groups.length-1];
+    if(g && g.d===r.date) g.rs.push(r); else groups.push({d:r.date, rs:[r]});
+  }
+  box.innerHTML=groups.map(g=>{
+    const nItem=g.rs.reduce((s,r)=>s+r.items.length,0);
+    const hs=[...new Set(g.rs.reduce((a,r)=>a.concat(r.houses||[]),[]))];
+    return '<div class="dgroup">'+
+      '<div class="dghd"><span class="dg-d">'+esc(g.d)+'</span>'+
+        '<span class="dg-w">'+esc(wdayOf(g.d))+'曜</span>'+
+        '<span class="dg-n">'+(g.rs.length>1? g.rs.length+'回の散布・':'')+'計'+nItem+'剤'+
+          (hs.length? '／'+esc(hs.join('・')) : '')+'</span>'+
+      '</div>'+ g.rs.map(histCard).join('') +'</div>';
   }).join('');
 }
 $('#hq').addEventListener('input',renderHist);
@@ -605,71 +753,121 @@ $('#histlist').addEventListener('click',e=>{
 });
 
 /* ---------- 使用回数サマリー ---------- */
+/* 集計画面のハウス選択に並べる名前。設定の候補＋実際に記録に出てくる名前 */
+function houseOptions(){
+  const set=new Set(S.houses);
+  for(const r of R) for(const h of houseKeys(r)) set.add(h);
+  return [...set];
+}
+function fillSumHouses(){
+  const sel=$('#sum-house'), cur=sel.value, opts=houseOptions();
+  sel.innerHTML='<option value="">すべて（ハウス別に表示）</option>'+
+    opts.map(h=>'<option value="'+esc(h)+'">'+esc(h)+'</option>').join('');
+  sel.value = opts.indexOf(cur)>=0 ? cur : '';   // 選んでいたハウスが残っていれば保つ
+}
+$('#sum-house').addEventListener('change',renderSum);
+
 function renderSum(){
+  fillSumHouses();
+  const hf=$('#sum-house').value;                    // 空 = すべてのハウスをまとめて表示
   const recs=seasonRecords(null);
-  // 本剤×使用方法
+  const hOf=r=>houseKeys(r).filter(h=>!hf||h===hf);  // この記録が回数に効くハウス
+
+  /* --- 本剤 × 使用方法（ハウスごとに数える） --- */
   const m={};
-  for(const r of recs) for(const it of r.items){
-    const k=it.reg+'\u0000'+it.method;
-    if(!m[k]) m[k]={name:it.name,use:it.use,method:it.method,lim:it.lim,times:it.times,n:0,last:''};
-    m[k].n++; if(r.date>m[k].last)m[k].last=r.date;
+  for(const r of recs){
+    const hs=hOf(r); if(!hs.length) continue;
+    for(const it of r.items){
+      const k=it.reg+'\u0000'+it.method;
+      if(!m[k]) m[k]={name:it.name,use:it.use,method:it.method,lim:it.lim,times:it.times,byH:{},last:''};
+      for(const h of hs) m[k].byH[h]=(m[k].byH[h]||0)+1;
+      if(r.date>m[k].last)m[k].last=r.date;
+    }
   }
-  const rows=Object.values(m).sort((a,b)=>b.n-a.n||a.name.localeCompare(b.name));
-  $('#sum-prod').innerHTML = rows.length? '<table class="tbl"><thead><tr><th>農薬 / 使用方法</th><th>登録上限</th><th style="text-align:right">今期</th><th>最終</th></tr></thead><tbody>'+
+  const rows=Object.values(m).map(x=>{
+    const ns=Object.values(x.byH);
+    /* 上限に一番近いハウスの回数で判定する。1棟でも超えたら赤にしたいため */
+    x.max = ns.length? Math.max.apply(null,ns) : 0;
+    x.detail = Object.entries(x.byH).sort((a,b)=>b[1]-a[1]).map(([h,n])=>h+' '+n).join('　');
+    return x;
+  }).sort((a,b)=>b.max-a.max||a.name.localeCompare(b.name));
+  $('#sum-prod').innerHTML = rows.length?
+    '<table class="tbl"><thead><tr><th>農薬 / 使用方法</th><th>登録上限</th>'+
+      (hf?'':'<th>ハウス別</th>')+'<th style="text-align:right">'+(hf?'今期':'最多')+'</th><th>最終</th></tr></thead><tbody>'+
     rows.map(x=>{
-      const cls = x.lim!=null && x.n>x.lim?'over':(x.lim!=null&&x.n===x.lim?'warn':'');
+      const cls = x.lim!=null && x.max>x.lim?'over':(x.lim!=null&&x.max===x.lim?'warn':'');
       return '<tr class="'+cls+'"><td><b>'+esc(x.name)+'</b><br><span style="color:var(--muted);font-size:11.5px">'+esc(x.method)+'</span></td>'+
-        '<td style="font-size:12px">'+esc(x.times||'—')+'</td><td class="n"><b>'+x.n+'</b></td><td class="n" style="font-size:11.5px;color:var(--muted)">'+esc(x.last)+'</td></tr>';
+        '<td style="font-size:12px">'+esc(x.times||'—')+'</td>'+
+        (hf?'':'<td style="font-size:11.5px;color:var(--muted)">'+esc(x.detail)+'</td>')+
+        '<td class="n"><b>'+x.max+'</b></td><td class="n" style="font-size:11.5px;color:var(--muted)">'+esc(x.last)+'</td></tr>';
     }).join('')+'</tbody></table>' : '<div class="empty">今期の記録がありません。</div>';
 
-  // 成分
+  /* --- 有効成分（同じくハウスごと） --- */
   const ing={};
-  for(const r of recs) for(const it of r.items) for(const [a,c] of (it.rac||[])){
-    if(!ing[a]) ing[a]={code:c,n:0,prods:new Set(),last:''};
-    ing[a].n++; ing[a].prods.add(it.name); if(r.date>ing[a].last)ing[a].last=r.date;
+  for(const r of recs){
+    const hs=hOf(r); if(!hs.length) continue;
+    for(const it of r.items) for(const [a,c] of (it.rac||[])){
+      if(!ing[a]) ing[a]={code:c,byH:{},prods:new Set(),last:''};
+      for(const h of hs) ing[a].byH[h]=(ing[a].byH[h]||0)+1;
+      ing[a].prods.add(it.name); if(r.date>ing[a].last)ing[a].last=r.date;
+    }
   }
-  const ir=Object.entries(ing).sort((a,b)=>b[1].n-a[1].n);
-  $('#sum-ing').innerHTML = ir.length? '<table class="tbl"><thead><tr><th>有効成分</th><th>RAC</th><th style="text-align:right">今期</th><th>使った剤</th></tr></thead><tbody>'+
+  const ir=Object.entries(ing).map(([a,v])=>{
+    const ns=Object.values(v.byH);
+    v.max = ns.length? Math.max.apply(null,ns) : 0;
+    v.detail = Object.entries(v.byH).sort((x,y)=>y[1]-x[1]).map(([h,n])=>h+' '+n).join('　');
+    return [a,v];
+  }).sort((a,b)=>b[1].max-a[1].max);
+  $('#sum-ing').innerHTML = ir.length?
+    '<table class="tbl"><thead><tr><th>有効成分</th><th>RAC</th>'+(hf?'':'<th>ハウス別</th>')+
+      '<th style="text-align:right">'+(hf?'今期':'最多')+'</th><th>使った剤</th></tr></thead><tbody>'+
     ir.map(([a,v])=>'<tr><td><b>'+esc(a)+'</b></td><td><span class="chip rac">'+esc((v.code&&v.code!=='0')?v.code:'—')+'</span></td>'+
-      '<td class="n"><b>'+v.n+'</b></td><td style="font-size:11.5px;color:var(--muted)">'+esc([...v.prods].join('、'))+'</td></tr>').join('')+'</tbody></table>'
+      (hf?'':'<td style="font-size:11.5px;color:var(--muted)">'+esc(v.detail)+'</td>')+
+      '<td class="n"><b>'+v.max+'</b></td><td style="font-size:11.5px;color:var(--muted)">'+esc([...v.prods].join('、'))+'</td></tr>').join('')+'</tbody></table>'
     : '<div class="empty">今期の記録がありません。</div>';
 
-  // RACローテーション（古い→新しい）
-  const seq=[...recs].sort((a,b)=>a.date<b.date?-1:1);
+  /* --- RACローテーション（古い→新しい） --- */
+  const seq=recs.filter(r=>hOf(r).length).sort((a,b)=>a.date<b.date?-1:1);
   const line=[];
   for(const r of seq){ const codes=new Set();
     for(const it of r.items) for(const [,c] of (it.rac||[])) if(c&&c!=='0')codes.add(c);
-    if(codes.size)line.push({d:r.date,c:[...codes]});
+    if(codes.size)line.push({d:r.date,c:[...codes],h:(r.houses||[]).join('・')});
   }
   const seen={};
-  $('#sum-rac').innerHTML = line.length? '<table class="tbl"><thead><tr><th>日付</th><th>RACコード</th><th>前回から</th></tr></thead><tbody>'+
+  $('#sum-rac').innerHTML = line.length?
+    '<table class="tbl"><thead><tr><th>日付</th>'+(hf?'':'<th>ハウス</th>')+'<th>RACコード</th><th>前回から</th></tr></thead><tbody>'+
     line.map(x=>{
       const gaps=x.c.map(c=>{const g=seen[c]!=null?'　'+c+': '+Math.round((new Date(x.d)-new Date(seen[c]))/86400000)+'日':''; return g;}).filter(Boolean).join('');
       x.c.forEach(c=>seen[c]=x.d);
-      return '<tr><td class="n" style="text-align:left">'+esc(x.d)+'</td><td>'+x.c.map(c=>'<span class="chip rac">'+esc(c)+'</span>').join(' ')+'</td>'+
+      return '<tr><td class="n" style="text-align:left">'+esc(x.d)+'</td>'+
+             (hf?'':'<td style="font-size:11.5px;color:var(--muted)">'+esc(x.h||'—')+'</td>')+
+             '<td>'+x.c.map(c=>'<span class="chip rac">'+esc(c)+'</span>').join(' ')+'</td>'+
              '<td style="font-size:11.5px;color:var(--muted)">'+esc(gaps||'初回')+'</td></tr>';
     }).join('')+'</tbody></table>' : '<div class="empty">今期の記録がありません。</div>';
 }
 
 /* ---------- 出力：行データ ---------- */
-const XH=['日付','ハウス','登録番号','用途','農薬の名称','農薬の種類','RACコード','有効成分','適用作物','適用病害虫',
+const XH=['日付','曜日','ハウス','登録番号','用途','農薬の名称','農薬の種類','RACコード','有効成分','適用作物','適用病害虫',
   '使用方法','希釈倍数・使用量(登録)','実際の希釈倍数・使用量','散布液量(登録)','使用時期(登録)','本剤の使用回数(登録)',
-  '今期 同一使用方法での回数','今期 本剤合計','総使用回数(登録)','散布水量(L)','展着剤','薬剤メモ','備考'];
+  '今期 同一使用方法での回数(このハウス)','今期 本剤合計(このハウス)','総使用回数(登録)','散布水量(L)','展着剤','混用剤数','薬剤メモ','備考'];
 function exportRows(){
   const rows=[];
   const seq=[...R].sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
-  const cM={},cP={};
+  const cM={},cP={};   // ハウスごとの通し番号
+  const bump=(o,h,k)=>{ if(!o[h])o[h]={}; return o[h][k]=(o[h][k]||0)+1; };
   for(const r of seq){
-    for(const it of r.items){
+    /* 1行 = 1薬剤 × 1ハウス にほどく。防除記録として提出しやすい形にするため。
+       3剤を2ハウスにかけた散布は6行になる。 */
+    for(const h of houseKeys(r)) for(const it of r.items){
       const kM=it.reg+'\u0000'+it.method;
-      const nM=inSeason(r.date)?(cM[kM]=(cM[kM]||0)+1):'';
-      const nP=inSeason(r.date)?(cP[it.reg]=(cP[it.reg]||0)+1):'';
+      const nM=inSeason(r.date)?bump(cM,h,kM):'';
+      const nP=inSeason(r.date)?bump(cP,h,it.reg):'';
       const [crop,pest]=String(it.pest).split('\u0001');
-      rows.push([r.date,r.house,it.reg,it.use,it.name,it.kind,
+      rows.push([r.date,wdayOf(r.date),(h===NOHOUSE?'':h),it.reg,it.use,it.name,it.kind,
         (it.rac||[]).map(([,c])=>(c&&c!=='0')?c:'—').join(' / '),
         (it.rac||[]).map(([a])=>a).join(' / '),
         crop||'',pest||'',it.method,it.dose,it.actual,it.liq||'',it.timing,it.times,
-        nM,nP,(it.tot||[]).join(' / '),r.water,r.spread,it.note,r.memo]);
+        nM,nP,(it.tot||[]).join(' / '),r.water,r.spread,r.items.length,it.note,r.memo]);
     }
   }
   return rows;
@@ -760,16 +958,18 @@ function buildXlsx(sheets){ // sheets:[{name,rows,dateCols}]
   return zip(files);
 }
 function summaryRows(){
+  /* 集計も「ハウス × 剤 × 使用方法」で1行。ハウスごとの残り回数がそのまま読める */
   const recs=seasonRecords(null), m={};
-  for(const r of recs) for(const it of r.items){
-    const k=it.reg+'\u0000'+it.method;
-    if(!m[k])m[k]={reg:it.reg,name:it.name,use:it.use,method:it.method,times:it.times,
+  for(const r of recs) for(const h of houseKeys(r)) for(const it of r.items){
+    const k=h+'\u0000'+it.reg+'\u0000'+it.method;
+    if(!m[k])m[k]={house:(h===NOHOUSE?'':h),reg:it.reg,name:it.name,use:it.use,method:it.method,times:it.times,
       rac:(it.rac||[]).map(([a,c])=>a+'('+((c&&c!=='0')?c:'—')+')').join(' / '),n:0,last:'',lim:it.lim};
     m[k].n++; if(r.date>m[k].last)m[k].last=r.date;
   }
-  const rows=[['登録番号','農薬の名称','用途','使用方法','有効成分(RAC)','登録上限','今期使用回数','判定','最終使用日']];
-  Object.values(m).sort((a,b)=>b.n-a.n).forEach(x=>rows.push([x.reg,x.name,x.use,x.method,x.rac,x.times||'—',x.n,
-    x.lim==null?'—':(x.n>x.lim?'超過':(x.n===x.lim?'上限':'残'+(x.lim-x.n)+'回')),x.last]));
+  const rows=[['ハウス','登録番号','農薬の名称','用途','使用方法','有効成分(RAC)','登録上限','今期使用回数','判定','最終使用日']];
+  Object.values(m).sort((a,b)=>a.house.localeCompare(b.house)||b.n-a.n)
+    .forEach(x=>rows.push([x.house,x.reg,x.name,x.use,x.method,x.rac,x.times||'—',x.n,
+      x.lim==null?'—':(x.n>x.lim?'超過':(x.n===x.lim?'上限':'残'+(x.lim-x.n)+'回')),x.last]));
   return rows;
 }
 /* ---------- Excel出力 ---------- */
@@ -781,8 +981,8 @@ function buildBook(){
   if(!rows.length){ toast('記録がありません'); return null; }
   return buildXlsx([
     {name:'散布履歴',rows:[XH,...rows],dateCols:[0],
-      widths:[11,7,8,8,22,20,10,16,9,14,12,16,16,14,14,14,10,10,30,10,12,16,20]},
-    {name:'使用回数集計',rows:summaryRows(),widths:[9,24,9,12,20,14,9,8,11]}
+      widths:[11,5,9,8,8,22,20,10,16,9,14,12,16,16,14,14,14,17,15,30,10,12,8,16,20]},
+    {name:'使用回数集計',rows:summaryRows(),widths:[8,9,24,9,12,20,14,9,8,11]}
   ]);
 }
 
@@ -880,7 +1080,7 @@ $('#f-rs').addEventListener('change',e=>{
       const j=JSON.parse(fr.result);
       if(!Array.isArray(j.records))throw 0;
       if(!confirm('現在の記録（'+R.length+'件）を、バックアップ（'+j.records.length+'件）で置き換えます。よろしいですか？'))return;
-      R=j.records; if(j.settings)S=Object.assign(S,j.settings);
+      R=j.records.map(migrate).filter(Boolean); if(j.settings)S=Object.assign(S,j.settings);
       saveAll(); fillSettings(); newDraft(); renderHist(); renderSum(); toast('復元しました');
     }catch(err){ toast('このファイルは読めません'); } };
   fr.readAsText(f); e.target.value='';
