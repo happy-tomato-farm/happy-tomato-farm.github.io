@@ -979,6 +979,30 @@ function load(pw, nokori){
     });
 }
 
+/* URL に付いた合言葉を読む。
+   例: https://happy-tomato-farm.github.io/shift/#pw=あいことば
+
+   なぜ必要か:
+   LINE などのアプリ内ブラウザは、閉じるたびに端末のメモ帳（localStorage）を捨てる。
+   そのため「一度入れたら覚えておく」方式だけでは毎回あいことばを聞かれてしまう。
+   リンク自体に持たせておけば、どのブラウザで開いても聞かれない。
+
+   「#」より後ろはサーバーに送られないため、GitHub 側のアクセス記録には残らない。
+   ?pw= 形式のリンクを配ってしまった場合も拾えるよう、両方を見ている。 */
+function urlNoAikotoba(){
+  const mirusaki = [location.hash, location.search];
+  for(let i = 0; i < mirusaki.length; i++){
+    const s = mirusaki[i];
+    if(!s) continue;
+    // 先頭の「#」「?」を落としてから pw=… を探す
+    const m = s.slice(1).match(/(?:^|&)pw=([^&]*)/);
+    if(!m) continue;
+    try{ return decodeURIComponent(m[1]).trim(); }
+    catch(e){ return m[1].trim(); }   // ％の並びが壊れたリンクでも止まらないように
+  }
+  return "";
+}
+
 function start(){
   wire();
 
@@ -1000,9 +1024,17 @@ function start(){
     if(e.key === "Enter") $("#pw-go").click();
   });
 
-  const saved = localStorage.getItem(PW_KEY) || "";
-  if(saved) load(saved);
-  else      show("gate");
+  /* あいことばを探す順番。
+       ① URL に付いていれば、それ（LINE から開く人向け）
+       ② 無ければ、前に入れて端末が覚えているもの（これまで通り）
+       ③ それも無ければ、あいことばの画面（これまで通り）
+     ①に当てはまらない人の動きは、今までと変わらない。 */
+  const fromURL = urlNoAikotoba();
+  const saved   = localStorage.getItem(PW_KEY) || "";
+  const pw      = fromURL || saved;
+
+  if(pw) load(pw);
+  else   show("gate");
 }
 
 start();
