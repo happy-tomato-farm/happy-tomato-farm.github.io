@@ -191,6 +191,17 @@ hr.s{border:0;border-top:1px solid var(--line2);margin:11px 0}
   background:var(--leaf-d);color:#fff;padding:10px 18px;border-radius:22px;font-size:13.5px;font-weight:600;
   opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
+
+/* ---------- 同期の状態表示 ---------- */
+.netbadge{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.04em;
+  padding:2px 9px;border-radius:11px;background:rgba(255,255,255,.14);color:#A9CFBC;white-space:nowrap}
+.netbadge.ok{color:#A9E3C4}
+.netbadge.busy{color:#EBD9A6}
+.netbadge.ng{background:#7A1F17;color:#FFD9D3}
+.syncrow{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.syncrow b{color:var(--ink);font-family:var(--mono);font-size:13px}
+.syncerr{margin-top:9px;font-size:12px;line-height:1.6;color:var(--red);background:var(--red-l);
+  border:1px solid #E3B5AF;border-radius:8px;padding:8px 10px;word-break:break-all}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -199,6 +210,7 @@ hr.s{border:0;border-top:1px solid var(--line2);margin:11px 0}
   <div class="hrow">
     <h1>消毒記録</h1>
     <span class="sub" id="dataver"></span>
+    <span class="netbadge" id="netbadge">確認中</span>
   </div>
   <nav role="tablist">
     <button role="tab" aria-selected="true" data-v="input">記録する</button>
@@ -275,6 +287,22 @@ hr.s{border:0;border-top:1px solid var(--line2);margin:11px 0}
 <!-- ============ 設定 ============ -->
 <section class="view" id="v-set">
   <div class="card">
+    <h2>同期</h2>
+    <div class="syncrow">
+      <span>状態</span><b id="s-net">—</b>
+      <span>最終同期</span><b id="s-last">—</b>
+      <span>未送信</span><b id="s-pend">0件</b>
+    </div>
+    <div class="btnrow" style="margin-top:11px">
+      <button class="btn pri" id="b-sync">今すぐ同期</button>
+      <button class="btn" id="b-bulk">この端末の記録をまとめて送る</button>
+    </div>
+    <div id="s-err"></div>
+    <p class="note">記録はスプレッドシートに保存されます。スマホでもパソコンでも、同じ記録が見えます。<br>
+      通信できないときは端末の中にためておき、つながったときに自動で送ります。<br>
+      「まとめて送る」は、この端末にだけある記録をシートへ送りたいときに使います。同じ記録は置き換わるだけで、二重にはなりません。</p>
+  </div>
+  <div class="card">
     <h2>今期の期間</h2>
     <div class="grid g2">
       <label class="f"><span>期の開始日</span><input type="date" id="s-start"></label>
@@ -285,7 +313,8 @@ hr.s{border:0;border-top:1px solid var(--line2);margin:11px 0}
   <div class="card">
     <h2>ハウス</h2>
     <label class="f"><span>候補（カンマ区切り）</span><input type="text" id="s-houses" placeholder="中央,東"></label>
-    <p class="note">ここに並べた名前が、記録画面のハウス選択ボタンになります。使用回数もこの単位で数えます。</p>
+    <p class="note">ここに並べた名前が、記録画面のハウス選択ボタンになります。使用回数もこの単位で数えます。<br>
+      <b>この設定と「今期の期間」は端末ごとです。</b>記録そのものは共有されますが、この2つはパソコンでも同じように設定してください。</p>
   </div>
   <div class="card">
     <h2>Excelに出す</h2>
@@ -339,14 +368,20 @@ const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200);}
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);}
 
-/* ---------- storage ---------- */
-const KR='shoudoku_records_v1', KS='shoudoku_settings_v1';
+/* ---------- storage ----------
+   記録の正本はスプレッドシート。ここに置くのは
+   ・KR: 最後に読めた記録の控え（通信できないときはこれを見る）
+   ・KP: まだ送れていない変更
+   ・KM: 最終同期時刻など、この端末の覚え書き
+   ・KS: 期の期間とハウス候補（端末ごとの設定なので共有しない） */
+const KR='shoudoku_records_v1', KS='shoudoku_settings_v1',
+      KP='shoudoku_pending_v1', KM='shoudoku_meta_v1';
 function defSettings(){
   const d=new Date(), y=d.getFullYear(), m=d.getMonth()+1;
   const sy = m>=7 ? y : y-1;
   return {start:sy+'-07-01', end:(sy+1)+'-06-30', houses:['中央','東']};
 }
-let S, R;
+let S, R, PEND, META;
 
 /* ハウスが選ばれていない記録の置き場所。集計を落とさないための入れ物 */
 const NOHOUSE='（未指定）';
@@ -369,12 +404,179 @@ function load(){
   try{R=JSON.parse(localStorage.getItem(KR)||'[]');}catch(e){R=[];}
   if(!Array.isArray(R))R=[];
   R=R.map(migrate).filter(Boolean);
+  try{PEND=JSON.parse(localStorage.getItem(KP)||'[]');}catch(e){PEND=[];}
+  if(!Array.isArray(PEND))PEND=[];
+  try{META=JSON.parse(localStorage.getItem(KM)||'{}');}catch(e){META={};}
+  if(!META||typeof META!=='object')META={};
 }
 function saveAll(){
   try{localStorage.setItem(KR,JSON.stringify(R));localStorage.setItem(KS,JSON.stringify(S));}
   catch(e){toast('保存できませんでした。バックアップを取ってください');}
 }
+function savePend(){ try{localStorage.setItem(KP,JSON.stringify(PEND));}catch(e){} }
+function saveMeta(){ try{localStorage.setItem(KM,JSON.stringify(META));}catch(e){} }
 load();
+
+/* ---------- スプレッドシートとの同期 ----------
+   記録の正本は Google スプレッドシート。端末が持つのは控えと送信待ちだけ。
+   こうすると「どちらの端末が新しいか」を突き合わせる必要がなくなり、
+   数え違いのもとになる競合が原理的に起きない。 */
+const API='https://script.google.com/macros/s/AKfycbzGcKh4EJojNnjvh9kwosFC2k6gzcllComI9iOgSAKeiIzcPoV2JK3tk9_gvjwx62ABZw/exec';
+
+const online = ()=> (navigator.onLine!==false);
+
+function setNet(text,cls){
+  const b=$('#netbadge'); if(b){ b.textContent=text; b.className='netbadge'+(cls?' '+cls:''); }
+  const n=$('#s-net');  if(n) n.textContent=text;
+  const p=$('#s-pend'); if(p) p.textContent=(PEND?PEND.length:0)+'件';
+  const l=$('#s-last'); if(l) l.textContent=(META&&META.lastSync)? META.lastSync.replace('T',' ').slice(0,16) : '—';
+}
+function setErr(msg){
+  const e=$('#s-err'); if(!e)return;
+  e.innerHTML = msg? '<div class="syncerr">'+esc(msg)+'</div>' : '';
+}
+
+/* --- 記録 ⇔ シートの行 ---
+   シートは平らな表なので、配列は区切り文字でつないで1セルに入れ、
+   読み戻すときに同じ区切りで割って組み直す。 */
+const SP=' / ';
+function sprayRow(r){
+  return {'id':r.id, '日付':r.date, 'ハウス':(r.houses||[]).join('・'),
+          '散布水量L':r.water||'', '展着剤':r.spread||'', '備考':r.memo||'',
+          '更新時刻':'', '削除':''};
+}
+function itemRows(r){
+  return (r.items||[]).map((it,i)=>{
+    const [crop,pest]=String(it.pest||'').split('\u0001');
+    return {'散布id':r.id, '並び':String(i),
+      '登録番号':it.reg, '農薬の名称':it.name, '用途':it.use, '農薬の種類':it.kind,
+      'RACコード':(it.rac||[]).map(x=>x[1]).join(SP),
+      '有効成分':(it.rac||[]).map(x=>x[0]).join(SP),
+      '適用作物':crop||'', '適用病害虫':pest||'', '使用方法':it.method||'',
+      '希釈倍数・使用量(登録)':it.dose||'', '実際の希釈倍数・使用量':it.actual||'',
+      '散布液量(登録)':it.liq||'', '使用時期(登録)':it.timing||'',
+      '本剤の使用回数(登録)':it.times||'',
+      '上限回数':(it.lim==null?'':String(it.lim)),
+      '総使用回数(登録)':(it.tot||[]).join(SP),
+      '薬剤メモ':it.note||''};
+  });
+}
+
+/* 登録番号から、埋め込んである農薬データの何番目かを引く表。
+   記録に「何番目か」を焼き付けてしまうと、農薬データを入れ替えたときに
+   別の薬を指す。だから記録には登録番号だけを残し、開くたびに引き直す。 */
+const REGIDX=(()=>{ const m={}; P.forEach((p,i)=>{ if(m[p.reg]==null)m[p.reg]=i; }); return m; })();
+
+function rowsToRecord(s, its){
+  const items = its.slice().sort((a,b)=>(+a['並び']||0)-(+b['並び']||0)).map(row=>{
+    const ings=(row['有効成分']||'').split(SP).filter(Boolean);
+    const codes=(row['RACコード']||'').split(SP);
+    const it={uid:uid(), reg:row['登録番号'], name:row['農薬の名称'],
+      kind:row['農薬の種類'], use:row['用途'],
+      rac:ings.map((a,i)=>[a, codes[i]||'']), racsrc:'',
+      pest:(row['適用作物']||'')+'\u0001'+(row['適用病害虫']||''),
+      crop:row['適用作物']||'', method:row['使用方法']||'',
+      dose:row['希釈倍数・使用量(登録)']||'', actual:row['実際の希釈倍数・使用量']||'',
+      liq:row['散布液量(登録)']||'', timing:row['使用時期(登録)']||'',
+      times:row['本剤の使用回数(登録)']||'',
+      lim:(row['上限回数']==null||row['上限回数']==='')?null:Number(row['上限回数']),
+      tot:(row['総使用回数(登録)']||'').split(SP).filter(Boolean),
+      note:row['薬剤メモ']||'', pi:null, ai:null};
+    /* 登録番号で薬を引き直し、適用行も病害虫と使用方法で突き合わせる。
+       見つからなければ pi は null のまま（登録が失効した薬などはこうなる）。 */
+    const pi=REGIDX[it.reg];
+    if(pi!=null){
+      it.pi=pi;
+      const ai=P[pi].apps.findIndex(a=>pestKey(a)===it.pest && a.method===it.method);
+      if(ai>=0) it.ai=ai;
+    }
+    return it;
+  });
+  return {id:s['id'], date:s['日付'], houses:(s['ハウス']||'').split('・').filter(Boolean),
+          water:s['散布水量L']||'', spread:s['展着剤']||'', memo:s['備考']||'', items:items};
+}
+
+/* --- 通信 --- */
+function apiGet(){
+  return fetch(API+'?want=shodoku&t='+Date.now())
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(j=>{ if(!j.ok) throw new Error(j.error||'読み込めませんでした'); return j; });
+}
+function apiPost(payload){
+  /* Content-Type を text/plain にするのが要点。application/json だとブラウザが
+     事前確認（プリフライト）を投げ、Apps Script がそれに応えられずに失敗する。 */
+  return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+                    body:JSON.stringify(payload)})
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(j=>{ if(!j.ok) throw new Error(j.error||'保存できませんでした'); return j; });
+}
+
+/* --- シートから取り込む --- */
+function pull(){
+  return apiGet().then(j=>{
+    const byId={};
+    (j.items||[]).forEach(row=>{ const k=row['散布id']; (byId[k]=byId[k]||[]).push(row); });
+    R=(j.sprays||[]).filter(s=>s['id'] && s['削除']!=='はい')
+                    .map(s=>rowsToRecord(s, byId[s['id']]||[]));
+    R.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+    META.lastSync=new Date().toISOString();
+    saveAll(); saveMeta();
+    return j;
+  });
+}
+
+/* --- 送信待ち --- */
+function queue(op){
+  PEND=PEND.filter(x=>x.id!==op.id);   // 同じ記録の古い指示は捨てる。最後の状態だけ送ればよい
+  PEND.push(op); savePend();
+}
+function flush(){
+  if(!PEND.length) return Promise.resolve();
+  const op=PEND[0];
+  const req = (op.t==='delete') ? {action:'delete', id:op.id}
+                                : {action:'save', spray:op.spray, items:op.items};
+  return apiPost(req).then(()=>{
+    PEND=PEND.filter(x=>x!==op); savePend();
+    return flush();                     // 残りも順に送る
+  });
+}
+/* この端末の記録をまるごとシートへ。移行と、バックアップ復元のあとに使う */
+function pushAll(){
+  if(!R.length) return Promise.resolve({count:0});
+  return apiPost({action:'bulk', sprays:R.map(sprayRow),
+                  items:R.reduce((a,r)=>a.concat(itemRows(r)),[])});
+}
+/* この版より前の記録はまだシートに載っていないので、初回だけまとめて送る */
+function migrateToSheet(){
+  if(META.migrated==='yes') return Promise.resolve();
+  return pushAll().then(()=>{
+    META.migrated='yes'; saveMeta();
+    if(R.length) toast('この端末の記録をシートへ移しました');
+  });
+}
+
+/* --- まとめ役：送ってから取り込む --- */
+let syncing=false;
+function sync(opts){
+  const quiet=opts&&opts.quiet;
+  if(syncing) return Promise.resolve();
+  if(!online()){ setNet('オフライン','ng'); return Promise.resolve(); }
+  syncing=true; setNet('同期中','busy'); setErr('');
+  /* 「移行 → 送信待ちを送る → 取り込む」の順を必ず守る。
+     取り込みは手元の記録をシートの内容で置き換えるので、
+     送るべきものを送り切る前に取り込むと、その分が消えてしまう。 */
+  return migrateToSheet().then(flush).then(pull).then(()=>{
+    setNet(PEND.length? '未送信'+PEND.length+'件':'同期済', PEND.length?'ng':'ok');
+    renderHist(); renderSum();
+    if(!quiet) toast('同期しました');
+  }).catch(e=>{
+    setNet(PEND.length? '未送信'+PEND.length+'件':'つながりません','ng');
+    setErr('同期できませんでした: '+e.message+
+           '　この端末の控えは表示しています。記録は失われていません。');
+    if(!quiet) toast('同期できませんでした');
+  }).then(()=>{ syncing=false; });
+}
+window.addEventListener('online', ()=>sync({quiet:true}));
 
 /* ---------- 期間内の記録 ---------- */
 const inSeason = d => d>=S.start && d<=S.end;
@@ -509,7 +711,21 @@ function renderItems(){
   $('#mixhd').textContent = nItem? ('混用する薬剤を追加（いま '+nItem+'剤）') : '混用する薬剤を追加';
   if(!nItem){ box.innerHTML='<div class="card"><div class="empty">まだ薬剤が入っていません。<br>上の検索窓から追加してください。<br>混用するなら、2剤目・3剤目も続けて追加してください。</div></div>'; return; }
   box.innerHTML = draft.items.map(it=>{
-    const p=P[it.pi];
+    const p=(it.pi!=null)? P[it.pi] : null;
+    if(!p){
+      /* 農薬データを入れ替えたあとで、登録番号が見つからなくなった記録。
+         記録の中身はそのまま残せるが、病害虫と使用方法は選び直せない。 */
+      return '<div class="item warn" data-uid="'+it.uid+'">'+
+        '<div class="itemhd"><div class="t"><div class="nm">'+esc(it.name)+'</div>'+
+          '<div class="meta"><span class="reg" style="font-family:var(--mono);color:var(--faint)">登録 '+esc(it.reg)+'</span></div>'+
+        '</div><button class="x" data-del="'+it.uid+'" aria-label="削除">×</button></div>'+
+        '<div class="itembd">'+
+          '<div class="alert w">この農薬が、いま入っている登録情報の中に見つかりません。登録が失効したか、農薬データを入れ替えた可能性があります。記録はこのまま残せますが、病害虫と使用方法は選び直せません。</div>'+
+          '<dl class="spec"><dt>病害虫</dt><dd>'+esc(pestLabel(it.pest))+'</dd>'+
+            '<dt>使用方法</dt><dd>'+esc(it.method||'—')+'</dd>'+
+            '<dt>実際の使用量</dt><dd class="mono">'+esc(it.actual||'—')+'</dd></dl>'+
+        '</div></div>';
+    }
     const pests=pestsFor(p);
     const pestOpts = pests.map(([k])=>{
       const [crop,pest]=k.split('\u0001');
@@ -634,15 +850,24 @@ function readForm(){
 $('#b-save').addEventListener('click',()=>{
   readForm();
   if(!draft.items.length){toast('薬剤が入っていません');return;}
-  const bad=draft.items.filter(it=>it.ai==null);
+  /* 登録情報に見つからない薬（pi が null）は、選び直せないのでそのまま通す */
+  const bad=draft.items.filter(it=>it.ai==null && it.pi!=null);
   if(bad.length){toast('病害虫と使用方法を選んでください');return;}
   if(!draft.houses.length &&
      !confirm('ハウスが選ばれていません。\n「未指定」として記録すると、使用回数をハウスごとに数えられません。\nこのまま記録しますか？')) return;
-  if(draft.id){ const i=R.findIndex(r=>r.id===draft.id); R[i]=JSON.parse(JSON.stringify(draft)); }
-  else { draft.id=uid(); R.push(JSON.parse(JSON.stringify(draft))); }
+  if(!draft.id) draft.id=uid();
+  const rec=JSON.parse(JSON.stringify(draft));
+  const i=R.findIndex(r=>r.id===rec.id);
+  if(i>=0) R[i]=rec; else R.push(rec);
   R.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
-  const msg='記録しました（'+draft.items.length+'剤'+(draft.houses.length?' × '+draft.houses.length+'ハウス':'')+'）';
-  saveAll(); toast(msg); newDraft(); renderHist(); renderSum(); go('hist');
+  const msg='記録しました（'+rec.items.length+'剤'+(rec.houses.length?' × '+rec.houses.length+'ハウス':'')+'）';
+  /* 先に手元へ反映して画面を返し、送信は裏で行う。
+     電波が悪くても入力が止まらないようにするため。 */
+  saveAll();
+  queue({t:'save', id:rec.id, spray:sprayRow(rec), items:itemRows(rec)});
+  setNet('未送信'+PEND.length+'件','busy');
+  toast(msg); newDraft(); renderHist(); renderSum(); go('hist');
+  sync({quiet:true});
 });
 function newDraft(){
   /* ふだんは全ハウスへかけるので、初めから全部選んだ状態にしておく。
@@ -749,7 +974,13 @@ $('#hq').addEventListener('input',renderHist);
 $('#histlist').addEventListener('click',e=>{
   const ed=e.target.closest('[data-edit]'), rm=e.target.closest('[data-rm]');
   if(ed){ const r=R.find(x=>x.id===ed.dataset.edit); draft=JSON.parse(JSON.stringify(r)); fillForm(); renderItems(); go('input'); toast('この日の記録を直しています'); }
-  if(rm){ if(!confirm('この日の記録を削除しますか？'))return; R=R.filter(x=>x.id!==rm.dataset.rm); saveAll(); renderHist(); renderSum(); toast('削除しました'); }
+  if(rm){
+    if(!confirm('この散布の記録を削除しますか？\nスプレッドシートでは「削除」の印が付き、行は残ります。'))return;
+    const id=rm.dataset.rm;
+    R=R.filter(x=>x.id!==id); saveAll();
+    queue({t:'delete', id:id});
+    renderHist(); renderSum(); toast('削除しました'); sync({quiet:true});
+  }
 });
 
 /* ---------- 使用回数サマリー ---------- */
@@ -1067,6 +1298,17 @@ $('#b-csv').addEventListener('click',()=>{
   dl(new Blob([csv],{type:'text/csv'}),'消毒記録_'+S.start.slice(0,4)+'.csv');
   toast('CSVを保存しました');
 });
+$('#b-sync').addEventListener('click',()=>sync({}));
+$('#b-bulk').addEventListener('click',()=>{
+  if(!R.length){ toast('送る記録がありません'); return; }
+  if(!confirm('この端末にある '+R.length+' 件をスプレッドシートへ送ります。\n同じ記録は置き換わるだけで、二重にはなりません。\nよろしいですか？')) return;
+  setNet('送信中','busy'); setErr('');
+  pushAll().then(()=>pull()).then(()=>{
+    setNet('同期済','ok'); renderHist(); renderSum(); toast('送りました');
+  }).catch(e=>{
+    setNet('つながりません','ng'); setErr('送れませんでした: '+e.message); toast('送れませんでした');
+  });
+});
 $('#b-bk').addEventListener('click',()=>{
   dl(new Blob([JSON.stringify({settings:S,records:R},null,1)],{type:'application/json'}),
      '消毒記録_backup_'+todayStr()+'.json');
@@ -1082,6 +1324,9 @@ $('#f-rs').addEventListener('change',e=>{
       if(!confirm('現在の記録（'+R.length+'件）を、バックアップ（'+j.records.length+'件）で置き換えます。よろしいですか？'))return;
       R=j.records.map(migrate).filter(Boolean); if(j.settings)S=Object.assign(S,j.settings);
       saveAll(); fillSettings(); newDraft(); renderHist(); renderSum(); toast('復元しました');
+      /* 復元した内容はまだシートに無い。送っておかないと、次の取り込みで消える */
+      pushAll().then(()=>sync({quiet:true}))
+               .catch(err=>setErr('復元した分を送れませんでした: '+err.message));
     }catch(err){ toast('このファイルは読めません'); } };
   fr.readAsText(f); e.target.value='';
 });
@@ -1114,6 +1359,10 @@ $('#datainfo').innerHTML='農薬 <b>'+P.length+'</b> 剤（トマト・野菜類
   P.filter(p=>p.rac&&p.rac.length).length+'</b> 剤（うち成分名からの推定 '+P.filter(p=>p.racsrc==='推定').length+' 剤）<br>'+
   '出典：農薬登録情報提供システム（農林水産省）／RACコード検索表（クロップライフジャパン）';
 fillSettings(); newDraft(); renderItems(); renderHist(); renderSum();
+/* 起動時：まず手元の控えを描いてから、スプレッドシートと突き合わせる。
+   通信できなくても、控えの分は読めるようにしておく。 */
+setNet('確認中','busy');
+sync({quiet:true});
 </script>
 </body>
 </html>
