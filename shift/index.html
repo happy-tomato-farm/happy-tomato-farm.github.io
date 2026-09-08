@@ -31,7 +31,11 @@
   /* JS から入れる。名前欄の幅・実働欄の幅・ヘッダーの高さ */
   --lane-left:74px;
   --hrs-w:54px;
+  /* --head-h    … 見出しのいまの高さ。日付の帯が貼りつく位置に使う
+     --head-full … 見出しをたたむ前の高さ。本文の上に空ける余白に使う。
+                   こちらはたたんでも動かさない（動かすと本文が上下にずれる） */
   --head-h:150px;
+  --head-full:150px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -59,6 +63,10 @@ body{
               "Quicksand","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",
               system-ui,sans-serif;
   font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+  /* 見出しは position:fixed で本文の上に浮いているため、
+     その高さぶんの居場所をここで確保する。
+     たたんでも縮めないので、本文が上下にずれることがない */
+  padding-top:var(--head-full);
 }
 .wrap{max-width:820px;margin:0 auto;padding:0 16px 90px}
 #body{padding-top:12px}
@@ -67,7 +75,10 @@ body{
    ヘッダー（ここが常に画面の上に残る）
    ===================================================================== */
 header{
-  position:sticky;top:0;z-index:40;
+  /* fixed にして、ページの流れから外す。
+     sticky のままだと「場所の予約」がページ内に残り、たたんで縮んだぶん
+     本文が上にずれて、スクロール中に画面が飛んでしまう */
+  position:fixed;left:0;right:0;top:0;z-index:40;
   background:color-mix(in srgb, var(--ground) 94%, transparent);
   backdrop-filter:saturate(1.4) blur(10px);
   border-bottom:1px solid var(--line);
@@ -796,9 +807,24 @@ function render(){
 }
 
 /* ヘッダーの高さを測って CSS 変数に入れる。
-   日付の見出しは、この高さのぶんだけ下に貼りつく */
+   日付の見出しは、この高さのぶんだけ下に貼りつく。
+
+   --head-full（本文の上に空ける余白）は、たたんでいる最中と
+   たたんだ状態では更新しない。ここを動かすと本文が上下にずれて、
+   スクロール中に画面が揺れて見えるため。
+
+   html 側に入れているのは、scroll-padding-top が html の値を見るから。
+   body に入れると、そちらには伝わらない（変数は下へしか流れない）。 */
 function measureHead(){
-  document.body.style.setProperty("--head-h", $("#head").offsetHeight + "px");
+  const head = $("#head");
+  const ima  = head.offsetHeight;
+  const css  = document.documentElement.style;
+
+  css.setProperty("--head-h", ima + "px");
+
+  if(!head.classList.contains("mini") && !head.dataset.ugoki){
+    css.setProperty("--head-full", ima + "px");
+  }
 }
 
 /* =====================================================================
@@ -860,17 +886,38 @@ function wire(){
      少しでも上に動かせば戻す（見たいときにすぐ出る） */
   const head = $("#head");
   let lastY = 0;
+  let ugokiTimer = null;
+
+  /* たたむ／開くの切り替え。
+     動いているあいだは目印（data-ugoki）を立てておき、
+     その間は --head-full を測り直さないようにする */
+  function setMini(on){
+    if(head.classList.contains("mini") === on) return;
+    head.dataset.ugoki = "1";
+    head.classList.toggle("mini", on);
+    // transitionend が来ないことがあるので、時間切れでも必ず外す
+    clearTimeout(ugokiTimer);
+    ugokiTimer = setTimeout(owari, 400);
+  }
+  function owari(){
+    delete head.dataset.ugoki;
+    measureHead();
+  }
+
   window.addEventListener("scroll", () => {
     const y = window.scrollY;
-    if(y < 60)                head.classList.remove("mini");
-    else if(y > lastY + 5)    head.classList.add("mini");
-    else if(y < lastY - 5)    head.classList.remove("mini");
+    if(y < 60)                setMini(false);
+    else if(y > lastY + 5)    setMini(true);
+    else if(y < lastY - 5)    setMini(false);
     lastY = y;
   }, { passive:true });
 
   /* ヘッダーの高さが変わったら測り直す（しまう動きの途中も含む） */
   if(window.ResizeObserver) new ResizeObserver(measureHead).observe(head);
-  head.addEventListener("transitionend", measureHead);
+  head.addEventListener("transitionend", () => {
+    clearTimeout(ugokiTimer);
+    owari();
+  });
 
   let tw = null;
   window.addEventListener("resize", () => {
