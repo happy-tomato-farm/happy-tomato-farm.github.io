@@ -383,13 +383,48 @@ body {
 
 /* ---------- 見出し ---------- */
 .topbar { border-bottom: 3px solid var(--leaf); }
-.topbar-inner { padding: 16px 20px; }
+.topbar-inner {
+  padding: 16px 20px;
+  /* 見出しを左、めにゅーボタンを右に置くための横並び。
+     flex-wrap があるので、画面が狭いときはボタンが下の行に折り返す */
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 .brand {
   font-family: inherit;
   font-size: 25px;
   font-weight: 800;
   letter-spacing: .02em;
 }
+
+/* めにゅーへ戻るボタン。
+   みんなのノート・病害虫の記録・シフトと同じ見た目にそろえている
+   （小さめの文字＋点線の下線）。共有版だけに出す。 */
+.tomenu {
+  margin-left: auto;          /* 余白を左側に寄せて、ボタンを右端へ */
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-bottom: 1.5px dotted var(--ink-soft);
+  white-space: nowrap;        /* 「≡ めにゅー」が途中で折れないように */
+}
+.tomenu:hover { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* ページ末尾の戻り口。表が縦に長いので、下まで見た人が上へ戻らずに済む。
+   ハウス選択の画面（saibai/index.html）と同じ文言・同じ中央寄せ。 */
+.tomenu-foot {
+  display: block;
+  text-align: center;
+  margin: 8px 0 40px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.tomenu-foot:hover { color: var(--ink); }
 .brand small {
   font-size: 13px;
   font-weight: 700;
@@ -625,6 +660,8 @@ summary em { font-size: 13px; font-weight: 700; }
 <header class="topbar">
   <div class="topbar-inner">
     <h1 class="brand">栽培記録<small>東ハウス ／ 2026シーズン</small></h1>
+    
+    <a class="tomenu" href="../minna/">≡ めにゅー</a>
   </div>
 </header>
 
@@ -2307,11 +2344,13 @@ HK
 <section class="panel">
   <h2>この書き出しについて</h2>
   <div class="meta">
-    <span><b>作成</b> 2026年8月12日 15:22</span>
+    <span><b>作成</b> 2026年9月8日 16:00</span>
     <span><b>作業記録</b> 作業記録/2027作業記録.xlsx</span><span><b>センサーCSV</b> 10ファイル（4週記録東_202509.csv 〜 4週記録東_202606.csv）</span><span><b>日の出日の入</b> 日の出日の入 シート</span><span><b>収量記録</b> バックアップ/2027収量記録_20260810_150601.xlsx</span>
   </div>
   <p class="printhint" style="margin-top:10px">このファイルは単独で開けます。Dropbox に置けばスマホからそのまま閲覧できます。</p>
 </section>
+
+<a class="tomenu-foot" href="../minna/">≡ めにゅーに もどる</a>
 
 </main>
 </body>
