@@ -715,10 +715,31 @@ function drawKaiFrames(){
 const o = (k,v,u,cls) => `<div class="o"><span class="k">${k}</span>
   <span class="v ${cls||""}">${v}${u?`<em>${u}</em>`:""}</span></div>`;
 
+/* 入力欄へ値を書き戻す。ただし【いま打っている欄には書き戻さない】。
+
+   type="number" の欄は、打ちかけの「0.」を"数として正しくない"とみなし、
+   JavaScript から読むと空文字が返る（HTML の決まりごと）。
+   そこへ書き戻すと、打った文字ごと消えて小数点が入力できなくなる。
+
+   打ち終わって欄から離れたときに render() をもう一度呼ぶので、
+   そのときに正しい形へ整えられる。 */
+function setVal(sel, v){
+  const el = $(sel);
+  if(!el || el === document.activeElement) return;
+  el.value = v;
+}
+
+/** その欄をいま打っている最中かどうか */
+const nyuryokuChu = sel => $(sel) === document.activeElement;
+
 function render(){
   const c=setg(), fg=ferg(), d=day(), f=fertCalc(fg);
+  // 計算には 1〜MAXKAI に収めた値を使う。
+  // ただし打っている最中は d.nkai を書き換えない。書き換えると、欄を消した瞬間に
+  // 1 が入り、続けて打った数字と合わさって「13」→ 7 に丸められてしまう
+  //（どの数字を打っても 7 になる原因）。欄から離れたときに整える。
   const nkai = Math.min(Math.max(Math.round(num(d.nkai))||1,1),MAXKAI);
-  d.nkai = nkai;
+  if(!nyuryokuChu("#i-nkai")) d.nkai = nkai;
 
   // ---- 日付 ----
   const dt=toDate(state.date);
@@ -736,15 +757,15 @@ function render(){
   }
   const T0 = num(d.bai);
 
-  $("#i-eday").value = d.eday; $("#i-nkai").value = nkai;
-  if(document.activeElement !== $("#i-nday")) $("#i-nday").value = fmt(num(d.nday),4);
-  if(document.activeElement !== $("#i-bai"))  $("#i-bai").value  = fmt(T0,0);
+  setVal("#i-eday", d.eday); setVal("#i-nkai", nkai);
+  setVal("#i-nday", fmt(num(d.nday),4));
+  setVal("#i-bai",  fmt(T0,0));
   $("#f-nday").classList.toggle("master", d.master==="n");
   $("#f-bai").classList.toggle("master",  d.master==="bai");
 
-  $("#i-fert").value=fg.fert; $("#i-bags").value=fg.bags; $("#i-made").value=fg.made;
-  $("#i-flow").value=c.flow; $("#i-need").value=c.need; $("#i-area").value=c.area;
-  $("#i-coef").value=c.coef; $("#i-film").value=c.film; $("#i-plus").value=c.plus;
+  setVal("#i-fert",fg.fert); setVal("#i-bags",fg.bags); setVal("#i-made",fg.made);
+  setVal("#i-flow",c.flow); setVal("#i-need",c.need); setVal("#i-area",c.area);
+  setVal("#i-coef",c.coef); setVal("#i-film",c.film); setVal("#i-plus",c.plus);
   $("#fsum").textContent = `${fg.fert}　${fg.bags}袋 / ${fg.made}L`;
   $("#ssum").textContent = `${fmt(num(c.flow),0)} L/min ・ ${fmt(num(c.area),0)} ㎡ ・ 係数 ${fmt(num(c.coef),1)}`;
   $("#fert-out").innerHTML =
@@ -807,8 +828,8 @@ function render(){
     $("#kt"+i).textContent = kaeta ? "かえた" : "かえる";
     $("#kv"+i).innerHTML =
       `${fmt(r.V,2)}<em>L/㎡</em>　${hms(r.P)}　N ${fmt(r.D,4)}<em>kg/10a</em>`;
-    $("#ke"+i).value = row.e ?? "";
-    $("#kp"+i).value = row.p ?? "";
+    setVal("#ke"+i, row.e ?? "");
+    setVal("#kp"+i, row.p ?? "");
     $("#ke"+i).placeholder = fmt(yoteiE,2);
     $("#kp"+i).placeholder = r.M>0 ? String(Math.round(r.M+num(c.plus))) : "";
     $("#keu"+i).textContent = `MJ/㎡（空欄なら 朝の予定 ${fmt(yoteiE,2)}）`;
@@ -916,6 +937,18 @@ function wire(){
                    "#i-coef":"coef","#i-film":"film","#i-plus":"plus" };
   for(const [s,k] of Object.entries(setMap))
     $(s).addEventListener("input", e=>{ setg()[k]=e.target.value; render(); });
+
+  /* 欄から離れたら、もう一度えがき直して形を整える。
+     打っている最中は setVal() が書き戻しを控えているので、
+     整えるのはここが担当になる。
+     （例：灌水回数に 13 と打って離れる → 7 に直る）
+
+     setTimeout で少し待つのは、blur の最中はまだ
+     document.activeElement がその欄のままのことがあり、
+     すぐ呼ぶと setVal() が「入力中」と判断して書き戻さないため。 */
+  document.querySelectorAll('input[type="number"]').forEach(el=>{
+    el.addEventListener("blur", ()=>setTimeout(render, 0));
+  });
 
   document.querySelectorAll(".tab").forEach(b=>{
     b.addEventListener("click",()=>{
