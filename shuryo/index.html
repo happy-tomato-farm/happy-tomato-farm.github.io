@@ -4,8 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#C62828">
+<meta name="mobile-web-app-capable" content="yes">
 <title>収量記録</title>
+<link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23C62828'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%232E6B33' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <style>
 :root{
   --paper:#FFF; --ink:#12180F; --muted:#5C6857; --rule:#C6CFC0;
@@ -21,23 +24,25 @@ body{
 }
 header{
   position:sticky; top:0; z-index:20; background:var(--paper);
-  border-bottom:3px solid var(--tomato); padding:12px 14px 0;
+  border-bottom:3px solid var(--tomato); padding:10px 14px 0;
 }
 .hrow{display:flex;align-items:baseline;gap:10px}
-h1{font-size:19px;font-weight:800;margin:0;flex:1}
-#net{font-size:12px;font-weight:700;padding:2px 8px;border:1.5px solid var(--rule);color:var(--muted)}
+h1{font-size:18px;font-weight:800;margin:0;flex:1}
+#net{font-size:12px;font-weight:700;padding:2px 8px;border:1.5px solid var(--rule);color:var(--muted);white-space:nowrap}
 #net.on{color:var(--leaf);border-color:var(--leaf)}
 #net.off{color:var(--tomato);border-color:var(--tomato)}
-nav{display:flex;margin-top:10px}
+#net.wait{color:var(--warn);border-color:var(--warn)}
+nav{display:flex;margin-top:8px}
 nav button{
-  flex:1;padding:11px 4px;font-size:15px;font-weight:700;font-family:inherit;
+  flex:1;padding:11px 2px;font-size:14.5px;font-weight:700;font-family:inherit;
   background:none;border:none;border-bottom:3px solid transparent;
   color:var(--muted);cursor:pointer;margin-bottom:-3px;
 }
 nav button.sel{color:var(--tomato);border-bottom-color:var(--tomato)}
-main{padding:16px 14px}
+main{padding:14px}
 section{display:none}
 section.sel{display:block}
+.hide{display:none !important}
 
 .card{border:2px solid var(--ink);margin-bottom:16px}
 .card>h2{
@@ -54,6 +59,34 @@ input[type=date],input[type=text],input[type=number],select{
   border:2px solid var(--rule);background:var(--tint);color:var(--ink);
 }
 input:focus,select:focus{outline:none;border-color:var(--leaf);background:var(--paper)}
+
+/* 数字欄の上下ボタン（スピナー）を消す。
+   押し間違いで数が変わるうえ、矢印キーを欄の移動に使うため邪魔になる */
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+/* ---- 日付バー（コンテナ・伝票で共通） ---- */
+#datebar{margin-bottom:14px}
+#datebar .row{display:flex;gap:8px;align-items:flex-end}
+#datebar .row>div:first-child{flex:1}
+#date{font-size:18px;font-weight:700;padding:13px 11px}
+button.today{
+  padding:13px 14px;font-size:14.5px;font-weight:700;font-family:inherit;
+  background:var(--paper);color:var(--ink);border:2px solid var(--ink);cursor:pointer;white-space:nowrap;
+}
+
+/* ---- コンテナ入力 ---- */
+.conrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.conbox{text-align:center}
+.conbox .nm{font-size:15px;font-weight:800;padding:7px 0;background:var(--ink);color:var(--paper)}
+.conbox input{
+  text-align:center;font-size:34px;font-weight:700;font-family:ui-monospace,monospace;
+  padding:14px 2px;border-top:none;
+}
+.savedline{display:flex;justify-content:space-between;align-items:center;
+  margin-top:12px;font-size:13.5px;color:var(--muted)}
+.savedline b{font-family:ui-monospace,monospace;font-size:17px;color:var(--ink)}
 
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{border:1px solid var(--rule);padding:0;text-align:center}
@@ -94,6 +127,7 @@ button.mini{
 .note{font-size:13.5px;color:var(--muted);margin:10px 0 0}
 .warnbox{border-left:5px solid var(--warn);background:var(--tint);padding:11px 12px;font-size:13.5px;margin-top:12px}
 .empty{color:var(--muted);font-size:14.5px;text-align:center;padding:26px 10px}
+.ver{text-align:center;font-size:11.5px;color:var(--muted);padding:4px 0 10px}
 
 #toast{
   position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
@@ -104,11 +138,12 @@ button.mini{
 #toast.bad{background:var(--tomato)}
 
 .recrow{display:flex;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--rule);font-size:14.5px}
-.recrow .d{font-family:ui-monospace,monospace;font-weight:700;width:88px;flex:none}
+.recrow .d{font-family:ui-monospace,monospace;font-weight:700;width:58px;flex:none}
 .recrow .h{flex:1}
 .recrow .n{font-family:ui-monospace,monospace;color:var(--muted)}
 .pill{font-size:11.5px;font-weight:700;padding:2px 7px;border:1.5px solid var(--rule);color:var(--muted)}
 .pill.wait{border-color:var(--warn);color:var(--warn)}
+.pill.ng{border-color:var(--tomato);color:var(--tomato)}
 
 .mtab{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .mtab button{
@@ -126,7 +161,8 @@ canvas{width:100%;height:auto;display:block}
 <header>
   <div class="hrow"><h1>収量記録</h1><span id="net">確認中</span></div>
   <nav>
-    <button data-tab="in" class="sel">入力</button>
+    <button data-tab="con" class="sel">コンテナ</button>
+    <button data-tab="slip">伝票</button>
     <button data-tab="rec">記録</button>
     <button data-tab="cmp">比較</button>
   </nav>
@@ -134,14 +170,41 @@ canvas{width:100%;height:auto;display:block}
 
 <main>
 
-<!-- ========== 入力 ========== -->
-<section id="in" class="sel">
-  <div class="card quiet"><div class="body" style="padding:12px 14px">
-    <label for="date">荷受日</label>
-    <input type="date" id="date">
-    <div id="spill" class="warnbox" style="display:none"></div>
-  </div></div>
+<!-- 日付バー：コンテナ／伝票タブで共通して使う -->
+<div id="datebar">
+  <div class="row">
+    <div>
+      <label for="date">荷受日</label>
+      <input type="date" id="date">
+    </div>
+    <button class="today" id="btn-today">今日</button>
+  </div>
+  <div id="spill" class="warnbox" style="display:none"></div>
+</div>
 
+<!-- ========== コンテナ（収穫終了時に入れる） ========== -->
+<section id="con" class="sel">
+  <div class="card">
+    <h2>コンテナ数</h2>
+    <div class="body">
+      <div class="conrow">
+        <div class="conbox"><div class="nm">東</div><input type="number" inputmode="numeric" id="c-east"></div>
+        <div class="conbox"><div class="nm">西</div><input type="number" inputmode="numeric" id="c-west"></div>
+        <div class="conbox"><div class="nm">南</div><input type="number" inputmode="numeric" id="c-south"></div>
+      </div>
+      <div class="savedline"><span id="savedmsg">打つたびに自動で保存されます</span><b id="consum"></b></div>
+      <div class="chk" id="split-verdict" style="display:none"><span>伝票のコンテナ数と照合</span><b>—</b></div>
+    </div>
+  </div>
+
+  <div class="card quiet">
+    <h2>伝票がまだの日</h2>
+    <div class="body" id="waiting"></div>
+  </div>
+</section>
+
+<!-- ========== 伝票（伝票が来てから入れる） ========== -->
+<section id="slip">
   <div class="card">
     <h2>宇賀神の伝票（東・西・南）</h2>
     <div class="body">
@@ -151,25 +214,13 @@ canvas{width:100%;height:auto;display:block}
         <div><label>伝票の総玉数</label><input type="number" inputmode="numeric" id="uga-chk" placeholder="照合用"></div>
       </div>
       <div class="chk" id="uga-verdict"><span>合計</span><b>—</b></div>
+      <div class="chk" id="slip-split"><span>東＋西＋南</span><b>—</b></div>
       <p class="note" style="margin-top:14px;font-weight:700;color:var(--ink)">お帰り</p>
       <div class="grid3">
         <div><label>手選格外</label><input type="number" inputmode="numeric" id="uga-o1"></div>
         <div><label>赤青玉</label><input type="number" inputmode="numeric" id="uga-o2"></div>
         <div><label>小玉</label><input type="number" inputmode="numeric" id="uga-o3"></div>
       </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>コンテナ数の仕分け</h2>
-    <div class="body">
-      <div class="grid3">
-        <div><label>東</label><input type="number" inputmode="numeric" id="c-east"></div>
-        <div><label>西</label><input type="number" inputmode="numeric" id="c-west"></div>
-        <div><label>南</label><input type="number" inputmode="numeric" id="c-south"></div>
-      </div>
-      <div class="chk" id="split-verdict"><span>東＋西＋南</span><b>—</b></div>
-      <p class="note">ハウス別の収量はこの比率で按分されます。伝票のコンテナ数と必ず一致させてください。</p>
     </div>
   </div>
 
@@ -191,7 +242,9 @@ canvas{width:100%;height:auto;display:block}
     </div>
   </div>
 
-  <button class="act" id="save">この日の記録を保存</button>
+  <p class="note">伝票もコンテナと同じく、打つたびに自動で保存されます。
+    下のボタンは「入れ終わった」ことを自分で確かめるためのものです。</p>
+  <button class="act" id="verify">確認して送信</button>
   <button class="act g" id="clear">この日の入力を消す</button>
 </section>
 
@@ -226,10 +279,34 @@ canvas{width:100%;height:auto;display:block}
 </section>
 
 </main>
+<div class="ver" id="verline"></div>
 <div id="toast"></div>
 
 <script>
 "use strict";
+
+/* =====================================================================
+   収量記録アプリ
+
+   画面は4つ。
+     コンテナ … 収穫が終わった時点で、東・西・南のコンテナ数だけを入れる
+     伝票     … 伝票が届いてから、等級ごとの内訳を入れる
+     記録     … 集計と、入力済みの日の一覧
+     比較     … 過去年度との月別比較
+
+   保存のしかた
+     ・入力するたびに端末（localStorage）へ自動保存する
+     ・電波があるときに Dropbox の 収量入力.json へ送る
+     ・圏外なら「送信待ち」として溜め、次に電波が入ったときに送る
+
+   同期のしかた（重要）
+     送信前に必ず Dropbox 側を読み、「日付＋ハウス」の単位で
+     新しいほうを残してから送る。丸ごと上書きしないので、
+     スマホでコンテナ数・パソコンで伝票、と別々に入れても消えない。
+   ===================================================================== */
+
+/* 版番号。ここを上げたら service worker の VER も上げること */
+var APP_VER = "2.0";
 
 /* ===================== 定数 ===================== */
 var SIZES = ["3L","2L","L","M","S","2S","3S","4S"];
@@ -245,9 +322,19 @@ var DBX_TOK_LS = "htf_dbx_refresh";
 var DATA_LS    = "htf_shuryo_data";
 var REMOTE_PATH = "/作業記録/収量入力.json";
 
+var HOUSES = ["宇賀神","東","西","南","中央"];
+var CON_HOUSES = [["東","c-east"],["西","c-west"],["南","c-south"]];
+var SLIP_HOUSES = [["宇賀神","uga"],["中央","chu"]];
+
 /* ===================== 状態 ===================== */
-var state = { records:{}, updatedAt:0, pending:false };
+/* records … "日付|ハウス" をキーにした記録。各記録は updatedAt（更新時刻）を持つ
+   pending … Dropbox へ未送信の変更があるか
+   syncedAt … 最後に送信できた時刻。これより新しい記録の数が「送信待ち」件数
+   forceReplace … 年度削除のときだけ立てる。マージせず丸ごと置き換える */
+var state = { records:{}, updatedAt:0, pending:false, syncedAt:0, forceReplace:false };
 var token = { value:null, expires:0 };
+var curDate = "";
+var netMsg = "";
 
 function key(date,house){ return date + "|" + house; }
 function num(v){ var n = parseInt(v,10); return isNaN(n) ? 0 : n; }
@@ -258,7 +345,15 @@ function toast(msg, bad){
   t.textContent = msg;
   t.className = "show" + (bad ? " bad" : "");
   clearTimeout(t._h);
-  t._h = setTimeout(function(){ t.className = ""; }, 3200);
+  t._h = setTimeout(function(){ t.className = ""; }, 3600);
+}
+
+/* 入力中の欄へは絶対に書き戻さない。
+   type="number" は打ちかけの値を空文字で返すため、書き戻すと入力が壊れる。 */
+function setVal(id, v){
+  var i = el(id);
+  if(i === document.activeElement) return;
+  i.value = (v === 0 || v === null || v === undefined || v === "") ? "" : v;
 }
 
 /* ===================== 年度 ===================== */
@@ -290,8 +385,47 @@ function prevMonthName(dateStr){
   var m = +dateStr.slice(5,7);
   return ({12:"11月",3:"2月",5:"4月",7:"6月"})[m] || "";
 }
+function todayStr(){
+  var t = new Date();
+  return t.getFullYear() + "-" + ("0"+(t.getMonth()+1)).slice(-2) + "-" + ("0"+t.getDate()).slice(-2);
+}
 
-/* ===================== 表の生成 ===================== */
+/* ===================== 記録の道具 ===================== */
+/* 更新時刻を除いた中身。同じかどうかの判定と、マージの比較に使う。
+   キーの順番が違っても同じ文字列になるように並べ替える */
+function fingerprint(r){
+  if(!r) return "";
+  var o = {};
+  Object.keys(r).sort().forEach(function(k){ if(k !== "updatedAt") o[k] = r[k]; });
+  return JSON.stringify(o);
+}
+function hasGrid(r){ return !!(r && r.grid && Object.keys(r.grid).length); }
+function isLive(r){ return !!(r && !r.cleared); }
+
+/* 記録を1件差し替える。中身が変わらないなら何もしない（無駄な送信待ちを作らない） */
+function putRecord(k, rec){
+  var cur = state.records[k];
+  if(fingerprint(cur) === fingerprint(rec)) return false;
+  rec.updatedAt = Date.now();
+  state.records[k] = rec;
+  return true;
+}
+
+function pendingCount(){
+  var n = 0;
+  Object.keys(state.records).forEach(function(k){
+    if((state.records[k].updatedAt||0) > state.syncedAt) n++;
+  });
+  return n;
+}
+
+function saveLocal(){
+  state.updatedAt = Date.now();
+  try{ localStorage.setItem(DATA_LS, JSON.stringify(state)); }
+  catch(e){ toast("端末に保存できません: " + e.message, true); }
+}
+
+/* ===================== 表の生成（伝票タブ） ===================== */
 function buildGrid(host, prefix){
   var h = '<table><thead><tr><th class="sz"></th>';
   GRADES.forEach(function(g){ h += "<th>"+g+"</th>"; });
@@ -310,13 +444,16 @@ function buildGrid(host, prefix){
   host.innerHTML = h;
 }
 
+function gridInput(prefix, s, g){
+  return document.querySelector('input[data-p="'+prefix+'"][data-s="'+s+'"][data-g="'+g+'"]');
+}
+
 function readGrid(prefix){
   var grid = {}, any = false;
   SIZES.forEach(function(s){
     var row = {};
     GRADES.forEach(function(g){
-      var i = document.querySelector('input[data-p="'+prefix+'"][data-s="'+s+'"][data-g="'+g+'"]');
-      var v = num(i.value);
+      var v = num(gridInput(prefix,s,g).value);
       if(v){ row[g] = v; any = true; }
     });
     if(Object.keys(row).length) grid[s] = row;
@@ -327,7 +464,8 @@ function readGrid(prefix){
 function writeGrid(prefix, grid){
   SIZES.forEach(function(s){
     GRADES.forEach(function(g){
-      var i = document.querySelector('input[data-p="'+prefix+'"][data-s="'+s+'"][data-g="'+g+'"]');
+      var i = gridInput(prefix,s,g);
+      if(i === document.activeElement) return;   /* 入力中の欄は触らない */
       var v = grid && grid[s] && grid[s][g];
       i.value = v ? v : "";
     });
@@ -339,8 +477,7 @@ function refreshGrid(prefix){
   SIZES.forEach(function(s){
     var rt = 0;
     GRADES.forEach(function(g){
-      var i = document.querySelector('input[data-p="'+prefix+'"][data-s="'+s+'"][data-g="'+g+'"]');
-      var v = num(i.value);
+      var v = num(gridInput(prefix,s,g).value);
       rt += v; colTot[g] += v;
     });
     el(prefix+"-rt-"+s.replace(/\W/g,"_")).textContent = rt || "";
@@ -359,67 +496,115 @@ function refreshGrid(prefix){
   return all;
 }
 
+/* ===================== コンテナ数の照合 ===================== */
+/* 東＋西＋南 と、伝票に書かれた宇賀神のコンテナ数を突き合わせる。
+   伝票がまだ入っていないときは照合欄そのものを出さない。 */
 function refreshSplit(){
-  var e = num(el("c-east").value), w = num(el("c-west").value), s = num(el("c-south").value);
-  var sum = e + w + s, want = num(el("uga-con").value);
-  var v = el("split-verdict"), b = v.querySelector("b");
-  if(!sum && !want){ v.className = "chk"; b.textContent = "—"; }
-  else if(want === sum && sum > 0){ v.className = "chk ok"; b.textContent = sum + " 個  一致"; }
-  else { v.className = "chk ng"; b.textContent = sum + " ／ 伝票 " + (want||0); }
-}
+  var sum = 0;
+  CON_HOUSES.forEach(function(p){ sum += num(el(p[1]).value); });
+  el("consum").textContent = sum ? "計 " + sum : "";
 
-/* ===================== 保存・読み出し ===================== */
-function collect(){
-  var date = el("date").value;
-  if(!date) return null;
-  var out = [];
-
-  var ug = readGrid("uga");
-  var ugCon = num(el("uga-con").value);
-  var ugO = num(el("uga-o1").value)+num(el("uga-o2").value)+num(el("uga-o3").value);
-  if(ug || ugCon || ugO){
-    out.push({date:date, house:"宇賀神", container:ugCon||null, okaeri:ugO||null, grid:ug,
-              okaeriParts:[num(el("uga-o1").value),num(el("uga-o2").value),num(el("uga-o3").value)],
-              slipTotal:num(el("uga-chk").value)||null});
-  }
-  [["東","c-east"],["西","c-west"],["南","c-south"]].forEach(function(p){
-    var c = num(el(p[1]).value);
-    if(c) out.push({date:date, house:p[0], container:c});
+  var want = num(el("uga-con").value);
+  [["split-verdict", true], ["slip-split", false]].forEach(function(t){
+    var v = el(t[0]), b = v.querySelector("b");
+    if(t[1]) v.style.display = want ? "flex" : "none";
+    if(!sum && !want){ v.className = "chk"; b.textContent = "—"; }
+    else if(want === sum && sum > 0){ v.className = "chk ok"; b.textContent = sum + " 個  一致"; }
+    else { v.className = "chk ng"; b.textContent = sum + " ／ 伝票 " + (want||0); }
   });
-
-  var ch = readGrid("chu");
-  var chCon = num(el("chu-con").value);
-  var chO = num(el("chu-o1").value)+num(el("chu-o2").value)+num(el("chu-o3").value);
-  if(ch || chCon || chO){
-    out.push({date:date, house:"中央", container:chCon||null, okaeri:chO||null, grid:ch,
-              okaeriParts:[num(el("chu-o1").value),num(el("chu-o2").value),num(el("chu-o3").value)],
-              slipTotal:num(el("chu-chk").value)||null});
-  }
-  return out;
 }
 
+/* ===================== 自動保存 ===================== */
+var saveTimer = null, syncTimer = null;
+/* 触られた画面を覚えておく。触っていない側は書き出さない
+   （表示だけして何も打っていない欄で、既存の記録を消さないため） */
+var dirty = {};
+
+/* 入力のたびに呼ぶ。端末へはすぐ、Dropbox へは少し待ってから送る
+   （打っている途中で何度も通信しないようにするため） */
+function scheduleSave(kind){
+  dirty[kind] = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 400);
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(function(){ sync(); }, 3000);
+}
+
+/* 溜まっている入力を端末へ書き出す */
+function flush(){
+  clearTimeout(saveTimer);
+  if(!curDate || !inSeason(curDate)){ dirty = {}; return; }  /* 8月・9月はExcelに行が無い */
+  var changed = false;
+  if(dirty.con)  changed = saveContainers() || changed;
+  if(dirty.slip) changed = saveSlip() || changed;
+  dirty = {};
+  if(changed){
+    state.pending = true;
+    saveLocal();
+    el("savedmsg").textContent = "保存しました " + new Date().toTimeString().slice(0,5);
+    updateNet();
+    renderWaiting();
+  }
+}
+
+/* コンテナ数（東・西・南）を保存する。
+   欄を空にした場合は「その日のその列を空にせよ」という指示を残す。
+   単に消すと、反映スクリプトがその日を知らないままになり、
+   Excelに古い数字が残ってしまう。 */
+function saveContainers(){
+  var changed = false;
+  CON_HOUSES.forEach(function(p){
+    var v = num(el(p[1]).value);
+    var k = key(curDate, p[0]);
+    var cur = state.records[k];
+    var rec;
+    if(v) rec = {date:curDate, house:p[0], container:v};
+    else if(isLive(cur)) rec = {date:curDate, house:p[0], cleared:true};
+    else return;                            /* もともと無くて空欄 → 何もしない */
+    if(putRecord(k, rec)) changed = true;
+  });
+  return changed;
+}
+
+/* 伝票（宇賀神・中央）を保存する */
+function saveSlip(){
+  var changed = false;
+  SLIP_HOUSES.forEach(function(pair){
+    var house = pair[0], p = pair[1];
+    var grid = readGrid(p);
+    var con = num(el(p+"-con").value);
+    var o1 = num(el(p+"-o1").value), o2 = num(el(p+"-o2").value), o3 = num(el(p+"-o3").value);
+    var ok = o1 + o2 + o3;
+    var k = key(curDate, house);
+    var cur = state.records[k];
+    var rec;
+    if(grid || con || ok){
+      rec = {date:curDate, house:house, container:con||null, okaeri:ok||null, grid:grid,
+             okaeriParts:[o1,o2,o3], slipTotal:num(el(p+"-chk").value)||null};
+    }
+    else if(isLive(cur)) rec = {date:curDate, house:house, cleared:true};
+    else return;
+    if(putRecord(k, rec)) changed = true;
+  });
+  return changed;
+}
+
+/* ===================== 日付の読み込み ===================== */
 function loadDay(date){
-  ["uga","chu"].forEach(function(p){
-    writeGrid(p, null);
-    el(p+"-con").value = ""; el(p+"-chk").value = "";
-    el(p+"-o1").value = ""; el(p+"-o2").value = ""; el(p+"-o3").value = "";
-  });
-  el("c-east").value = ""; el("c-west").value = ""; el("c-south").value = "";
+  curDate = date;
 
-  var m = {"宇賀神":"uga","中央":"chu"};
-  Object.keys(m).forEach(function(house){
-    var r = state.records[key(date,house)];
-    if(!r || r.cleared) return;
-    var p = m[house];
-    writeGrid(p, r.grid);
-    el(p+"-con").value = r.container || "";
-    el(p+"-chk").value = r.slipTotal || "";
-    var op = r.okaeriParts || [r.okaeri||0,0,0];
-    el(p+"-o1").value = op[0] || ""; el(p+"-o2").value = op[1] || ""; el(p+"-o3").value = op[2] || "";
+  ["uga","chu"].forEach(function(p){
+    var r = state.records[key(date, p === "uga" ? "宇賀神" : "中央")];
+    if(!isLive(r)) r = null;
+    writeGrid(p, r && r.grid);
+    setVal(p+"-con", r && r.container);
+    setVal(p+"-chk", r && r.slipTotal);
+    var op = (r && r.okaeriParts) || [r && r.okaeri || 0, 0, 0];
+    setVal(p+"-o1", op[0]); setVal(p+"-o2", op[1]); setVal(p+"-o3", op[2]);
   });
-  [["東","c-east"],["西","c-west"],["南","c-south"]].forEach(function(p){
-    var r = state.records[key(date,p[0])];
-    el(p[1]).value = (r && !r.cleared && r.container) ? r.container : "";
+  CON_HOUSES.forEach(function(p){
+    var r = state.records[key(date, p[0])];
+    setVal(p[1], isLive(r) ? r.container : "");
   });
 
   var sp = el("spill");
@@ -434,41 +619,35 @@ function loadDay(date){
       "ブロックの末尾に入ります。従来どおりの扱いです。";
   } else { sp.style.display = "none"; }
 
+  el("savedmsg").textContent = "打つたびに自動で保存されます";
   refreshGrid("uga"); refreshGrid("chu"); refreshSplit();
+  renderWaiting();
 }
 
-/* その日の記録を差し替える。
-   入力が無くなったハウスには「空にする」指示を残す。
-   単に消すと、反映スクリプトがその日を知らないままになり、
-   Excelに古い数字が残ってしまう。 */
-function applyDay(date, recs, force){
-  var byHouse = {};
-  (recs||[]).forEach(function(r){ byHouse[r.house] = r; });
-  ["宇賀神","東","西","南","中央"].forEach(function(h){
-    var k = key(date,h);
-    if(byHouse[h]) state.records[k] = byHouse[h];
-    else if(force || state.records[k]) state.records[k] = {date:date, house:h, cleared:true};
+/* その日の記録をすべて「空にする」。明示操作のときだけ使う */
+function clearDay(date){
+  var changed = false;
+  HOUSES.forEach(function(h){
+    if(putRecord(key(date,h), {date:date, house:h, cleared:true})) changed = true;
   });
-}
-
-function liveDates(){
-  var d = {};
-  Object.keys(state.records).forEach(function(k){
-    if(!state.records[k].cleared) d[k.split("|")[0]] = 1;
-  });
-  return d;
-}
-
-function saveLocal(){
-  state.updatedAt = Date.now();
-  localStorage.setItem(DATA_LS, JSON.stringify(state));
+  return changed;
 }
 
 /* ===================== Dropbox ===================== */
 function online(){ return navigator.onLine !== false; }
 
 function setNet(txt, cls){
+  netMsg = txt;
   var n = el("net"); n.textContent = txt; n.className = cls || "";
+}
+
+/* 送信待ちの件数を常に見えるようにする。気づかないまま溜まるのを防ぐ */
+function updateNet(){
+  var n = pendingCount();
+  if(!online()){ setNet(n ? "圏外 " + n + "件待ち" : "オフライン", "off"); return; }
+  if(!localStorage.getItem(DBX_TOK_LS)){ setNet("未接続", "off"); return; }
+  if(n) setNet("送信待ち " + n + "件", "wait");
+  else setNet("同期済", "on");
 }
 
 function getToken(){
@@ -488,16 +667,20 @@ function getToken(){
   });
 }
 
+/* Dropbox-API-Arg ヘッダーは ASCII しか通らない。
+   日本語のパス（/作業記録/…）を \uXXXX の形に直してから渡す */
 function apiArg(o){
-  return JSON.stringify(o).replace(/[\u007f-\uffff]/g, function(c){
+  return JSON.stringify(o).replace(/[-￿]/g, function(c){
     return "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4);
   });
 }
 
 function upload(){
+  var list = Object.keys(state.records).map(function(k){ return state.records[k]; });
+  /* 送信した時点の最新時刻を覚えておく。送信中に打った分は送信待ちのまま残る */
+  var mark = list.reduce(function(a,r){ return Math.max(a, r.updatedAt||0); }, 0);
   return getToken().then(function(t){
-    var payload = { version:1, updatedAt:state.updatedAt,
-                    records:Object.keys(state.records).map(function(k){ return state.records[k]; }) };
+    var payload = { version:1, updatedAt:Date.now(), records:list };
     return fetch("https://content.dropboxapi.com/2/files/upload", {
       method:"POST",
       headers:{
@@ -509,7 +692,12 @@ function upload(){
     });
   }).then(function(r){
     if(!r.ok) return r.text().then(function(t){ throw new Error("HTTP "+r.status+" "+t.slice(0,90)); });
-    state.pending = false; saveLocal(); setNet("同期済", "on");
+    state.forceReplace = false;
+    state.syncedAt = Math.max(state.syncedAt, mark);
+    /* 送信している最中に打った分は、まだ送れていない。
+       一律で pending=false にすると取りこぼすので数えて決める */
+    state.pending = pendingCount() > 0;
+    saveLocal();
   });
 }
 
@@ -526,22 +714,116 @@ function download(){
   });
 }
 
+/* Dropbox 側の内容を、日付＋ハウスの単位で取り込む。
+   丸ごと入れ替えないので、別の端末で入れた分が消えない。
+
+   勝ち負けの決め方
+     1. 更新時刻が新しいほうを採る
+     2. 時刻が同じなら、内訳を持っているほうを採る
+     3. 歯止め … 内訳を持つ記録を、内訳の無い記録で置き換えない。
+        端末の時計がずれていても伝票の中身が消えないようにするため。
+        ただし「消す」を押して作られた記録（cleared）は例外で、消去を優先する。 */
+function mergeRemote(remote){
+  var changed = false, guarded = 0;
+  (remote && remote.records || []).forEach(function(r){
+    if(!r || !r.date || !r.house) return;
+    var k = key(r.date, r.house);
+    var mine = state.records[k];
+    if(!mine){ state.records[k] = r; changed = true; return; }
+    if(fingerprint(mine) === fingerprint(r)) return;
+
+    var tm = mine.updatedAt || 0, tr = r.updatedAt || 0;
+    var win = tr > tm ? r : (tm > tr ? mine : (hasGrid(mine) ? mine : r));
+    var lose = (win === r) ? mine : r;
+    if(hasGrid(lose) && !hasGrid(win) && !win.cleared){ win = lose; guarded++; }
+
+    if(win !== mine){ state.records[k] = win; changed = true; }
+  });
+  return {changed:changed, guarded:guarded};
+}
+
 function sync(){
-  if(!online()){ setNet("オフライン", "off"); return Promise.resolve(); }
+  clearTimeout(syncTimer);
+  if(!online()){ updateNet(); return Promise.resolve(); }
+  if(!localStorage.getItem(DBX_TOK_LS)){ updateNet(); return Promise.resolve(); }
   setNet("同期中");
-  if(state.pending) return upload().catch(function(e){ setNet("未送信","off"); toast("同期できません: "+e.message, true); });
+
+  /* 年度削除のときだけ、マージせずに丸ごと置き換える
+     （マージすると削除した記録が Dropbox 側から戻ってきてしまうため） */
+  if(state.forceReplace){
+    return upload().then(function(){ updateNet(); })
+      .catch(function(e){ setNet("未送信","off"); toast("同期できません: "+e.message, true); });
+  }
+
   return download().then(function(remote){
-    if(remote && remote.updatedAt && remote.updatedAt > state.updatedAt){
-      state.records = {};
-      (remote.records||[]).forEach(function(r){ state.records[key(r.date,r.house)] = r; });
-      state.updatedAt = remote.updatedAt;
-      localStorage.setItem(DATA_LS, JSON.stringify(state));
-      loadDay(el("date").value);
+    var res = mergeRemote(remote);
+    if(res.changed){
+      saveLocal();
+      loadDay(curDate);            /* 入力中の欄は setVal / writeGrid が守る */
       renderRec(); renderChart();
+      toast("ほかの端末の入力を取り込みました");
     }
-    setNet("同期済","on");
+    if(res.guarded){
+      toast("内訳の食い違いがありました。内訳の入っているほうを残しました", true);
+    }
+    if(state.pending) return upload();
+  }).then(function(){
+    updateNet();
   }).catch(function(e){
-    setNet(e.message === "未接続" ? "未接続" : "同期不可", "off");
+    if(e.message === "未接続") setNet("未接続","off");
+    else { setNet("同期不可","off"); }
+  });
+}
+
+/* ===================== 伝票がまだの日 ===================== */
+/* コンテナ数は入っているのに宇賀神の内訳がまだ、という日を拾う。
+   入れ忘れを防ぐための一覧。 */
+function waitingDates(){
+  var byDate = {};
+  Object.keys(state.records).forEach(function(k){
+    var r = state.records[k];
+    if(!isLive(r)) return;
+    if(!byDate[r.date]) byDate[r.date] = {con:0, uga:null, chu:null};
+    if(r.house === "宇賀神") byDate[r.date].uga = r;
+    else if(r.house === "中央") byDate[r.date].chu = r;
+    else byDate[r.date].con += (r.container || 0);
+  });
+
+  var out = [];
+  Object.keys(byDate).sort().reverse().forEach(function(d){
+    var b = byDate[d];
+    if(!b.con) return;                                  /* コンテナ未入力の日は対象外 */
+    if(!hasGrid(b.uga)){ out.push({date:d, con:b.con, kind:"wait"}); return; }
+    var want = b.uga.container || 0;
+    if(want && want !== b.con) out.push({date:d, con:b.con, kind:"ng", want:want});
+  });
+  return out;
+}
+
+function renderWaiting(){
+  var list = waitingDates();
+  var host = el("waiting");
+  if(!list.length){
+    host.innerHTML = '<div class="empty">伝票待ちはありません</div>';
+    return;
+  }
+  host.innerHTML = list.map(function(w){
+    var pill = w.kind === "wait"
+      ? '<span class="pill wait">伝票まち</span>'
+      : '<span class="pill ng">コンテナ不一致</span>';
+    var n = w.kind === "wait"
+      ? w.con + " 個"
+      : w.con + " ／ 伝票 " + w.want;
+    return '<div class="recrow"><span class="d">'+w.date.slice(5)+'</span>' +
+           '<span class="h">'+pill+'</span><span class="n">'+n+'</span>' +
+           '<button class="mini" data-slip="'+w.date+'">伝票へ</button></div>';
+  }).join("");
+  Array.prototype.forEach.call(host.querySelectorAll("[data-slip]"), function(b){
+    b.addEventListener("click", function(){
+      setDate(b.getAttribute("data-slip"));
+      selectTab("slip");
+      window.scrollTo(0,0);
+    });
   });
 }
 
@@ -560,16 +842,24 @@ function dayWeight(r){
 function houseWeights(date){
   var out = {"中央":0,"東":0,"西":0,"南":0};
   var chu = state.records[key(date,"中央")];
-  if(chu && !chu.cleared) out["中央"] = dayWeight(chu);
+  if(isLive(chu)) out["中央"] = dayWeight(chu);
   var uga = state.records[key(date,"宇賀神")];
-  if(uga && !uga.cleared && uga.container){
+  if(isLive(uga) && uga.container){
     var per = dayWeight(uga) / uga.container;
     ["東","西","南"].forEach(function(h){
       var r = state.records[key(date,h)];
-      if(r && !r.cleared && r.container) out[h] = per * r.container;
+      if(isLive(r) && r.container) out[h] = per * r.container;
     });
   }
   return out;
+}
+
+function liveDates(){
+  var d = {};
+  Object.keys(state.records).forEach(function(k){
+    if(isLive(state.records[k])) d[k.split("|")[0]] = 1;
+  });
+  return d;
 }
 
 function monthlyTotals(){
@@ -607,8 +897,8 @@ function renderSeasons(){
     '複数の年度が混ざっています。反映スクリプトは1年度ずつしか処理できません。' +
     '不要な年度を削除してください。</div>' +
     ys.map(function(y){
-      return '<div class="recrow"><span class="d">' + y + '年度</span>' +
-             '<span class="h">' + Object.keys(byS[y].dates).length + ' 日分</span>' +
+      return '<div class="recrow"><span class="d">' + y + '</span>' +
+             '<span class="h">年度 ' + Object.keys(byS[y].dates).length + ' 日分</span>' +
              '<button class="mini" data-delseason="' + y + '">削除</button></div>';
     }).join("");
 
@@ -622,8 +912,9 @@ function renderSeasons(){
       Object.keys(state.records).forEach(function(k){
         if(seasonOf(state.records[k].date) === y) delete state.records[k];
       });
-      state.pending = true; saveLocal();
-      renderRec(); renderChart();
+      /* 削除は「無くす」操作なので、マージせず Dropbox 側も置き換える */
+      state.pending = true; state.forceReplace = true; saveLocal();
+      renderRec(); renderChart(); renderWaiting(); updateNet();
       toast(y + "年度を削除しました");
       sync();
     });
@@ -658,27 +949,33 @@ function renderRec(){
   if(!ds.length){ lst.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
   lst.innerHTML = ds.map(function(d){
     var uga = state.records[key(d,"宇賀神")], chu = state.records[key(d,"中央")];
-    if(uga && uga.cleared) uga = null;
-    if(chu && chu.cleared) chu = null;
+    if(!isLive(uga)) uga = null;
+    if(!isLive(chu)) chu = null;
+    var con = 0;
+    ["東","西","南"].forEach(function(h){
+      var r = state.records[key(d,h)];
+      if(isLive(r)) con += (r.container || 0);
+    });
     var n = 0;
     if(uga) n += Object.keys(uga.grid||{}).reduce(function(a,s){
       return a + GRADES.reduce(function(b,g){ return b + (uga.grid[s][g]||0); },0); },0);
     if(chu) n += Object.keys(chu.grid||{}).reduce(function(a,s){
       return a + GRADES.reduce(function(b,g){ return b + (chu.grid[s][g]||0); },0); },0);
-    var live = !!(uga || chu) || ["東","西","南"].some(function(h){
-      var r = state.records[key(d,h)]; return r && !r.cleared;
-    });
-    var mid = live
-      ? '<span class="h">'+(uga?"宇賀神 ":"")+(chu?"中央":"")+'</span><span class="n">'+n+' 個</span>'
-      : '<span class="h"><span class="pill wait">消去</span></span><span class="n"></span>';
+
+    var live = !!(uga || chu || con);
+    var mid;
+    if(!live) mid = '<span class="h"><span class="pill">消去</span></span><span class="n"></span>';
+    else if(!uga && con) mid = '<span class="h"><span class="pill wait">伝票まち</span></span>' +
+                               '<span class="n">'+con+' 個</span>';
+    else mid = '<span class="h">'+(uga?"宇賀神 ":"")+(chu?"中央":"")+'</span><span class="n">'+n+' 玉</span>';
+
     return '<div class="recrow" data-d="'+d+'"><span class="d">'+d.slice(5)+'</span>' +
            mid + '<button class="mini" data-open="'+d+'">開く</button></div>';
   }).join("");
   Array.prototype.forEach.call(lst.querySelectorAll("[data-open]"), function(b){
     b.addEventListener("click", function(){
-      el("date").value = b.getAttribute("data-open");
-      loadDay(el("date").value);
-      selectTab("in");
+      setDate(b.getAttribute("data-open"));
+      selectTab("slip");
       window.scrollTo(0,0);
     });
   });
@@ -762,7 +1059,89 @@ function renderChart(){
   }).join("");
 }
 
-/* ===================== タブ ===================== */
+/* ===================== キーボードでの移動（パソコン用） =====================
+
+   矢印キーで隣の欄へ移る。表の作りを決め打ちせず、
+   画面上の位置から「その向きにある一番近い欄」を選ぶ。
+   こうしておくと、8×4のマス目でも、東西南の3つ並びでも、
+   お帰りの3つ並びでも、同じ仕組みで自然に動く。
+
+   日付欄（type=date）は対象外。矢印キーで年月日を送る本来の動きを残す。 */
+
+/* いま画面に出ている数字欄だけを集める */
+function navInputs(){
+  var sec = document.querySelector("main section.sel");
+  if(!sec) return [];
+  return Array.prototype.filter.call(
+    sec.querySelectorAll('input[type=number]'),
+    function(i){ return i.offsetParent !== null; }   /* 隠れている欄は除く */
+  );
+}
+
+/* from から (dx,dy) の向きにある欄へ移る。dx,dy は -1 / 0 / 1 */
+function moveFocus(from, dx, dy){
+  var a = from.getBoundingClientRect();
+  var ax = a.left + a.width/2, ay = a.top + a.height/2;
+  var cands = [];
+
+  navInputs().forEach(function(i){
+    if(i === from) return;
+    var b = i.getBoundingClientRect();
+    var bx = b.left + b.width/2, by = b.top + b.height/2;
+
+    /* along … 進みたい向きにどれだけ先か
+       side  … その向きから横にどれだけずれているか */
+    var along = (bx - ax) * dx + (by - ay) * dy;
+    var side  = Math.abs((bx - ax) * dy + (by - ay) * dx);
+    if(along <= 1) return;                       /* 真横・逆方向は対象外 */
+
+    /* 横にずれすぎているものは別の列（行）とみなして捨てる。
+       欄の大きさを基準にするので、幅の違う欄が混ざっても破綻しない */
+    var limit = (dx ? Math.max(a.height, b.height) : Math.max(a.width, b.width)) * 1.2;
+    if(side > limit) return;
+
+    cands.push({el:i, along:along, side:side, span:(dx ? b.height : b.width)});
+  });
+  if(!cands.length) return;
+
+  /* まず「一番手前の行（列）」に絞る。
+     こうしないと、真正面にあるというだけで2つ先の行へ飛んでしまう */
+  var near = Infinity;
+  cands.forEach(function(c){ if(c.along < near) near = c.along; });
+  var band = cands.filter(function(c){ return c.along <= near + c.span * 0.6; });
+
+  /* その中で、まっすぐ正面に近いものを選ぶ */
+  band.sort(function(p, q){ return (p.side - q.side) || (p.along - q.along); });
+
+  var best = band[0].el;
+  best.focus();
+  try{ best.select(); }catch(e){}                /* 移った先はすぐ打ち替えられる状態に */
+}
+
+function setupKeys(){
+  var DIR = {ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0],
+             Up:[0,-1], Down:[0,1], Left:[-1,0], Right:[1,0]};   /* 古い名前も拾う */
+
+  document.addEventListener("keydown", function(e){
+    var t = e.target;
+    if(!t || t.tagName !== "INPUT" || t.type !== "number") return;
+    if(e.altKey || e.ctrlKey || e.metaKey) return;
+    var d = DIR[e.key];
+    if(!d) return;
+    /* 先に止める。これをしないと上下キーで数字が勝手に増減する */
+    e.preventDefault();
+    moveFocus(t, d[0], d[1]);
+  });
+
+  /* 数字欄にカーソルを置いたまま画面を送ると、ホイールで値が変わってしまう。
+     気づかないうちに数字が書き換わるのが一番こわいので、送る前に外す */
+  document.addEventListener("wheel", function(){
+    var t = document.activeElement;
+    if(t && t.tagName === "INPUT" && t.type === "number") t.blur();
+  }, {passive:true});
+}
+
+/* ===================== タブ・日付 ===================== */
 function selectTab(id){
   Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b){
     b.classList.toggle("sel", b.getAttribute("data-tab") === id);
@@ -770,36 +1149,117 @@ function selectTab(id){
   Array.prototype.forEach.call(document.querySelectorAll("main section"), function(s){
     s.classList.toggle("sel", s.id === id);
   });
+  /* 日付バーはコンテナ・伝票でだけ使う */
+  el("datebar").classList.toggle("hide", id !== "con" && id !== "slip");
   if(id === "rec") renderRec();
   if(id === "cmp") renderChart();
+  if(id === "con") renderWaiting();
+}
+
+/* 日付を変える。年度をまたぐときだけ確認する
+   （2027 と 2026 の打ち間違いで、別年度の記録が混ざるのを防ぐ） */
+function setDate(date){
+  var prev = curDate;
+  if(date && inSeason(date)){
+    var ss = seasonsInUse();
+    var s = seasonOf(date);
+    if(ss.length && ss.indexOf(s) < 0){
+      if(!confirm("いま記録があるのは " + ss.join("年度・") + "年度です。\n" +
+                  date + " は " + s + "年度になります。\n\n" +
+                  "反映スクリプトは1年度ずつしか処理できません。\n" +
+                  "この日付で続けますか？")){
+        el("date").value = prev;
+        return;
+      }
+    }
+  }
+  el("date").value = date;
+  loadDay(date);
+}
+
+/* ===================== service worker ===================== */
+/* アプリの中身を端末に持たせ、圏外でも開けるようにする。
+   新しい版が出たときは、勝手に入れ替えず知らせるだけにする
+   （入力中に画面が入れ替わると危ないため）。 */
+function setupSW(){
+  if(!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.register("./sw.js").then(function(reg){
+    reg.addEventListener("updatefound", function(){
+      var sw = reg.installing;
+      if(!sw) return;
+      sw.addEventListener("statechange", function(){
+        if(sw.state === "installed" && navigator.serviceWorker.controller){
+          if(confirm("収量記録の新しい版があります。\n今すぐ切り替えますか？\n\n" +
+                     "（入力中のものがあれば、あとで「いいえ」を選んでください。\n" +
+                     "　次に開いたときに切り替わります）")){
+            sw.postMessage("skip-waiting");
+          }
+        }
+      });
+    });
+  }).catch(function(){ /* 登録できなくてもアプリ自体は動く */ });
+
+  var reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", function(){
+    if(reloading) return;
+    reloading = true;
+    location.reload();
+  });
 }
 
 /* ===================== 起動 ===================== */
 (function init(){
+  el("verline").textContent = "版 " + APP_VER;
   buildGrid(el("g-uga"), "uga");
   buildGrid(el("g-chu"), "chu");
 
   try{
     var raw = localStorage.getItem(DATA_LS);
-    if(raw){ var s = JSON.parse(raw); state.records = s.records||{}; state.updatedAt = s.updatedAt||0; state.pending = !!s.pending; }
+    if(raw){
+      var s = JSON.parse(raw);
+      state.records  = s.records  || {};
+      state.updatedAt = s.updatedAt || 0;
+      state.pending  = !!s.pending;
+      state.syncedAt = s.syncedAt || 0;
+      state.forceReplace = !!s.forceReplace;
+      /* 旧版から引き継いだ記録には更新時刻が無い。
+         0 のままだと全部が「送信待ち」に見えるので、同期済みとみなす */
+      if(!s.syncedAt){
+        var t = Date.now();
+        Object.keys(state.records).forEach(function(k){
+          if(!state.records[k].updatedAt) state.records[k].updatedAt = t;
+        });
+        state.syncedAt = t;
+      }
+    }
   }catch(e){}
 
-  var today = new Date();
-  el("date").value = today.getFullYear() + "-" +
-    ("0"+(today.getMonth()+1)).slice(-2) + "-" + ("0"+today.getDate()).slice(-2);
+  el("date").value = todayStr();
+  curDate = el("date").value;
 
   document.addEventListener("input", function(e){
     var t = e.target;
-    if(t.dataset && t.dataset.p) refreshGrid(t.dataset.p);
-    if(t.id === "uga-chk") refreshGrid("uga");
-    if(t.id === "chu-chk") refreshGrid("chu");
-    if(t.id === "uga-con" || t.id === "c-east" || t.id === "c-west" || t.id === "c-south") refreshSplit();
+    if(t.dataset && t.dataset.p){ refreshGrid(t.dataset.p); scheduleSave("slip"); return; }
+    if(t.id === "uga-chk" || t.id === "chu-chk"){ refreshGrid(t.id.slice(0,3)); scheduleSave("slip"); return; }
+    if(t.id === "uga-con"){ refreshSplit(); scheduleSave("slip"); return; }
+    if(t.id === "chu-con" || /^(uga|chu)-o[123]$/.test(t.id)){ scheduleSave("slip"); return; }
+    if(t.id === "c-east" || t.id === "c-west" || t.id === "c-south"){ refreshSplit(); scheduleSave("con"); return; }
   });
 
-  el("date").addEventListener("change", function(){ loadDay(el("date").value); });
+  /* 画面を閉じる・裏に回すときは、待たずに書き出す */
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "hidden"){ flush(); }
+  });
+  window.addEventListener("pagehide", function(){ flush(); });
+
+  el("date").addEventListener("change", function(){ setDate(el("date").value); });
+  el("btn-today").addEventListener("click", function(){ setDate(todayStr()); });
 
   Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b){
-    b.addEventListener("click", function(){ selectTab(b.getAttribute("data-tab")); });
+    b.addEventListener("click", function(){
+      flush();
+      selectTab(b.getAttribute("data-tab"));
+    });
   });
 
   el("housetab").innerHTML = ["中央","東","西","南"].map(function(h){
@@ -815,66 +1275,60 @@ function selectTab(id){
     renderChart();
   });
 
-  el("save").addEventListener("click", function(){
-    var date = el("date").value;
-    if(!date){ toast("荷受日を選んでください", true); return; }
-    var recs = collect();
-    if(!recs || !recs.length){ toast("入力がありません", true); return; }
-
-    if(!inSeason(date)){
-      alert("8月と9月は Excel に行がありません。\n10月から翌年7月までの日付を選んでください。");
-      return;
-    }
-    var ss = seasonsInUse(seasonOf(date));
-    if(ss.length > 1){
-      alert("年度が混ざります。\n\n現在の記録: " + ss.join("年度、") + "年度\n\n" +
-            "反映スクリプトは1年度ずつしか処理できません。\n" +
-            "記録タブで不要な年度の記録を削除してください。");
-      return;
-    }
-
-    var ugaCon = num(el("uga-con").value);
-    var split = num(el("c-east").value)+num(el("c-west").value)+num(el("c-south").value);
-    if(ugaCon && split !== ugaCon){
-      if(!confirm("コンテナ数が合っていません。\n伝票 "+ugaCon+" ／ 仕分け "+split+
-                  "\n\nこのまま保存すると按分がずれます。保存しますか？")) return;
-    }
+  /* 伝票タブの「確認して送信」。保存はすでに済んでいるので、
+     ここでやるのは照合の確認と、すぐ送ること */
+  el("verify").addEventListener("click", function(){
+    flush();
     var bad = [];
-    [["uga","宇賀神"],["chu","中央"]].forEach(function(p){
-      var want = num(el(p[0]+"-chk").value);
-      var got = num(el(p[0]+"-all").textContent);
-      if(want && want !== got) bad.push(p[1]+"（"+got+" ／ 伝票 "+want+"）");
+    SLIP_HOUSES.forEach(function(p){
+      var want = num(el(p[1]+"-chk").value);
+      var got = num(el(p[1]+"-all").textContent);
+      if(want && want !== got) bad.push(p[0]+" の総玉数（"+got+" ／ 伝票 "+want+"）");
     });
-    if(bad.length && !confirm("総玉数が合っていません。\n"+bad.join("\n")+"\n\n保存しますか？")) return;
+    var sum = 0;
+    CON_HOUSES.forEach(function(p){ sum += num(el(p[1]).value); });
+    var ugaCon = num(el("uga-con").value);
+    if(ugaCon && sum !== ugaCon) bad.push("コンテナ数（東西南 "+sum+" ／ 伝票 "+ugaCon+"）");
 
-    applyDay(date, recs);
-    state.pending = true; saveLocal();
-    toast("保存しました");
+    if(bad.length) alert("合っていないところがあります。\n\n・" + bad.join("\n・") +
+                         "\n\n保存はされています。直したいときは入力しなおしてください。");
+    else toast("照合は一致しています");
     sync();
   });
 
   el("clear").addEventListener("click", function(){
-    var date = el("date").value;
-    if(!date) return;
-    if(!confirm(date + " を空にします。\nExcelに直接入力した分があっても消えます。\n\nよろしいですか？")) return;
-    applyDay(date, [], true);
-    state.pending = true; saveLocal();
-    loadDay(date);
+    if(!curDate) return;
+    if(!confirm(curDate + " を空にします。\n" +
+                "コンテナ数も伝票の内訳も、まとめて消えます。\n" +
+                "Excelに直接入力した分があっても消えます。\n\nよろしいですか？")) return;
+    if(clearDay(curDate)){ state.pending = true; saveLocal(); }
+    loadDay(curDate);
+    renderRec(); updateNet();
     toast("消しました");
     sync();
   });
 
-  el("resync").addEventListener("click", function(){ sync().then(function(){ renderRec(); }); });
+  el("resync").addEventListener("click", function(){
+    flush();
+    sync().then(function(){ renderRec(); });
+  });
 
   window.addEventListener("online", function(){ sync(); });
-  window.addEventListener("offline", function(){ setNet("オフライン","off"); });
+  window.addEventListener("offline", function(){ updateNet(); });
 
-  loadDay(el("date").value);
+  loadDay(curDate);
+  selectTab("con");
+  setupKeys();
+  setupSW();
+
+  /* 端末の保存領域を守るよう明示的に頼む（自動削除されにくくなる） */
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist();
 
   if(!localStorage.getItem(DBX_TOK_LS)){
-    setNet("未接続","off");
+    updateNet();
     toast("Dropboxに未接続です。接続設定を先に行ってください", true);
   } else {
+    updateNet();
     sync();
   }
 })();
