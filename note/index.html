@@ -6,6 +6,11 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#EE5340">
 <title>みんなのノート｜ハッピートマトファーム</title>
+<!-- Google への接続を、ページを読みながら先に用意しておく（つながるまでの待ちを減らす）。
+     exec は script.googleusercontent.com へ転送されるので、そちらも合わせて用意する -->
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
+<link rel="preconnect" href="https://drive.google.com">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23EE5340'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%234E9A5A' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <style>
 :root{
@@ -454,6 +459,23 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
   var KINDS = [], NOTES = [], REPLIES = [];
   var filter = { house:"", kind:"" };
 
+  /* この端末に残しておく控え。起動を待たせないために使う（下の「起動」を参照） */
+  var CACHE_KEY = "htf_note_cache";
+
+  var cacheYomu = function(){
+    try{
+      var v = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+      return (v && v.notes) ? v : null;
+    }catch(e){ return null; }
+  };
+  var cacheKaku = function(){
+    try{
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        kinds: KINDS, notes: NOTES, replies: REPLIES
+      }));
+    }catch(e){ /* いっぱいでも動く */ }
+  };
+
   var $ = function(s){ return document.querySelector(s); };
 
   var esc = function(s){
@@ -618,6 +640,10 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
         $("#lb").showModal();
       });
     });
+
+    /* いま出しているものを、この端末の控えに残す。
+       書いた直後や、ピンを付け外しした直後でも控えが古くならない */
+    cacheKaku();
   };
 
   var renderKindChips = function(){
@@ -1001,11 +1027,35 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
     }).catch(function(e){ bar(e.message, true); });
   });
 
-  /* ---- 起動 ---- */
-  load().then(function(){
+  /* ---- 起動 ----
+     Google（Apps Script）からの返事は 4 秒ほどかかる。返事を待ってから
+     描き始めると、その間ずっと「読み込んでいます…」のままになるので、
+     前に読んだものをこの端末に控えておき、まずそれを出す。
+     最新は裏で取りに行って、届いたら静かに差し替える。
+     ハウスの中は電波が弱く、Google側が応答しないこともあるため、
+     待たせずに、とりあえず読める状態にしておく意味もある。
+     病害虫のページ（byogai.html）と同じ作りにしてある。
+     控えの読み書き（cacheYomu / cacheKaku）は、この script の先頭にある。 */
+  var tsukau = function(j){
+    KINDS = j.kinds || [];
+    NOTES = j.notes || [];
+    REPLIES = j.replies || [];
     renderKindChips();
     render();
+  };
+
+  var MAE = cacheYomu();
+  if(MAE) tsukau(MAE);        /* 控えを先に出す（一瞬で出る） */
+
+  load().then(function(){
+    renderKindChips();
+    render();                 /* 控えへの保存は render() の最後でしている */
   }).catch(function(e){
+    if(MAE){
+      /* 控えは出せているので、画面は使える。取れなかったことだけ伝える */
+      bar("いま最新を取れませんでした。前に読んだものを出しています", true);
+      return;
+    }
     $("#loading").innerHTML =
       '読み込めませんでした<br><span style="font-size:13px">' + esc(e.message) + '</span>';
   });
