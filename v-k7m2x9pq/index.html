@@ -165,6 +165,39 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
      ここで直接指定して、確実に色が分かれるようにしている。
      隣り合う年度どうしで色味がはっきり離れるよう並べてある。 */
   var YEAR_COLORS = ["#2F6FB2", "#E8863C", "#7B4EA8", "#1E9E76", "#B5306B"];
+  /* 5年より古い年度の色。背景として薄く出し、最近の年度を邪魔しない */
+  var OLD_COLORS = ["#AEB8C6", "#BCC5D0", "#C8D0D9", "#D3D9E0", "#DDE2E8", "#E4E8ED"];
+
+  /* グラフに出す年度。既定は直近3年。
+     年度が11ある状態で全部出すと線が重なって読めないため。
+     年度の一覧（構成比の年度選び・月別表）は全年度のまま。 */
+  var CHART_YEARS = 3;
+  var showAllYears = false;
+
+  function chartSeasons(){
+    return showAllYears ? seasons : seasons.slice(-CHART_YEARS);
+  }
+
+  /* 新しい年度ほどはっきりした色にする。
+     直近5年は YEAR_COLORS、それより古い年度は薄い灰色。
+     年度が5つ以下のときは、これまでと同じ色の並びになる。 */
+  function seriesColor(i, total){
+    var base = Math.max(0, total - YEAR_COLORS.length);
+    var k = i - base;
+    if(k >= 0) return YEAR_COLORS[k];
+    return OLD_COLORS[Math.min(-k - 1, OLD_COLORS.length - 1)];
+  }
+
+  function yearSwitch(){
+    if(seasons.length <= CHART_YEARS) return "";   /* 切り替える意味が無い */
+    var n = seasons.length;
+    return '<div class="pick" style="padding-top:10px">' +
+      '<button data-span="recent"' + (showAllYears ? '' : ' class="sel"') + '>直近' +
+        CHART_YEARS + '年</button>' +
+      '<button data-span="all"' + (showAllYears ? ' class="sel"' : '') + '>すべて（' +
+        n + '年度）</button>' +
+      '</div>';
+  }
 
   document.getElementById("sub").textContent =
     last.label + "　最終更新 " + (D.generated || "").slice(0,10);
@@ -366,12 +399,13 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
 
   function chartCard(title, field, opt){
     opt = opt || {};
-    var series = seasons.map(function(s,i){
+    var use = chartSeasons();
+    var series = use.map(function(s,i){
       return {
         name: s.label,
         data: (s.houses[cur] || {})[field] || [],
-        color: YEAR_COLORS[i % YEAR_COLORS.length],
-        thick: i === seasons.length-1
+        color: seriesColor(i, use.length),
+        thick: i === use.length-1
       };
     }).filter(function(s){ return sum(s.data) > 0; });
 
@@ -652,6 +686,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     var area = (last.houses[cur] || {}).area;
     host.innerHTML =
       summary() +
+      yearSwitch() +
       chartCard("月別の収量（kg）", "kg", {bar:true}) +
       chartCard("10aあたりの収量（kg）", "kg10a", {bar:true}) +
       chartCard("一果実あたりの重量（g）", "gpf",
@@ -667,6 +702,16 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
       pieCard("等級の構成（"+latestWithData().label+" 年間）", "grades", D.grades, GRADE_PALETTE,
               function(k){ return k; }) +
       (area ? '<footer style="padding-top:4px">'+cur+'　'+fmt(area*10,0)+'a</footer>' : "");
+
+    /* グラフに出す年度の切り替え */
+    var spans = document.querySelectorAll ? document.querySelectorAll("[data-span]") : [];
+    Array.prototype.forEach.call(spans, function(b){
+      b.addEventListener("click", function(){
+        showAllYears = b.getAttribute("data-span") === "all";
+        render();
+        window.scrollTo(0, 0);
+      });
+    });
 
     /* 構成比の年度切り替え */
     var picks = document.querySelectorAll ? document.querySelectorAll("[data-year]") : [];
