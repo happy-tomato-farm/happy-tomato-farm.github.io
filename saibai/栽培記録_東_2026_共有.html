@@ -88,7 +88,15 @@ select, input[type=&#34;text&#34;], input[type=&#34;number&#34;], textarea {
   padding: 6px 9px;
 }
 textarea { width: 100%; resize: vertical; line-height: 1.7; }
-input[type=&#34;number&#34;] { font-family: var(--mono); }
+/* 数値を打ち込む欄。type=&#34;text&#34; + inputmode=&#34;decimal&#34; で作ってあります
+   （type=&#34;number&#34; だと上下キーが値の増減に取られ、欄の移動に使えないため） */
+input[inputmode=&#34;decimal&#34;] { font-family: var(--mono); }
+/* 念のため。過去に type=&#34;number&#34; で作った欄が残っていても増減ボタンを出しません */
+input[type=&#34;number&#34;] { font-family: var(--mono); -moz-appearance: textfield; appearance: textfield; }
+input[type=&#34;number&#34;]::-webkit-outer-spin-button,
+input[type=&#34;number&#34;]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+/* 数として読めない値が残っている欄 */
+input.bad { border-color: var(--alert); background: var(--alert-bg); }
 select:focus, input:focus, textarea:focus, button:focus-visible, a:focus-visible {
   outline: 2px solid var(--leaf);
   outline-offset: 1px;
@@ -777,8 +785,8 @@ summary em { font-size: 13px; font-weight: 700; }
   <div class="stat-row">
     <div class="stat"><b>44</b><span>記録のある週</span></div>
     <div class="stat"><b>31,398</b><span>収穫量 kg/10a</span></div>
-    <div class="stat"><b>0.1</b><span>N 累計 kg/10a</span></div>
-    <div class="stat"><b>0.4</b><span>K 累計 kg/10a</span></div>
+    <div class="stat"><b>0.4</b><span>N 累計 kg/10a</span></div>
+    <div class="stat"><b>1.1</b><span>K 累計 kg/10a</span></div>
     <div class="stat"><b>5.5</b><span>DIF 平均 ℃</span></div>
     
   </div>
@@ -1336,10 +1344,10 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="wk">Week38<span>9/15</span></td>
           <td class="num">1.31</td>
           <td class="num">1.08</td>
-          <td class="num">0.053</td>
-          <td class="num">0.159</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.087</td>
+          <td class="num">0.262</td>
+          <td class="num">0.16</td>
+          <td class="num">0.47</td>
           <td class="num">—</td>
           <td class="num">0</td>
           <td class="num">—</td>
@@ -1349,10 +1357,10 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="wk">Week39<span>9/22</span></td>
           <td class="num">1.83</td>
           <td class="num">1.22</td>
-          <td class="num">0.000</td>
-          <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.207</td>
+          <td class="num">0.621</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">—</td>
           <td class="num">0</td>
           <td class="num">—</td>
@@ -1364,8 +1372,8 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.35</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">0.0</td>
           <td class="num">0</td>
           <td class="num">—</td>
@@ -1377,8 +1385,8 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.44</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">0.0</td>
           <td class="num">0</td>
           <td class="num">—</td>
@@ -1390,11 +1398,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.55</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">138.3</td>
           <td class="num">138</td>
-          <td class="num">37%</td>
+          <td class="num">110%</td>
         </tr>
       
         <tr>
@@ -1403,11 +1411,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.22</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">369.2</td>
           <td class="num">508</td>
-          <td class="num">10%</td>
+          <td class="num">30%</td>
         </tr>
       
         <tr>
@@ -1416,11 +1424,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.65</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">546.4</td>
           <td class="num">1,054</td>
-          <td class="num">5%</td>
+          <td class="num">14%</td>
         </tr>
       
         <tr>
@@ -1429,11 +1437,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.57</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">315.4</td>
           <td class="num">1,369</td>
-          <td class="num">4%</td>
+          <td class="num">11%</td>
         </tr>
       
         <tr>
@@ -1442,11 +1450,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.03</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">329.5</td>
           <td class="num">1,699</td>
-          <td class="num">3%</td>
+          <td class="num">9%</td>
         </tr>
       
         <tr>
@@ -1455,11 +1463,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.82</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">580.4</td>
           <td class="num">2,279</td>
-          <td class="num">2%</td>
+          <td class="num">7%</td>
         </tr>
       
         <tr>
@@ -1468,11 +1476,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.57</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">443.1</td>
           <td class="num">2,722</td>
-          <td class="num">2%</td>
+          <td class="num">6%</td>
         </tr>
       
         <tr>
@@ -1481,11 +1489,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.39</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">477.2</td>
           <td class="num">3,200</td>
-          <td class="num">2%</td>
+          <td class="num">5%</td>
         </tr>
       
         <tr>
@@ -1494,11 +1502,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.26</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">492.6</td>
           <td class="num">3,692</td>
-          <td class="num">1%</td>
+          <td class="num">4%</td>
         </tr>
       
         <tr>
@@ -1507,11 +1515,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.29</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">478.0</td>
           <td class="num">4,170</td>
-          <td class="num">1%</td>
+          <td class="num">4%</td>
         </tr>
       
         <tr>
@@ -1520,11 +1528,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.41</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">566.5</td>
           <td class="num">4,737</td>
-          <td class="num">1%</td>
+          <td class="num">3%</td>
         </tr>
       
         <tr>
@@ -1533,11 +1541,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.30</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">619.5</td>
           <td class="num">5,356</td>
-          <td class="num">1%</td>
+          <td class="num">3%</td>
         </tr>
       
         <tr>
@@ -1546,11 +1554,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.56</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">651.7</td>
           <td class="num">6,008</td>
-          <td class="num">1%</td>
+          <td class="num">3%</td>
         </tr>
       
         <tr>
@@ -1559,11 +1567,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.62</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">433.0</td>
           <td class="num">6,441</td>
-          <td class="num">1%</td>
+          <td class="num">2%</td>
         </tr>
       
         <tr>
@@ -1572,11 +1580,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.68</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">436.9</td>
           <td class="num">6,878</td>
-          <td class="num">1%</td>
+          <td class="num">2%</td>
         </tr>
       
         <tr>
@@ -1585,11 +1593,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.14</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">513.1</td>
           <td class="num">7,391</td>
-          <td class="num">1%</td>
+          <td class="num">2%</td>
         </tr>
       
         <tr>
@@ -1598,11 +1606,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.71</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">598.4</td>
           <td class="num">7,989</td>
-          <td class="num">1%</td>
+          <td class="num">2%</td>
         </tr>
       
         <tr>
@@ -1611,11 +1619,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.02</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">706.9</td>
           <td class="num">8,696</td>
-          <td class="num">1%</td>
+          <td class="num">2%</td>
         </tr>
       
         <tr>
@@ -1624,11 +1632,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.15</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">720.4</td>
           <td class="num">9,417</td>
-          <td class="num">1%</td>
+          <td class="num">2%</td>
         </tr>
       
         <tr>
@@ -1637,11 +1645,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.29</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">695.6</td>
           <td class="num">10,112</td>
-          <td class="num">1%</td>
+          <td class="num">2%</td>
         </tr>
       
         <tr>
@@ -1650,11 +1658,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.02</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">618.3</td>
           <td class="num">10,731</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1663,11 +1671,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">1.90</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">621.7</td>
           <td class="num">11,352</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1676,11 +1684,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.25</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">765.3</td>
           <td class="num">12,118</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1689,11 +1697,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.40</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">710.4</td>
           <td class="num">12,828</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1702,11 +1710,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.70</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">1,134.3</td>
           <td class="num">13,962</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1715,11 +1723,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">3.02</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">817.5</td>
           <td class="num">14,780</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1728,11 +1736,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">3.54</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">1,488.7</td>
           <td class="num">16,268</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1741,11 +1749,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.96</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">713.2</td>
           <td class="num">16,982</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1754,11 +1762,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.88</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">957.9</td>
           <td class="num">17,940</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1767,11 +1775,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">3.89</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">872.7</td>
           <td class="num">18,812</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1780,11 +1788,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">3.92</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">1,628.6</td>
           <td class="num">20,441</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1793,11 +1801,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">3.14</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">1,081.0</td>
           <td class="num">21,522</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1806,11 +1814,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">3.76</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">2,092.1</td>
           <td class="num">23,614</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1819,11 +1827,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">3.12</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">1,799.0</td>
           <td class="num">25,413</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1832,11 +1840,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">3.02</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">1,316.3</td>
           <td class="num">26,729</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1845,11 +1853,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.72</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">1,220.3</td>
           <td class="num">27,949</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1858,11 +1866,11 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">3.58</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">2,165.5</td>
           <td class="num">30,115</td>
-          <td class="num">0%</td>
+          <td class="num">1%</td>
         </tr>
       
         <tr>
@@ -1871,8 +1879,8 @@ summary em { font-size: 13px; font-weight: 700; }
           <td class="num">2.68</td>
           <td class="num">0.000</td>
           <td class="num">0.000</td>
-          <td class="num">0.12</td>
-          <td class="num">0.37</td>
+          <td class="num">0.36</td>
+          <td class="num">1.09</td>
           <td class="num">1,282.8</td>
           <td class="num">31,398</td>
           <td class="num">0%</td>
@@ -2344,8 +2352,8 @@ HK
 <section class="panel">
   <h2>この書き出しについて</h2>
   <div class="meta">
-    <span><b>作成</b> 2026年9月17日 11:26</span>
-    <span><b>作業記録</b> 作業記録/2027作業記録.xlsx</span><span><b>センサーCSV</b> 11ファイル（4週記録東_202509.csv 〜 4週記録東_202609.csv）</span><span><b>日の出日の入</b> 日の出日の入 シート</span><span><b>収量記録</b> バックアップ/2027収量記録_20260810_150601.xlsx</span>
+    <span><b>作成</b> 2026年9月24日 10:35</span>
+    <span><b>作業記録</b> 作業記録/2027作業記録.xlsx</span><span><b>センサーCSV</b> 11ファイル（4週記録東_202509.csv 〜 4週記録東_202609.csv）</span><span><b>日の出日の入</b> 日の出日の入 シート</span><span><b>収量記録</b> バックアップ/2027収量記録_日付修正前_20260919_135926.xlsx</span>
   </div>
   <p class="printhint" style="margin-top:10px">このファイルは単独で開けます。Dropbox に置けばスマホからそのまま閲覧できます。</p>
 </section>
