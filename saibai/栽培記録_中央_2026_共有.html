@@ -88,7 +88,15 @@ select, input[type=&#34;text&#34;], input[type=&#34;number&#34;], textarea {
   padding: 6px 9px;
 }
 textarea { width: 100%; resize: vertical; line-height: 1.7; }
-input[type=&#34;number&#34;] { font-family: var(--mono); }
+/* 数値を打ち込む欄。type=&#34;text&#34; + inputmode=&#34;decimal&#34; で作ってあります
+   （type=&#34;number&#34; だと上下キーが値の増減に取られ、欄の移動に使えないため） */
+input[inputmode=&#34;decimal&#34;] { font-family: var(--mono); }
+/* 念のため。過去に type=&#34;number&#34; で作った欄が残っていても増減ボタンを出しません */
+input[type=&#34;number&#34;] { font-family: var(--mono); -moz-appearance: textfield; appearance: textfield; }
+input[type=&#34;number&#34;]::-webkit-outer-spin-button,
+input[type=&#34;number&#34;]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+/* 数として読めない値が残っている欄 */
+input.bad { border-color: var(--alert); background: var(--alert-bg); }
 select:focus, input:focus, textarea:focus, button:focus-visible, a:focus-visible {
   outline: 2px solid var(--leaf);
   outline-offset: 1px;
@@ -3086,8 +3094,8 @@ HK
 <section class="panel">
   <h2>この書き出しについて</h2>
   <div class="meta">
-    <span><b>作成</b> 2026年9月17日 11:26</span>
-    <span><b>作業記録</b> 作業記録/2027作業記録.xlsx</span><span><b>センサーCSV</b> 13ファイル（4週記録中央_202507.csv 〜 4週記録中央_202609.csv）</span><span><b>日の出日の入</b> 日の出日の入 シート</span><span><b>収量記録</b> バックアップ/2027収量記録_20260810_150601.xlsx</span>
+    <span><b>作成</b> 2026年9月24日 10:35</span>
+    <span><b>作業記録</b> 作業記録/2027作業記録.xlsx</span><span><b>センサーCSV</b> 13ファイル（4週記録中央_202507.csv 〜 4週記録中央_202609.csv）</span><span><b>日の出日の入</b> 日の出日の入 シート</span><span><b>収量記録</b> バックアップ/2027収量記録_日付修正前_20260919_135926.xlsx</span>
   </div>
   <p class="printhint" style="margin-top:10px">このファイルは単独で開けます。Dropbox に置けばスマホからそのまま閲覧できます。</p>
 </section>
