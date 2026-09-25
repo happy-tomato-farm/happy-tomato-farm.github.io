@@ -376,8 +376,13 @@ function mins(t){ var a = String(t).split(":"); return (+a[0]) * 60 + (+a[1]); }
 function hhmm(m){ return ("0" + Math.floor(m/60)).slice(-2) + ":" + ("0" + (m % 60)).slice(-2); }
 function fmt(m){ return Math.floor(m/60) + ":" + ("0" + (m % 60)).slice(-2); }
 
-/* 「09:00-14:30」を「9:00–14:30」の形にします（画面に出す用） */
+/* 時間の書き方が「09:00-14:30」の形になっているか */
+function tadashiiPat(p){ return /^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/.test(String(p || "")); }
+
+/* 「09:00-14:30」を「9:00–14:30」の形にします（画面に出す用）。
+   設定シートの書き方が崩れていても画面が止まらないよう、そのまま返します。 */
 function label(p){
+  if (!tadashiiPat(p)) return String(p || "");
   var a = String(p).split("-");
   return a[0].replace(/^0/,"") + "–" + a[1].replace(/^0/,"");
 }
@@ -782,7 +787,7 @@ function jikanWoErabu(day){
   (hito.often || []).forEach(function(t){ if (tachi.indexOf(t) < 0) tachi.push(t); });
 
   tachi.forEach(function(pat){
-    if (!/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(pat)) return;   // 書き方が変なものは出しません
+    if (!tadashiiPat(pat)) return;        // 設定シートの書き方が変なものは出しません
     var b = document.createElement("button");
     b.type = "button";
     b.innerHTML = "<span>" + label(pat) + (pat === hito.usual ? "（いつも）" : "") + "</span>" +
@@ -901,7 +906,17 @@ function jotaiWoKaku(){
 
 function kaku(){
   if (!who) return;
-  var st = ensure(), hito = hitoOf(who), p = periodOf(perKey), main = $("main");
+
+  // 控えから開いたときなど、設定に無い名前が残っていることがある。
+  // そのまま進むと計算のところで止まるので、名前えらびに戻す
+  var hito = hitoOf(who);
+  if (!hito){
+    shiraseru("設定に " + who + " さんが見つかりません。えらびなおしてください", true);
+    modoru();
+    return;
+  }
+
+  var st = ensure(), p = periodOf(perKey), main = $("main");
   main.innerHTML = "";
 
   // ホーム画面へのおすすめ（アイコンから開いているときと、閉じたあとは出しません）
@@ -1035,7 +1050,12 @@ $("pwIn").addEventListener("keydown", function(e){
   var kara = "";
   var h = String(location.hash || "");
   var m = /[#&]pw=([^&]*)/.exec(h);
-  if (m) kara = decodeURIComponent(m[1]);
+  if (m){
+    // % が中途半端に入っているリンクだと decodeURIComponent は例外を出す。
+    // ここで止まると画面が真っ白のままになるので、そのままの文字で通す
+    try { kara = decodeURIComponent(m[1]); }
+    catch (err) { kara = m[1]; }
+  }
 
   if (!kara) kara = omoidasu(PW_KEY);
 
