@@ -107,6 +107,21 @@ h2{font-size:15.5px; font-weight:800; margin:0 0 3px}
 .tool:hover{border-color:var(--teal)}
 .tool.done{border-color:var(--leaf); background:var(--leaf-soft); color:var(--leaf)}
 
+/* 見出しと切り替え */
+.h2row{display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap}
+.viewseg{display:flex; gap:0; border:1px solid var(--line); border-radius:11px; overflow:hidden;
+  background:var(--card); margin-bottom:12px; flex:none}
+.viewseg button{border:0; background:transparent; color:var(--muted); font-family:var(--ui);
+  font-weight:700; font-size:13px; padding:8px 15px; cursor:pointer}
+.viewseg button + button{border-left:1px solid var(--line)}
+.viewseg button.on{background:var(--teal); color:var(--on-teal)}
+.legend{font-size:12px; color:var(--muted); font-weight:700; margin:10px 0 0;
+  display:flex; gap:16px; flex-wrap:wrap; align-items:center}
+.legend i{display:inline-block; width:13px; height:13px; border-radius:4px;
+  border:1px solid var(--line); vertical-align:-2px; margin-right:5px}
+.legend i.chigau{background:var(--amber-soft); border-color:var(--amber)}
+.legend i.deru{background:var(--teal-soft); border-color:var(--teal)}
+
 /* マス目 */
 .gridwrap{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--card)}
 table.grid{border-collapse:separate; border-spacing:0; font-size:12px; width:max-content; min-width:100%}
@@ -133,8 +148,13 @@ td.cell button .t1{display:block; font-size:11.5px; color:var(--ink)}
 td.cell button .t2{display:block; font-size:11.5px; color:var(--ink)}
 td.cell.on{background:var(--teal-soft)}
 td.cell.on button{color:var(--ink)}
-td.cell.edited{background:var(--amber-soft); box-shadow:inset 0 0 0 2px var(--amber)}
+/* きぼうと中身が違うマス。確定したあとも、どこを直したかが分かるようにする */
+td.cell.chigau{background:var(--amber-soft); box-shadow:inset 0 0 0 2px var(--amber)}
 td.cell.off button{color:var(--faint); font-size:12px}
+/* きぼうを見ているあいだは、押しても変わらないことを見た目でも示す */
+table.grid.yomu td.cell button{cursor:default}
+table.grid.yomu{opacity:.96}
+td.cell .moto{display:block; font-size:9.5px; color:var(--amber); font-weight:800; line-height:1.3}
 tr.noSubmit td.cell{background:repeating-linear-gradient(45deg,transparent,transparent 5px,var(--hair) 5px,var(--hair) 10px)}
 tr.noSubmit td.name{color:var(--faint)}
 
@@ -259,9 +279,18 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
     </section>
 
     <section>
-      <h2>希望の一覧</h2>
-      <p class="lead">マスを押すと、その日の時間と休憩を直せます。直したマスは黄色くなります</p>
+      <div class="h2row">
+        <div>
+          <h2 id="gridTitle">シフトの組み</h2>
+          <p class="lead" id="gridLead">マスを押すと、その日の時間と休憩を直せます</p>
+        </div>
+        <div class="viewseg" id="viewSeg">
+          <button type="button" data-v="kakutei" class="on">いまの組み</button>
+          <button type="button" data-v="kibou">出されたきぼう</button>
+        </div>
+      </div>
       <div class="gridwrap"><table class="grid" id="grid"></table></div>
+      <p class="legend" id="legend"></p>
     </section>
 
     <section>
@@ -411,6 +440,9 @@ var pw = "";
 var people = [], kibou = [], kakutei = [];
 var perKey = PERIODS.current;
 
+/* マス目に何を映すか。"kakutei"＝組んだ内容／"kibou"＝出されたまま */
+var hyoji = "kakutei";
+
 /* マス目。 grid[名前][日] = null（休み） か
    { s,e,b1s,b1e,b2s,b2e, naoshita:true/false } */
 var grid = {};
@@ -458,8 +490,25 @@ function kakuteiAri(){
   return false;
 }
 
+/* パートさんが出したままの内容（希望）を、休憩つきに広げて返します。
+   確定してもこれは変わりません。いつでも見くらべられます。 */
+function kibouCell(hito, day){
+  var kib = kibouOf(hito.name);
+  var pat = kib ? kib.days[String(day)] : null;
+  return (pat && tadashiiPat(pat)) ? hirogeru(hito, pat) : null;
+}
+
+/* 2つのマスが同じ中身かどうか */
+function onaji(a, b){
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return a.s === b.s && a.e === b.e &&
+         (a.b1s||"") === (b.b1s||"") && (a.b1e||"") === (b.b1e||"") &&
+         (a.b2s||"") === (b.b2s||"") && (a.b2e||"") === (b.b2e||"");
+}
+
 /* マス目を組み立てます。
-   すでに確定してあればそれを、なければ希望を休憩つきに広げたものを入れます。 */
+   すでに確定してあればそれを、なければ希望を広げたものを入れます。 */
 function gridWoTsukuru(){
   grid = {};
   var p = periodOf(perKey), hibi = daysOf(p);
@@ -470,9 +519,15 @@ function gridWoTsukuru(){
     if (k.period === perKey) kaku[k.date + "|" + k.person] = k;
   });
 
+  // この期間が確定ずみかどうか。
+  // 確定したときは「休みの日」の行を作らない（勤務のある日だけ書く）ので、
+  // 行が無いことを「まだ確定していない」と取りちがえると、管理者が休みに
+  // 変えた日が希望の時間に戻ってしまいます。期間ごとに見て、確定ずみなら
+  // 「行が無い＝休み」と読むようにします。
+  var zumi = kakuteiAri();
+
   people.forEach(function(h){
     var gyo = {};
-    var kib = kibouOf(h.name);
 
     hibi.forEach(function(x){
       var k = kaku[x.ymd + "|" + h.name];
@@ -480,10 +535,11 @@ function gridWoTsukuru(){
         // 確定ずみ。そのまま出します（きまりを変えても過去は動かしません）
         gyo[x.d] = { s:k.start, e:k.end, b1s:k.b1s, b1e:k.b1e, b2s:k.b2s, b2e:k.b2e,
                      naoshita:false, kakuteizumi:true };
-        return;
+      } else if (zumi){
+        gyo[x.d] = null;                 // 確定ずみの期間で行が無い＝休み
+      } else {
+        gyo[x.d] = kibouCell(h, x.d);    // まだ確定していないので希望のまま
       }
-      var pat = kib ? kib.days[String(x.d)] : null;
-      gyo[x.d] = (pat && tadashiiPat(pat)) ? hirogeru(h, pat) : null;
     });
 
     grid[h.name] = gyo;
@@ -582,11 +638,20 @@ function kakuSubs(){
   });
 }
 
-/* ---- 人×日のマス目 ---- */
+/* ---- 人×日のマス目 ----
+   hyoji が "kakutei" なら組んだ内容、"kibou" ならパートさんが出したままを見せます。
+   出したままは kibou シートに残りつづけるので、確定したあとでも見られます。 */
 function kakuGrid(){
   var p = periodOf(perKey), hibi = daysOf(p);
+  var yomu = (hyoji === "kibou");
   var tb = $("grid");
   tb.innerHTML = "";
+  tb.className = "grid" + (yomu ? " yomu" : "");
+
+  $("gridTitle").textContent = yomu ? "出されたきぼう" : "シフトの組み";
+  $("gridLead").textContent  = yomu
+    ? "パートさんが出したままの内容です。ここでは直せません"
+    : "マスを押すと、その日の時間と休憩を直せます";
 
   // 見出し
   var thead = document.createElement("thead");
@@ -623,21 +688,33 @@ function kakuGrid(){
 
     var hi = 0, fun = 0;
     hibi.forEach(function(x){
-      var c = grid[h.name][x.d];
+      var kum = grid[h.name][x.d];          // 組んだ内容
+      var kib = kibouCell(h, x.d);          // 出されたきぼう
+      var c   = yomu ? kib : kum;
+      var chigau = !onaji(kum, kib);
+
       var td = document.createElement("td");
-      td.className = "cell" + (c ? " on" : " off") + (c && c.naoshita ? " edited" : "");
+      td.className = "cell" + (c ? " on" : " off") + (chigau ? " chigau" : "");
 
       var bt = document.createElement("button");
       bt.type = "button";
       if (c){
-        bt.innerHTML = '<span class="t1">' + shortT(c.s) + '</span>' +
-                       '<span class="t2">' + shortT(c.e) + '</span>' +
-                       fmt(workOf(c));
+        var naka = '<span class="t1">' + shortT(c.s) + '</span>' +
+                   '<span class="t2">' + shortT(c.e) + '</span>' +
+                   fmt(workOf(c));
+        // 組んだ内容を見ているとき、きぼうと違うならもとの時間も小さく添える
+        if (!yomu && chigau){
+          naka += '<span class="moto">' + (kib ? "希望 " + shortT(kib.s) : "希望 休み") + '</span>';
+        }
+        bt.innerHTML = naka;
         hi++; fun += workOf(c);
       } else {
         bt.textContent = "−";
+        if (!yomu && chigau && kib){
+          bt.innerHTML = '−<span class="moto">希望 ' + shortT(kib.s) + '</span>';
+        }
       }
-      bt.onclick = function(){ masuWoNaosu(h, x); };
+      if (!yomu) bt.onclick = function(){ masuWoNaosu(h, x); };
       td.appendChild(bt);
       row.appendChild(td);
     });
@@ -662,7 +739,7 @@ function kakuGrid(){
   hibi.forEach(function(x){
     var n = 0, f = 0;
     people.forEach(function(h){
-      var c = grid[h.name][x.d];
+      var c = yomu ? kibouCell(h, x.d) : grid[h.name][x.d];
       if (c){ n++; f += workOf(c); }
     });
     souHi += n; souFun += f;
@@ -678,6 +755,19 @@ function kakuGrid(){
   tbody.appendChild(trN);
 
   tb.appendChild(tbody);
+
+  // 下の説明書き
+  var chigauKazu = 0;
+  people.forEach(function(h){
+    hibi.forEach(function(x){
+      if (!onaji(grid[h.name][x.d], kibouCell(h, x.d))) chigauKazu++;
+    });
+  });
+  $("legend").innerHTML =
+    '<span><i class="deru"></i>出る日</span>' +
+    '<span><i class="chigau"></i>きぼうと違う日' +
+      (chigauKazu ? "（" + chigauKazu + "）" : "（なし）") + '</span>' +
+    (chigauKazu ? '<span>「出されたきぼう」に切り替えると、出されたままが見られます</span>' : '');
 }
 
 /* ---- ひとこと ---- */
@@ -997,6 +1087,24 @@ $("btnKakutei").onclick = function(){
 })();
 
 $("btnReload").onclick = function(){ yomikomu(pw); };
+
+/* 「いまの組み」と「出されたきぼう」の切り替え。
+   きぼうは確定しても消えないので、あとから何度でも見くらべられます。 */
+(function viewWoKirikaeru(){
+  var box = $("viewSeg");
+  var botan = box.getElementsByTagName("button");
+  for (var i = 0; i < botan.length; i++){
+    (function(b){
+      b.onclick = function(){
+        hyoji = b.getAttribute("data-v");
+        for (var j = 0; j < botan.length; j++){
+          botan[j].className = (botan[j] === b) ? "on" : "";
+        }
+        kakuGrid();
+      };
+    })(botan[i]);
+  }
+})();
 
 $("pwGo").onclick = function(){
   var v = $("pwIn").value.trim();
