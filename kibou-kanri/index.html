@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1F5C3D">
+<title>シフト組み｜管理</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='12' width='52' height='44' rx='9' fill='%231F5C3D'/%3E%3Cpath d='M6 26h52M20 6v12M44 6v12' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+
+<style>
+:root{
+  --ground:#F3F5F0; --card:#FFFFFF; --sub:#F8FAF6;
+  --ink:#23281F; --muted:#6C7566; --faint:#909A88;
+  --line:#DEE5D9; --hair:#EBF0E7;
+  --teal:#2A8FA8; --teal-soft:#E4F1F4; --on-teal:#FFFFFF;
+  --tomato:#D0432F; --tomato-soft:#FBE9E5;
+  --sat:#3E7FA8; --sun:#C2571F;
+  --leaf:#2F7A46; --leaf-soft:#E4F0E7; --on-leaf:#FFFFFF;
+  --amber:#B87514; --amber-soft:#FBF0DC;
+  --ui:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Zen Maru Gothic",
+       "Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;
+  --shadow:0 1px 0 rgba(35,40,31,.04), 0 10px 24px -16px rgba(35,40,31,.4);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#171A16; --card:#21251F; --sub:#1C201B;
+    --ink:#E9EDE4; --muted:#98A291; --faint:#7E8877;
+    --line:#333A2F; --hair:#2A3026;
+    --teal:#5FBDD4; --teal-soft:#1E3239; --on-teal:#0F2127;
+    --tomato:#FF6E5B; --tomato-soft:#3A241F;
+    --sat:#7FB8D6; --sun:#F58E5C;
+    --leaf:#72BA84; --leaf-soft:#1F3224; --on-leaf:#10231A;
+    --amber:#E8B563; --amber-soft:#332913;
+    --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 24px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#171A16; --card:#21251F; --sub:#1C201B;
+  --ink:#E9EDE4; --muted:#98A291; --faint:#7E8877;
+  --line:#333A2F; --hair:#2A3026;
+  --teal:#5FBDD4; --teal-soft:#1E3239; --on-teal:#0F2127;
+  --tomato:#FF6E5B; --tomato-soft:#3A241F;
+  --sat:#7FB8D6; --sun:#F58E5C;
+  --leaf:#72BA84; --leaf-soft:#1F3224; --on-leaf:#10231A;
+  --amber:#E8B563; --amber-soft:#332913;
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 24px -16px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--ground); color:var(--ink); font-family:var(--ui);
+  font-size:15px; line-height:1.7; -webkit-font-smoothing:antialiased}
+[hidden]{display:none !important}
+button{font-family:inherit}
+:focus-visible{outline:2.5px solid var(--teal); outline-offset:2px}
+
+.wrap{max-width:1120px; margin:0 auto; padding:0 16px 120px}
+
+/* ---------- 入口 ---------- */
+.gate{max-width:380px; margin:0 auto; padding:70px 20px}
+.gate .logo{font-size:36px; text-align:center; line-height:1}
+.gate h1{font-size:22px; font-weight:800; text-align:center; margin:12px 0 2px}
+.gate p.sub{font-size:12.5px; color:var(--muted); text-align:center; font-weight:700; margin:0 0 26px}
+.gate input{width:100%; font-family:var(--ui); font-weight:700; font-size:17px; color:var(--ink);
+  background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 14px}
+.gate button{width:100%; margin-top:12px; border:0; border-radius:13px; background:var(--leaf);
+  color:var(--on-leaf); font-weight:800; font-size:16px; padding:14px; cursor:pointer}
+.gate .ng{color:var(--tomato); font-size:13px; font-weight:700; text-align:center; min-height:22px; margin:8px 0 0}
+
+/* ---------- ヘッダー ---------- */
+header{position:sticky; top:0; z-index:30; background:var(--ground);
+  border-bottom:1px solid var(--line); padding:12px 0 11px; margin-bottom:4px}
+.hin{max-width:1120px; margin:0 auto; padding:0 16px;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+.hin h1{font-size:19px; font-weight:800; margin:0; flex:none}
+.hin .spacer{flex:1}
+#selPeriod{font-family:var(--ui); font-weight:700; font-size:14px; color:var(--ink);
+  background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 30px 8px 11px;
+  cursor:pointer; -webkit-appearance:none; appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
+                   linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 16px) 55%, calc(100% - 11px) 55%;
+  background-size:6px 6px, 6px 6px; background-repeat:no-repeat}
+.badge{font-size:11.5px; font-weight:800; border-radius:999px; padding:3px 11px;
+  background:var(--sub); color:var(--muted); flex:none}
+.badge.ok{background:var(--leaf-soft); color:var(--leaf)}
+.badge.wip{background:var(--amber-soft); color:var(--amber)}
+
+/* ---------- 節 ---------- */
+section{margin-top:26px}
+h2{font-size:15.5px; font-weight:800; margin:0 0 3px}
+.lead{font-size:12.5px; color:var(--muted); font-weight:700; margin:0 0 12px}
+
+/* 提出のようす */
+.subs{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px}
+.sub-chip{display:flex; align-items:baseline; gap:7px; background:var(--card);
+  border:1px solid var(--line); border-radius:11px; padding:8px 13px; font-size:13.5px; font-weight:700}
+.sub-chip.yet{border-style:dashed; color:var(--faint)}
+.sub-chip b{font-size:14.5px}
+.sub-chip small{font-size:11.5px; color:var(--muted); font-weight:700}
+.sub-chip.done small{color:var(--leaf)}
+
+.tools{display:flex; gap:9px; flex-wrap:wrap}
+.tool{border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:10px;
+  padding:9px 15px; font-weight:700; font-size:13.5px; cursor:pointer}
+.tool:hover{border-color:var(--teal)}
+.tool.done{border-color:var(--leaf); background:var(--leaf-soft); color:var(--leaf)}
+
+/* マス目 */
+.gridwrap{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--card)}
+table.grid{border-collapse:separate; border-spacing:0; font-size:12px; width:max-content; min-width:100%}
+table.grid th, table.grid td{border-bottom:1px solid var(--hair); border-right:1px solid var(--hair);
+  padding:0; text-align:center; vertical-align:middle}
+table.grid tr:last-child td, table.grid tr:last-child th{border-bottom:0}
+table.grid th.name, table.grid td.name{
+  position:sticky; left:0; z-index:2; background:var(--card);
+  min-width:78px; max-width:78px; text-align:left; padding:7px 10px;
+  font-weight:800; font-size:13px; border-right:1px solid var(--line);
+}
+table.grid thead th{background:var(--sub); font-weight:700; font-size:11px; color:var(--muted);
+  padding:6px 3px; min-width:54px; position:sticky; top:0; z-index:1; line-height:1.35}
+table.grid thead th.name{z-index:3; background:var(--sub)}
+table.grid thead th .dw{display:block; font-size:10px}
+table.grid thead th.s6 .dw{color:var(--sat)} table.grid thead th.s0 .dw{color:var(--sun)}
+table.grid thead th.s6, table.grid thead th.s0{background:var(--hair)}
+
+td.cell{padding:0}
+td.cell button{width:100%; min-height:46px; border:0; background:transparent; color:var(--faint);
+  font-family:var(--ui); font-weight:700; font-size:11px; cursor:pointer; line-height:1.3;
+  font-variant-numeric:tabular-nums; padding:4px 2px; display:block}
+td.cell button .t1{display:block; font-size:11.5px; color:var(--ink)}
+td.cell button .t2{display:block; font-size:11.5px; color:var(--ink)}
+td.cell.on{background:var(--teal-soft)}
+td.cell.on button{color:var(--ink)}
+td.cell.edited{background:var(--amber-soft); box-shadow:inset 0 0 0 2px var(--amber)}
+td.cell.off button{color:var(--faint); font-size:12px}
+tr.noSubmit td.cell{background:repeating-linear-gradient(45deg,transparent,transparent 5px,var(--hair) 5px,var(--hair) 10px)}
+tr.noSubmit td.name{color:var(--faint)}
+
+tr.tally td, tr.tally th{background:var(--sub); font-weight:800}
+tr.tally td{font-size:12.5px; font-variant-numeric:tabular-nums; padding:7px 3px}
+tr.tally td.low{color:var(--tomato)}
+td.total, th.total{background:var(--sub); min-width:76px; font-variant-numeric:tabular-nums;
+  font-weight:800; font-size:12px; padding:6px 8px}
+
+/* ひとこと */
+.memos{display:grid; gap:9px}
+.memo{background:var(--card); border:1px solid var(--line); border-left:4px solid var(--teal);
+  border-radius:11px; padding:11px 14px; font-size:13.5px; line-height:1.75}
+.memo b{display:block; font-size:13px; margin-bottom:1px}
+.memo span{color:var(--muted); white-space:pre-wrap; word-break:break-word}
+.none{font-size:13px; color:var(--faint); font-weight:700}
+
+/* 下の確定バー */
+.fixbar{position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--card);
+  border-top:1px solid var(--line); padding:11px 16px calc(12px + env(safe-area-inset-bottom));
+  box-shadow:0 -8px 24px -18px rgba(0,0,0,.5)}
+.fixin{max-width:1120px; margin:0 auto; display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+.fixin .info{flex:1; min-width:180px; font-size:13px; color:var(--muted); font-weight:700;
+  font-variant-numeric:tabular-nums}
+.fixin .info b{color:var(--ink); font-size:15px}
+.kakutei{border:0; border-radius:12px; background:var(--leaf); color:var(--on-leaf);
+  font-weight:800; font-size:15px; padding:12px 26px; cursor:pointer; flex:none}
+.kakutei:disabled{background:var(--line); color:var(--faint); cursor:default}
+
+/* シート */
+.sheet{position:fixed; inset:0; z-index:60; background:rgba(20,24,18,.45); display:none;
+  align-items:flex-end; justify-content:center}
+.sheet.open{display:flex}
+.sheet-in{background:var(--card); width:100%; max-width:480px; border-radius:20px 20px 0 0;
+  padding:16px 16px calc(20px + env(safe-area-inset-bottom)); max-height:92vh; overflow-y:auto}
+@media (min-width:600px){
+  .sheet{align-items:center}
+  .sheet-in{border-radius:18px; max-height:86vh}
+}
+.sheet-in h3{margin:0 0 2px; font-size:17px; font-weight:800; text-align:center}
+.sheet-in .hint{margin:0 0 14px; font-size:12.5px; color:var(--muted); text-align:center; font-weight:700}
+.grp{font-size:11px; font-weight:800; letter-spacing:.09em; color:var(--faint); margin:15px 0 7px}
+.grp:first-of-type{margin-top:0}
+.tchoice{display:flex; flex-wrap:wrap; gap:6px}
+.tchoice button{border:1px solid var(--line); background:var(--card); color:var(--ink);
+  border-radius:9px; padding:8px 12px; font-weight:700; font-size:13.5px; cursor:pointer;
+  font-variant-numeric:tabular-nums}
+.tchoice button.cur{border-color:var(--teal); background:var(--teal-soft)}
+.pair{display:flex; gap:8px; align-items:center}
+.pair select{flex:1; font-family:var(--ui); font-weight:700; font-size:15px; color:var(--ink);
+  background:var(--sub); border:1px solid var(--line); border-radius:10px; padding:9px;
+  text-align:center; cursor:pointer; font-variant-numeric:tabular-nums}
+.pair span{color:var(--muted); font-weight:700; font-size:13px}
+.brk{display:grid; grid-template-columns:auto 1fr; gap:9px 11px; align-items:center; margin-bottom:9px}
+.brk label{display:flex; align-items:center; gap:7px; font-size:13.5px; font-weight:700; cursor:pointer}
+.brk input[type=checkbox]{width:19px; height:19px; accent-color:var(--teal); cursor:pointer}
+.out{background:var(--sub); border:1px solid var(--line); border-radius:11px; padding:11px 13px;
+  text-align:center; font-size:13px; color:var(--muted); font-weight:700; margin-top:13px;
+  font-variant-numeric:tabular-nums}
+.out b{color:var(--ink); font-size:17px}
+.warn{background:var(--tomato-soft); color:var(--tomato); border-radius:10px; padding:9px 12px;
+  font-size:12.5px; font-weight:700; line-height:1.6; margin-top:10px}
+.sheet .ok{width:100%; margin-top:13px; border:0; border-radius:12px; background:var(--teal);
+  color:var(--on-teal); font-weight:800; font-size:15.5px; padding:13px; cursor:pointer}
+.sheet .alt{width:100%; margin-top:9px; border:1px solid var(--line); background:var(--card);
+  color:var(--muted); border-radius:12px; font-weight:700; font-size:14px; padding:11px; cursor:pointer}
+
+pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-radius:11px;
+  padding:13px 15px; font-family:var(--ui); font-size:13.5px; line-height:1.8; white-space:pre-wrap;
+  color:var(--ink); max-height:40vh; overflow-y:auto}
+
+.bar{position:fixed; left:50%; transform:translateX(-50%); bottom:-90px; z-index:80;
+  background:var(--ink); color:var(--ground); font-weight:700; font-size:13.5px;
+  border-radius:999px; padding:10px 22px; box-shadow:var(--shadow); transition:bottom .22s ease;
+  max-width:92vw; text-align:center}
+.bar.on{bottom:96px}
+.bar.bad{background:var(--tomato); color:#fff}
+
+@media (prefers-reduced-motion: reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<!-- 入口 -->
+<div class="gate" id="gate" hidden>
+  <div class="logo">🗓️</div>
+  <h1>シフト組み</h1>
+  <p class="sub">管理用</p>
+  <input id="pwIn" type="password" autocomplete="off" placeholder="あいことば">
+  <button id="pwGo">ひらく</button>
+  <p class="ng" id="pwNg"></p>
+</div>
+
+<div class="gate" id="loading">
+  <div class="logo">🗓️</div>
+  <h1>シフト組み</h1>
+  <p class="sub" id="loadMsg">よみこんでいます…</p>
+</div>
+
+<!-- 本体 -->
+<div id="app" hidden>
+  <header>
+    <div class="hin">
+      <h1>シフト組み</h1>
+      <select id="selPeriod" aria-label="期間"></select>
+      <span class="badge" id="badge">　</span>
+      <span class="spacer"></span>
+      <button class="tool" id="btnReload">よみこみ直す</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <section>
+      <h2>提出のようす</h2>
+      <p class="lead">締切はないので、ここで「まだの人」をつかむだなも</p>
+      <div class="subs" id="subs"></div>
+      <div class="tools">
+        <button class="tool" id="btnSaisoku">まだの人への催促文をコピー</button>
+        <button class="tool" id="btnHyou">確定シフトを表としてコピー</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>希望の一覧</h2>
+      <p class="lead">マスを押すと、その日の時間と休憩を直せます。直したマスは黄色くなります</p>
+      <div class="gridwrap"><table class="grid" id="grid"></table></div>
+    </section>
+
+    <section>
+      <h2>ひとこと</h2>
+      <div class="memos" id="memos"></div>
+    </section>
+
+  </div>
+
+  <div class="fixbar">
+    <div class="fixin">
+      <div class="info" id="info">　</div>
+      <button class="kakutei" id="btnKakutei">この期間を確定する</button>
+    </div>
+  </div>
+</div>
+
+<!-- マスを直すシート -->
+<div class="sheet" id="shCell"><div class="sheet-in">
+  <h3 id="cT">　</h3>
+  <p class="hint" id="cH">　</p>
+
+  <div class="grp">勤務の時間</div>
+  <div class="tchoice" id="cQuick"></div>
+  <div class="pair" style="margin-top:8px">
+    <select id="cS" aria-label="はじまり"></select><span>〜</span><select id="cE" aria-label="おわり"></select>
+  </div>
+
+  <div class="grp">休憩（この日だけ変えられます）</div>
+  <div class="brk">
+    <label><input type="checkbox" id="b1on"> 午前</label>
+    <div class="pair">
+      <select id="b1s" aria-label="午前の休憩のはじまり"></select><span>〜</span><select id="b1e" aria-label="午前の休憩のおわり"></select>
+    </div>
+    <label><input type="checkbox" id="b2on"> 昼</label>
+    <div class="pair">
+      <select id="b2s" aria-label="昼の休憩のはじまり"></select><span>〜</span><select id="b2e" aria-label="昼の休憩のおわり"></select>
+    </div>
+  </div>
+
+  <div class="out" id="cOut">　</div>
+  <div id="cWarn"></div>
+
+  <button class="ok" id="cOk">この内容にする</button>
+  <button class="alt" id="cRest">この日は休みにする</button>
+  <button class="alt" id="cReset">きぼうのとおりに戻す</button>
+</div></div>
+
+<!-- コピー用のシート -->
+<div class="sheet" id="shCopy"><div class="sheet-in">
+  <h3 id="pT">　</h3>
+  <p class="hint" id="pH">　</p>
+  <pre class="msg" id="pBody"></pre>
+  <button class="ok" id="pCopy">コピーする</button>
+  <button class="alt" id="pClose">とじる</button>
+</div></div>
+
+<div class="bar" id="bar"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ====================================================================
+   シフト組み（管理用）
+
+   パートさんが出した希望を人×日でならべ、直して、確定する画面。
+   確定したものは kakutei シートに入る。そこから先（Excel と PDF）は段階3。
+
+   この画面はパートさんには配らない。みんなのページにも置かない。
+   ==================================================================== */
+
+var API = "https://script.google.com/macros/s/AKfycbzYkVlVngoC6CXf9HKPlfnFbJHs5lrarw2J9dLjdqaqvdVQFIN15aMr5EyNSA8tj1UU/exec";
+var KIBOU_URL = "https://happy-tomato-farm.github.io/kibou/";
+var PW_KEY = "htf_kanri_pw";
+
+var WD = ["日","月","火","水","木","金","土"];
+var $ = function(id){ return document.getElementById(id); };
+
+function oboeru(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function omoidasu(k){ try{ return localStorage.getItem(k) || ""; }catch(e){ return ""; } }
+function wasureru(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+var barTimer = null;
+function shiraseru(msg, warui){
+  var el = $("bar");
+  el.textContent = msg;
+  el.className = "bar on" + (warui ? " bad" : "");
+  clearTimeout(barTimer);
+  barTimer = setTimeout(function(){ el.className = "bar"; }, warui ? 6000 : 2600);
+}
+
+/* ---- 時刻 ---- */
+function mins(t){ var a = String(t).split(":"); return (+a[0])*60 + (+a[1]); }
+function hhmm(m){ return ("0"+Math.floor(m/60)).slice(-2) + ":" + ("0"+(m%60)).slice(-2); }
+function fmt(m){ return Math.floor(m/60) + ":" + ("0"+(m%60)).slice(-2); }
+function tadashiiPat(p){ return /^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/.test(String(p||"")); }
+function shortT(t){ return String(t).replace(/^0/,""); }
+
+function ymd(y,m,d){ return y + "-" + ("0"+(m+1)).slice(-2) + "-" + ("0"+d).slice(-2); }
+function lastDay(y,m){ return new Date(y, m+1, 0).getDate(); }
+
+/* ---- 期間。管理側は前を多めに見たいので 前4つ・先3つ ---- */
+function makePeriods(){
+  var now = new Date();
+  var kyou = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var list = [];
+  for (var k = -3; k <= 3; k++){
+    var d = new Date(kyou.getFullYear(), kyou.getMonth()+k, 1);
+    var y = d.getFullYear(), m = d.getMonth();
+    list.push({ y:y, m:m, from:1,  to:15 });
+    list.push({ y:y, m:m, from:16, to:lastDay(y,m) });
+  }
+  list.forEach(function(p){
+    p.key = ymd(p.y, p.m, p.from);
+    p.start = new Date(p.y, p.m, p.from);
+    p.label = (p.y === kyou.getFullYear() ? "" : p.y + "年") +
+              (p.m+1) + "月" + p.from + "日〜" + p.to + "日";
+  });
+  var next = 0;
+  for (var i = 0; i < list.length; i++){
+    if (list[i].start > kyou){ next = i; break; }
+  }
+  return { list: list.slice(Math.max(0, next-4), next+3), current: list[next].key };
+}
+var PERIODS = makePeriods();
+
+function periodOf(key){
+  for (var i = 0; i < PERIODS.list.length; i++){
+    if (PERIODS.list[i].key === key) return PERIODS.list[i];
+  }
+  return PERIODS.list[0];
+}
+function daysOf(p){
+  var out = [];
+  for (var d = p.from; d <= p.to; d++){
+    out.push({ d:d, w:new Date(p.y,p.m,d).getDay(), ymd:ymd(p.y,p.m,d) });
+  }
+  return out;
+}
+
+/* ====================================================================
+   いまの状態
+   ==================================================================== */
+
+var pw = "";
+var people = [], kibou = [], kakutei = [];
+var perKey = PERIODS.current;
+
+/* マス目。 grid[名前][日] = null（休み） か
+   { s,e,b1s,b1e,b2s,b2e, naoshita:true/false } */
+var grid = {};
+
+function hitoOf(name){
+  for (var i = 0; i < people.length; i++){ if (people[i].name === name) return people[i]; }
+  return null;
+}
+
+/* その人その日の休憩を、きまりどおりに入れた形にします */
+function hirogeru(hito, pat){
+  var a = String(pat).split("-"), s = mins(a[0]), e = mins(a[1]);
+  var c = { s:a[0], e:a[1], b1s:"", b1e:"", b2s:"", b2e:"", naoshita:false };
+
+  if (hito.amAt && hito.amMin){
+    var s1 = mins(hito.amAt), e1 = s1 + hito.amMin;
+    if (s1 >= s && e1 <= e){ c.b1s = hito.amAt; c.b1e = hhmm(e1); }
+  }
+  if (hito.noonAt && hito.noonMin){
+    var s2 = mins(hito.noonAt), e2 = s2 + hito.noonMin;
+    if (s2 >= s && e2 <= e){ c.b2s = hito.noonAt; c.b2e = hhmm(e2); }
+  }
+  return c;
+}
+
+function restOf(c){
+  var r = 0;
+  if (c.b1s && c.b1e) r += mins(c.b1e) - mins(c.b1s);
+  if (c.b2s && c.b2e) r += mins(c.b2e) - mins(c.b2s);
+  return r;
+}
+function workOf(c){ return mins(c.e) - mins(c.s) - restOf(c); }
+
+/* ---- 提出のようす ---- */
+function kibouOf(name){
+  for (var i = 0; i < kibou.length; i++){
+    if (kibou[i].person === name && kibou[i].period === perKey) return kibou[i];
+  }
+  return null;
+}
+function kakuteiAri(){
+  for (var i = 0; i < kakutei.length; i++){
+    if (kakutei[i].period === perKey) return true;
+  }
+  return false;
+}
+
+/* マス目を組み立てます。
+   すでに確定してあればそれを、なければ希望を休憩つきに広げたものを入れます。 */
+function gridWoTsukuru(){
+  grid = {};
+  var p = periodOf(perKey), hibi = daysOf(p);
+
+  // 確定ずみを引きやすい形にします
+  var kaku = {};
+  kakutei.forEach(function(k){
+    if (k.period === perKey) kaku[k.date + "|" + k.person] = k;
+  });
+
+  people.forEach(function(h){
+    var gyo = {};
+    var kib = kibouOf(h.name);
+
+    hibi.forEach(function(x){
+      var k = kaku[x.ymd + "|" + h.name];
+      if (k){
+        // 確定ずみ。そのまま出します（きまりを変えても過去は動かしません）
+        gyo[x.d] = { s:k.start, e:k.end, b1s:k.b1s, b1e:k.b1e, b2s:k.b2s, b2e:k.b2e,
+                     naoshita:false, kakuteizumi:true };
+        return;
+      }
+      var pat = kib ? kib.days[String(x.d)] : null;
+      gyo[x.d] = (pat && tadashiiPat(pat)) ? hirogeru(h, pat) : null;
+    });
+
+    grid[h.name] = gyo;
+  });
+}
+
+/* ====================================================================
+   通信
+   ==================================================================== */
+
+function toru(url){
+  if (!window.AbortController) return fetch(url).then(function(r){ return r.json(); });
+  var ac = new AbortController();
+  var t = setTimeout(function(){ ac.abort(); }, 25000);
+  return fetch(url, { signal: ac.signal }).then(function(r){ return r.json(); })
+    .then(function(j){ clearTimeout(t); return j; },
+          function(e){ clearTimeout(t); throw e; });
+}
+
+function okuru(payload){
+  return fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  }).then(function(r){ return r.json(); }).then(function(j){
+    if (!j.ok) throw new Error(j.error || "保存できませんでした");
+    return j;
+  });
+}
+
+function miseru(which){
+  $("loading").hidden = (which !== "load");
+  $("gate").hidden    = (which !== "gate");
+  $("app").hidden     = (which !== "app");
+}
+
+function yomikomu(aikotoba){
+  miseru("load");
+  return toru(API + "?want=kibouAll&pw=" + encodeURIComponent(aikotoba))
+    .then(function(j){
+      if (!j.ok){
+        wasureru(PW_KEY);
+        miseru("gate");
+        $("pwNg").textContent = (j.need === "aikotoba")
+          ? "あいことばがちがいます" : (j.error || "読みこめませんでした");
+        return;
+      }
+      pw = aikotoba;
+      oboeru(PW_KEY, pw);
+      people  = j.people  || [];
+      kibou   = j.kibou   || [];
+      kakutei = j.kakutei || [];
+      gridWoTsukuru();
+      miseru("app");
+      kaku();
+    })
+    .catch(function(err){
+      miseru("gate");
+      $("pwNg").textContent = "つながりません（" + (err && err.message ? err.message : "") + "）";
+    });
+}
+
+/* ====================================================================
+   描く
+   ==================================================================== */
+
+function kaku(){
+  var p = periodOf(perKey);
+
+  // 上の印
+  var b = $("badge");
+  if (kakuteiAri()){ b.textContent = "確定ずみ"; b.className = "badge ok"; }
+  else             { b.textContent = "未確定";   b.className = "badge wip"; }
+
+  kakuSubs();
+  kakuGrid();
+  kakuMemos();
+  kakuInfo();
+}
+
+/* ---- 提出のようす ---- */
+function kakuSubs(){
+  var box = $("subs");
+  box.innerHTML = "";
+  people.forEach(function(h){
+    var k = kibouOf(h.name);
+    var el = document.createElement("div");
+    el.className = "sub-chip " + (k ? "done" : "yet");
+    if (k){
+      var d = new Date(k.at);
+      el.innerHTML = "<b>" + h.name + "</b><small>" + (d.getMonth()+1) + "/" + d.getDate() + " に提出</small>";
+    } else {
+      el.innerHTML = "<b>" + h.name + "</b><small>まだ</small>";
+    }
+    box.appendChild(el);
+  });
+}
+
+/* ---- 人×日のマス目 ---- */
+function kakuGrid(){
+  var p = periodOf(perKey), hibi = daysOf(p);
+  var tb = $("grid");
+  tb.innerHTML = "";
+
+  // 見出し
+  var thead = document.createElement("thead");
+  var tr = document.createElement("tr");
+  var th0 = document.createElement("th");
+  th0.className = "name";
+  th0.textContent = "";
+  tr.appendChild(th0);
+
+  hibi.forEach(function(x){
+    var th = document.createElement("th");
+    th.className = (x.w === 6 ? "s6" : x.w === 0 ? "s0" : "");
+    th.innerHTML = x.d + '<span class="dw">' + WD[x.w] + "</span>";
+    tr.appendChild(th);
+  });
+  var thT = document.createElement("th");
+  thT.className = "total";
+  thT.textContent = "合計";
+  tr.appendChild(thT);
+  thead.appendChild(tr);
+  tb.appendChild(thead);
+
+  // 人ごとの行
+  var tbody = document.createElement("tbody");
+  people.forEach(function(h){
+    var kib = kibouOf(h.name);
+    var row = document.createElement("tr");
+    if (!kib && !kakuteiAri()) row.className = "noSubmit";
+
+    var tdN = document.createElement("td");
+    tdN.className = "name";
+    tdN.textContent = h.name;
+    row.appendChild(tdN);
+
+    var hi = 0, fun = 0;
+    hibi.forEach(function(x){
+      var c = grid[h.name][x.d];
+      var td = document.createElement("td");
+      td.className = "cell" + (c ? " on" : " off") + (c && c.naoshita ? " edited" : "");
+
+      var bt = document.createElement("button");
+      bt.type = "button";
+      if (c){
+        bt.innerHTML = '<span class="t1">' + shortT(c.s) + '</span>' +
+                       '<span class="t2">' + shortT(c.e) + '</span>' +
+                       fmt(workOf(c));
+        hi++; fun += workOf(c);
+      } else {
+        bt.textContent = "−";
+      }
+      bt.onclick = function(){ masuWoNaosu(h, x); };
+      td.appendChild(bt);
+      row.appendChild(td);
+    });
+
+    var tdT = document.createElement("td");
+    tdT.className = "total";
+    tdT.innerHTML = hi + "日<br>" + fmt(fun);
+    row.appendChild(tdT);
+
+    tbody.appendChild(row);
+  });
+
+  // 人数の行
+  var trN = document.createElement("tr");
+  trN.className = "tally";
+  var thN = document.createElement("th");
+  thN.className = "name";
+  thN.textContent = "人数";
+  trN.appendChild(thN);
+
+  var souHi = 0, souFun = 0;
+  hibi.forEach(function(x){
+    var n = 0, f = 0;
+    people.forEach(function(h){
+      var c = grid[h.name][x.d];
+      if (c){ n++; f += workOf(c); }
+    });
+    souHi += n; souFun += f;
+    var td = document.createElement("td");
+    td.className = (n === 0 ? "low" : "");
+    td.textContent = n ? n : "0";
+    trN.appendChild(td);
+  });
+  var tdNT = document.createElement("td");
+  tdNT.className = "total";
+  tdNT.innerHTML = "のべ" + souHi + "日<br>" + fmt(souFun);
+  trN.appendChild(tdNT);
+  tbody.appendChild(trN);
+
+  tb.appendChild(tbody);
+}
+
+/* ---- ひとこと ---- */
+function kakuMemos(){
+  var box = $("memos");
+  box.innerHTML = "";
+  var atta = false;
+  people.forEach(function(h){
+    var k = kibouOf(h.name);
+    if (!k || !k.memo) return;
+    atta = true;
+    var el = document.createElement("div");
+    el.className = "memo";
+    var b = document.createElement("b");
+    b.textContent = h.name + " さん";
+    var s = document.createElement("span");
+    s.textContent = k.memo;
+    el.appendChild(b); el.appendChild(s);
+    box.appendChild(el);
+  });
+  if (!atta){
+    var n = document.createElement("p");
+    n.className = "none";
+    n.textContent = "この期間のひとことはありません";
+    box.appendChild(n);
+  }
+}
+
+/* ---- 下のバー ---- */
+function kakuInfo(){
+  var hibi = daysOf(periodOf(perKey));
+  var ken = 0, fun = 0, naoshi = 0;
+  people.forEach(function(h){
+    hibi.forEach(function(x){
+      var c = grid[h.name][x.d];
+      if (c){ ken++; fun += workOf(c); if (c.naoshita) naoshi++; }
+    });
+  });
+  var mada = people.filter(function(h){ return !kibouOf(h.name); }).length;
+
+  $("info").innerHTML =
+    "のべ <b>" + ken + "</b> 日／実働 <b>" + fmt(fun) + "</b>" +
+    (naoshi ? "　直したマス " + naoshi : "") +
+    (mada ? "　<span style='color:var(--tomato)'>未提出 " + mada + " 人</span>" : "");
+  $("btnKakutei").disabled = (ken === 0);
+}
+
+/* ====================================================================
+   マスを直すシート
+   ==================================================================== */
+
+var shCell = $("shCell");
+var imaHito = null, imaHi = null;
+
+(function fillSelects(){
+  // 勤務は 6:00〜19:00、休憩は 8:00〜17:00。どちらも5分きざみ
+  [["cS",6,19,15],["cE",6,19,15],["b1s",8,17,5],["b1e",8,17,5],["b2s",8,17,5],["b2e",8,17,5]]
+    .forEach(function(a){
+      var el = $(a[0]);
+      for (var m = a[1]*60; m <= a[2]*60; m += a[3]){
+        var t = hhmm(m);
+        el.appendChild(new Option(t, t));
+      }
+    });
+})();
+
+function ima(){
+  return {
+    s: $("cS").value, e: $("cE").value,
+    b1s: $("b1on").checked ? $("b1s").value : "",
+    b1e: $("b1on").checked ? $("b1e").value : "",
+    b2s: $("b2on").checked ? $("b2s").value : "",
+    b2e: $("b2on").checked ? $("b2e").value : ""
+  };
+}
+
+function cellWoMiseru(){
+  var c = ima();
+  var ok = $("cOk");
+  var keiji = [];
+
+  if (mins(c.e) <= mins(c.s)) keiji.push("おわりの時刻を、はじまりより後にしてください");
+  if ($("b1on").checked && mins($("b1e").value) <= mins($("b1s").value)) keiji.push("午前の休憩の時刻が逆です");
+  if ($("b2on").checked && mins($("b2e").value) <= mins($("b2s").value)) keiji.push("昼の休憩の時刻が逆です");
+
+  if (keiji.length){
+    $("cOut").textContent = keiji[0];
+    $("cWarn").innerHTML = "";
+    ok.disabled = true; ok.style.opacity = ".45";
+    return;
+  }
+
+  var r = restOf(c), w = workOf(c);
+  $("cOut").innerHTML = "休憩 " + r + "分 ・ 実働 <b>" + fmt(w) + "</b>";
+
+  var chui = [];
+  // 休憩が勤務の外にはみ出していないか
+  if (c.b1s && (mins(c.b1s) < mins(c.s) || mins(c.b1e) > mins(c.e))) chui.push("午前の休憩が勤務時間の外に出ています");
+  if (c.b2s && (mins(c.b2s) < mins(c.s) || mins(c.b2e) > mins(c.e))) chui.push("昼の休憩が勤務時間の外に出ています");
+  // 法律の決まり
+  if (w > 480 && r < 60)      chui.push("実働が8時間を超えます。休憩は60分以上必要です");
+  else if (w > 360 && r < 45) chui.push("実働が6時間を超えます。休憩は45分以上必要です");
+
+  $("cWarn").innerHTML = chui.length ? '<div class="warn">' + chui.join("<br>") + "</div>" : "";
+  ok.disabled = false; ok.style.opacity = "1";
+}
+
+["cS","cE","b1s","b1e","b2s","b2e","b1on","b2on"].forEach(function(id){
+  $(id).addEventListener("change", cellWoMiseru);
+});
+
+function masuWoNaosu(hito, x){
+  imaHito = hito; imaHi = x;
+  var c = grid[hito.name][x.d];
+
+  $("cT").textContent = hito.name + " さん";
+  $("cH").textContent = (periodOf(perKey).m + 1) + "月" + x.d + "日（" + WD[x.w] + "）" +
+                        (c ? "" : "　いまは休み");
+
+  // よく使う時間のボタン
+  var box = $("cQuick");
+  box.innerHTML = "";
+  var tachi = (hito.quick && hito.quick.length ? hito.quick.slice() : [hito.usual]);
+  (hito.often || []).forEach(function(t){ if (tachi.indexOf(t) < 0) tachi.push(t); });
+  tachi.forEach(function(pat){
+    if (!tadashiiPat(pat)) return;
+    var bt = document.createElement("button");
+    bt.type = "button";
+    bt.textContent = shortT(pat.split("-")[0]) + "–" + shortT(pat.split("-")[1]);
+    if (c && (c.s + "-" + c.e) === pat) bt.className = "cur";
+    bt.onclick = function(){
+      var hiro = hirogeru(hito, pat);
+      moto(hiro);
+      cellWoMiseru();
+    };
+    box.appendChild(bt);
+  });
+
+  moto(c || hirogeru(hito, hito.usual));
+  cellWoMiseru();
+  shCell.classList.add("open");
+}
+
+/* シートの入力欄に値を入れます */
+function moto(c){
+  $("cS").value = c.s; $("cE").value = c.e;
+  $("b1on").checked = !!c.b1s;
+  if (c.b1s){ $("b1s").value = c.b1s; $("b1e").value = c.b1e; }
+  $("b2on").checked = !!c.b2s;
+  if (c.b2s){ $("b2s").value = c.b2s; $("b2e").value = c.b2e; }
+}
+
+shCell.onclick = function(e){ if (e.target === shCell) shCell.classList.remove("open"); };
+
+$("cOk").onclick = function(){
+  var c = ima();
+  c.naoshita = true;
+  grid[imaHito.name][imaHi.d] = c;
+  shCell.classList.remove("open");
+  kaku();
+};
+$("cRest").onclick = function(){
+  grid[imaHito.name][imaHi.d] = null;
+  shCell.classList.remove("open");
+  kaku();
+};
+$("cReset").onclick = function(){
+  var kib = kibouOf(imaHito.name);
+  var pat = kib ? kib.days[String(imaHi.d)] : null;
+  grid[imaHito.name][imaHi.d] = (pat && tadashiiPat(pat)) ? hirogeru(imaHito, pat) : null;
+  shCell.classList.remove("open");
+  kaku();
+};
+
+/* ====================================================================
+   コピー用のシート
+   ==================================================================== */
+
+var shCopy = $("shCopy");
+shCopy.onclick = function(e){ if (e.target === shCopy) shCopy.classList.remove("open"); };
+$("pClose").onclick = function(){ shCopy.classList.remove("open"); };
+
+function copyWoDasu(title, hint, body){
+  $("pT").textContent = title;
+  $("pH").textContent = hint;
+  $("pBody").textContent = body;
+  shCopy.classList.add("open");
+}
+
+$("pCopy").onclick = function(){
+  var moji = $("pBody").textContent;
+  var owari = function(){ shiraseru("コピーしました"); shCopy.classList.remove("open"); };
+
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(moji).then(owari, tegaki);
+  } else {
+    tegaki();
+  }
+
+  // 古いブラウザ用のやり方
+  function tegaki(){
+    try{
+      var ta = document.createElement("textarea");
+      ta.value = moji;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      owari();
+    }catch(err){
+      shiraseru("コピーできませんでした。長押しでえらんでください", true);
+    }
+  }
+};
+
+$("btnSaisoku").onclick = function(){
+  var mada = people.filter(function(h){ return !kibouOf(h.name); });
+  var p = periodOf(perKey);
+
+  if (!mada.length){
+    shiraseru("全員そろっています");
+    return;
+  }
+  var namae = mada.map(function(h){ return h.name + "さん"; }).join("、");
+  var body =
+    "【シフトきぼうのお願い】\n" +
+    p.label + "ぶんが、まだの方がいます。\n" +
+    namae + "、お手すきのときにお願いします。\n\n" +
+    KIBOU_URL;
+
+  copyWoDasu("催促の文", "LINE の全体トークに貼ってください", body);
+};
+
+$("btnHyou").onclick = function(){
+  var p = periodOf(perKey), hibi = daysOf(p);
+  var gyo = ["日付\t曜日\t" + people.map(function(h){ return h.name; }).join("\t")];
+
+  hibi.forEach(function(x){
+    var retsu = people.map(function(h){
+      var c = grid[h.name][x.d];
+      return c ? (shortT(c.s) + "-" + shortT(c.e)) : "";
+    });
+    gyo.push((p.m+1) + "/" + x.d + "\t" + WD[x.w] + "\t" + retsu.join("\t"));
+  });
+
+  copyWoDasu("確定シフトの表", "Excel やスプレッドシートにそのまま貼れます（タブ区切り）",
+             gyo.join("\n"));
+};
+
+/* ====================================================================
+   確定
+   ==================================================================== */
+
+$("btnKakutei").onclick = function(){
+  var p = periodOf(perKey), hibi = daysOf(p);
+  var items = [];
+
+  people.forEach(function(h){
+    hibi.forEach(function(x){
+      var c = grid[h.name][x.d];
+      if (!c) return;
+      items.push({
+        d: x.ymd, p: h.name,
+        s: c.s, e: c.e,
+        b1s: c.b1s, b1e: c.b1e, b2s: c.b2s, b2e: c.b2e,
+        r: hhmm(restOf(c)), w: hhmm(workOf(c)),
+        m: ""
+      });
+    });
+  });
+
+  var mada = people.filter(function(h){ return !kibouOf(h.name); });
+  var kotoba = p.label + " を確定します。\n\nのべ " + items.length + " 日ぶん。" +
+    (mada.length ? "\n\n※ " + mada.map(function(h){ return h.name + "さん"; }).join("、") +
+                   " はまだ出していません。このまま確定しますか？" : "");
+
+  if (!window.confirm(kotoba)) return;
+
+  var b = $("btnKakutei");
+  b.disabled = true;
+  b.textContent = "保存しています…";
+
+  okuru({ action:"saveKakutei", aikotoba:pw, period:perKey, items:items })
+    .then(function(j){
+      shiraseru("確定しました（" + j.added + "日ぶん）");
+      b.textContent = "この期間を確定する";
+      return toru(API + "?want=kibouAll&pw=" + encodeURIComponent(pw));
+    })
+    .then(function(j){
+      if (j && j.ok){
+        kibou = j.kibou || [];
+        kakutei = j.kakutei || [];
+        gridWoTsukuru();
+        kaku();
+      }
+    })
+    .catch(function(err){
+      b.disabled = false;
+      b.textContent = "この期間を確定する";
+      shiraseru("保存できませんでした。" + (err && err.message ? err.message : ""), true);
+    });
+};
+
+/* ====================================================================
+   まわり
+   ==================================================================== */
+
+(function kikanWoNarabu(){
+  var sel = $("selPeriod");
+  PERIODS.list.forEach(function(p){
+    sel.appendChild(new Option(p.label + (p.key === PERIODS.current ? "（つぎ）" : ""), p.key));
+  });
+  sel.value = perKey;
+  sel.onchange = function(){ perKey = sel.value; gridWoTsukuru(); kaku(); };
+})();
+
+$("btnReload").onclick = function(){ yomikomu(pw); };
+
+$("pwGo").onclick = function(){
+  var v = $("pwIn").value.trim();
+  if (!v){ $("pwNg").textContent = "あいことばを入れてください"; return; }
+  yomikomu(v);
+};
+$("pwIn").addEventListener("keydown", function(e){
+  if (e.key === "Enter") $("pwGo").click();
+});
+
+(function hajimeru(){
+  var kara = "";
+  var m = /[#&]pw=([^&]*)/.exec(String(location.hash || ""));
+  if (m){
+    try { kara = decodeURIComponent(m[1]); } catch(err){ kara = m[1]; }
+  }
+  if (!kara) kara = omoidasu(PW_KEY);
+
+  if (kara) yomikomu(kara);
+  else miseru("gate");
+})();
+})();
+</script>
+</body>
+</html>
