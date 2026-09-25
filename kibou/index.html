@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2A8FA8">
+<title>シフトきぼう｜ハッピートマトファーム</title>
+
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="きぼう">
+
+<style>
+:root{
+  --ground:#F3F5F0; --card:#FFFFFF; --sub:#F8FAF6;
+  --ink:#23281F; --muted:#6C7566; --faint:#909A88;
+  --line:#DEE5D9; --hair:#EBF0E7;
+  --teal:#2A8FA8; --teal-soft:#E4F1F4; --on-teal:#FFFFFF;
+  --tomato:#D0432F; --tomato-soft:#FBE9E5;
+  --sat:#3E7FA8; --sun:#C2571F;
+  --leaf:#3E8552; --leaf-soft:#E6F1E7;
+  --ui:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Zen Maru Gothic",
+       "Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;
+  --shadow:0 1px 0 rgba(35,40,31,.04), 0 10px 24px -16px rgba(35,40,31,.4);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#171A16; --card:#21251F; --sub:#1C201B;
+    --ink:#E9EDE4; --muted:#98A291; --faint:#7E8877;
+    --line:#333A2F; --hair:#2A3026;
+    --teal:#5FBDD4; --teal-soft:#1E3239; --on-teal:#0F2127;
+    --tomato:#FF6E5B; --tomato-soft:#3A241F;
+    --sat:#7FB8D6; --sun:#F58E5C;
+    --leaf:#72BA84; --leaf-soft:#1F3224;
+    --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 24px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#171A16; --card:#21251F; --sub:#1C201B;
+  --ink:#E9EDE4; --muted:#98A291; --faint:#7E8877;
+  --line:#333A2F; --hair:#2A3026;
+  --teal:#5FBDD4; --teal-soft:#1E3239; --on-teal:#0F2127;
+  --tomato:#FF6E5B; --tomato-soft:#3A241F;
+  --sat:#7FB8D6; --sun:#F58E5C;
+  --leaf:#72BA84; --leaf-soft:#1F3224;
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 24px -16px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:var(--ground); color:var(--ink); font-family:var(--ui);
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+#app{
+  display:flex; flex-direction:column; min-height:100%; max-width:560px; margin:0 auto;
+  min-height:100dvh;
+}
+[hidden]{display:none !important}
+button{font-family:inherit}
+:focus-visible{outline:2.5px solid var(--teal); outline-offset:2px}
+
+/* ==================================================================
+   読み込み中・入口
+   ================================================================== */
+.screen{flex:1; display:flex; flex-direction:column; padding:26px 20px calc(24px + env(safe-area-inset-bottom)); overflow-y:auto}
+.logo{font-size:36px; text-align:center; line-height:1}
+.screen h1{font-size:23px; font-weight:800; text-align:center; margin:10px 0 2px}
+.screen .farm{font-size:12.5px; color:var(--muted); text-align:center; font-weight:700; margin:0 0 24px}
+.screen .ask{font-size:12.5px; font-weight:700; color:var(--muted); letter-spacing:.06em;
+  text-align:center; margin:0 0 12px}
+.screen .tip{font-size:11.5px; color:var(--faint); text-align:center; font-weight:700;
+  margin:18px 0 0; line-height:1.7}
+
+.names{display:grid; gap:10px}
+.names button{
+  position:relative; border:2px solid var(--line); background:var(--card); color:var(--ink);
+  border-radius:15px; padding:16px; font-weight:800; font-size:20px; cursor:pointer; text-align:center;
+}
+.names button .last{
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  font-size:10.5px; font-weight:800; color:var(--teal); background:var(--teal-soft);
+  border-radius:999px; padding:2px 9px;
+}
+
+.field{width:100%; font-family:var(--ui); font-weight:700; font-size:17px; color:var(--ink);
+  background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 14px}
+.field:focus{outline:2px solid var(--teal); border-color:var(--teal)}
+.go{width:100%; margin-top:12px; border:0; border-radius:13px; background:var(--teal);
+  color:var(--on-teal); font-weight:800; font-size:16px; padding:14px; cursor:pointer}
+.ng{color:var(--tomato); font-size:13px; font-weight:700; text-align:center; min-height:22px; margin:8px 0 0}
+
+.pins{display:flex; gap:13px; justify-content:center; margin:12px 0 2px}
+.pins i{width:16px; height:16px; border-radius:50%; border:2px solid var(--line); display:block}
+.pins i.on{background:var(--teal); border-color:var(--teal)}
+.pins.bad i{border-color:var(--tomato)}
+.keys{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:8px}
+.keys button{border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:13px;
+  padding:15px 0; font-weight:700; font-size:22px; cursor:pointer}
+.keys button.act{background:var(--teal); border-color:var(--teal); color:var(--on-teal); font-size:15px}
+.keys button.ghost{background:transparent; border-color:transparent; font-size:14px; color:var(--muted)}
+
+/* ==================================================================
+   本体
+   ================================================================== */
+header{
+  position:sticky; top:0; z-index:20; background:var(--ground);
+  border-bottom:1px solid var(--line); padding:calc(10px + env(safe-area-inset-top)) 16px 11px;
+}
+.htop{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.htop h2{font-size:19px; font-weight:800; margin:0; line-height:1.35}
+.htop button{background:none; border:0; color:var(--muted); font-weight:700; font-size:12px;
+  cursor:pointer; padding:4px 0; text-decoration:underline; flex:none}
+#selPeriod{
+  width:100%; margin-top:9px; font-family:var(--ui); font-weight:700; font-size:14px; color:var(--ink);
+  background:var(--card); border:1px solid var(--line); border-radius:10px; padding:9px 11px; cursor:pointer;
+  -webkit-appearance:none; appearance:none; padding-right:30px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
+                   linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 17px) 55%, calc(100% - 12px) 55%;
+  background-size:6px 6px, 6px 6px; background-repeat:no-repeat;
+}
+.state{display:inline-flex; align-items:center; margin-top:9px; font-size:12px; font-weight:700;
+  border-radius:999px; padding:3px 12px; background:var(--sub); color:var(--muted)}
+.state.sent{background:var(--leaf-soft); color:var(--leaf)}
+
+main{flex:1; padding:12px 16px 16px}
+footer{
+  position:sticky; bottom:0; z-index:20; border-top:1px solid var(--line); background:var(--sub);
+  padding:10px 16px calc(12px + env(safe-area-inset-bottom));
+}
+.sum{display:flex; justify-content:space-between; align-items:baseline; font-size:13px;
+  color:var(--muted); font-weight:700; margin-bottom:9px}
+.sum b{font-size:17px; color:var(--ink); font-variant-numeric:tabular-nums}
+.send{width:100%; border:0; border-radius:13px; background:var(--teal); color:var(--on-teal);
+  font-weight:800; font-size:16px; padding:14px; cursor:pointer}
+.send:disabled{background:var(--line); color:var(--faint); cursor:default}
+.send.done{background:var(--leaf)}
+
+/* ホーム画面のおすすめ */
+.pwa{display:flex; gap:10px; align-items:center; background:var(--teal-soft); border:1px solid var(--teal);
+  border-radius:12px; padding:10px 12px; margin-bottom:12px; font-size:12.5px; line-height:1.6; font-weight:700}
+.pwa span{flex:1}
+.pwa button{background:none; border:0; color:var(--muted); font-weight:800; font-size:16px;
+  cursor:pointer; padding:0 3px; flex:none}
+
+/* 1日1行 */
+.rows{display:grid; gap:7px}
+.row{border:1px solid var(--line); border-radius:13px; padding:8px 10px 9px; background:var(--card)}
+.row.on{background:var(--teal-soft); border-color:var(--teal)}
+.rtop{display:grid; grid-template-columns:50px 1fr; gap:10px; align-items:center}
+.rdate{font-size:13.5px; font-weight:700; line-height:1.25; font-variant-numeric:tabular-nums}
+.rdate small{display:block; font-size:10.5px; color:var(--muted); font-weight:700}
+.rdate.s6 small{color:var(--sat)} .rdate.s0 small{color:var(--sun)}
+.seg{display:flex; gap:5px}
+.seg button{flex:1; border:1px solid var(--line); background:var(--card); color:var(--muted);
+  border-radius:10px; padding:9px 2px; font-weight:700; font-size:12.5px; cursor:pointer;
+  font-variant-numeric:tabular-nums; line-height:1.4}
+.seg button.sel{background:var(--teal); border-color:var(--teal); color:var(--on-teal)}
+.seg button.sel.rest{background:var(--faint); border-color:var(--faint); color:var(--card)}
+.rdet{font-size:11px; color:var(--muted); font-weight:700; margin:6px 0 0 60px;
+  font-variant-numeric:tabular-nums; line-height:1.5}
+.rdet em{font-style:normal; color:var(--ink)}
+
+.memo{margin-top:16px; border:1px solid var(--line); border-radius:13px; background:var(--card); padding:12px 13px}
+.memo label{display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:7px}
+.memo textarea{width:100%; border:1px solid var(--line); border-radius:10px; background:var(--sub);
+  color:var(--ink); font-family:var(--ui); font-size:14.5px; line-height:1.7; padding:10px 11px;
+  resize:vertical; min-height:80px}
+.memo textarea:focus{outline:2px solid var(--teal); border-color:var(--teal)}
+.memo .eg{font-size:11px; color:var(--faint); font-weight:700; margin:7px 0 0; line-height:1.6}
+
+/* 下から出るシート */
+.sheet{position:fixed; inset:0; z-index:60; background:rgba(20,24,18,.45); display:none;
+  align-items:flex-end; justify-content:center}
+.sheet.open{display:flex}
+.sheet-in{background:var(--card); width:100%; max-width:560px; border-radius:20px 20px 0 0;
+  padding:16px 16px calc(20px + env(safe-area-inset-bottom)); max-height:92vh; overflow-y:auto}
+.sheet-in h3{margin:0 0 3px; font-size:16px; font-weight:800; text-align:center}
+.sheet-in .hint{margin:0 0 14px; font-size:12px; color:var(--muted); text-align:center; font-weight:700}
+.grp{font-size:11px; font-weight:700; letter-spacing:.1em; color:var(--faint); margin:14px 0 7px}
+.grp:first-of-type{margin-top:0}
+.tchoice{display:grid; gap:7px}
+.tchoice button{border:1px solid var(--line); background:var(--card); color:var(--ink);
+  border-radius:11px; padding:12px 13px; font-weight:700; font-size:15px; cursor:pointer;
+  display:flex; justify-content:space-between; gap:9px; font-variant-numeric:tabular-nums; text-align:left}
+.tchoice button small{color:var(--muted); font-weight:700; font-size:12px}
+.tchoice button.cur{border-color:var(--teal); background:var(--teal-soft)}
+.free{display:flex; gap:8px; align-items:center}
+.free select{flex:1; font-family:var(--ui); font-weight:700; font-size:16px; color:var(--ink);
+  background:var(--sub); border:1px solid var(--line); border-radius:11px; padding:11px;
+  text-align:center; cursor:pointer; font-variant-numeric:tabular-nums}
+.free span{color:var(--muted); font-weight:700}
+.freeout{text-align:center; font-size:13px; color:var(--muted); font-weight:700; margin:11px 0 0}
+.freeout b{color:var(--ink); font-size:15px}
+.sheet .ok{width:100%; margin-top:12px; border:0; border-radius:12px; background:var(--teal);
+  color:var(--on-teal); font-weight:800; font-size:15.5px; padding:13px; cursor:pointer}
+.sheet .alt{width:100%; margin-top:9px; border:1px solid var(--line); background:var(--card);
+  color:var(--muted); border-radius:12px; font-weight:700; font-size:14.5px; padding:12px; cursor:pointer}
+.warn{background:var(--tomato-soft); color:var(--tomato); border-radius:10px; padding:9px 12px;
+  font-size:12.5px; font-weight:700; line-height:1.6; margin-top:10px}
+
+/* 名前の確認 */
+.namecheck{border:2px solid var(--teal); background:var(--teal-soft); border-radius:15px;
+  padding:18px 14px; text-align:center; margin-bottom:14px}
+.namecheck .nm{font-size:32px; font-weight:800; line-height:1.25}
+.namecheck .q{font-size:13px; color:var(--muted); font-weight:700; margin-top:4px}
+.recap{border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:14px}
+.recap div{display:flex; justify-content:space-between; gap:12px; padding:9px 13px;
+  border-bottom:1px solid var(--hair); font-variant-numeric:tabular-nums}
+.recap div:last-child{border-bottom:0}
+.recap .k{color:var(--muted); font-weight:700}
+.recap b{font-weight:700}
+.recap .memotxt{display:block; text-align:left; color:var(--muted); font-size:13px;
+  line-height:1.7; padding:10px 13px; background:var(--sub); white-space:pre-wrap; word-break:break-word}
+
+/* 出したあと */
+.done{text-align:center; padding:60px 14px}
+.done .mk{font-size:40px; line-height:1}
+.done h3{font-size:20px; font-weight:800; margin:14px 0 6px}
+.done p{font-size:14px; color:var(--muted); margin:0 auto; max-width:26ch; line-height:1.8}
+.done button{background:none; border:0; color:var(--teal); font-weight:700; font-size:13.5px;
+  cursor:pointer; margin-top:18px}
+
+/* 知らせの帯 */
+.bar{position:fixed; left:50%; transform:translateX(-50%); bottom:-80px; z-index:80;
+  background:var(--ink); color:var(--ground); font-weight:700; font-size:13.5px;
+  border-radius:999px; padding:10px 20px; box-shadow:var(--shadow); transition:bottom .22s ease;
+  max-width:92vw; text-align:center}
+.bar.on{bottom:calc(88px + env(safe-area-inset-bottom))}
+.bar.bad{background:var(--tomato); color:#fff}
+
+@media (prefers-reduced-motion: reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- 読み込み中 -->
+  <section class="screen" id="scLoad">
+    <div class="logo">🍅</div>
+    <h1>シフトきぼう</h1>
+    <p class="farm">ハッピートマトファーム</p>
+    <p class="ask" id="loadMsg">よみこんでいます…</p>
+  </section>
+
+  <!-- あいことば（リンクに入っていないときだけ出ます） -->
+  <section class="screen" id="scPw" hidden>
+    <div class="logo">🍅</div>
+    <h1>シフトきぼう</h1>
+    <p class="farm">ハッピートマトファーム</p>
+    <p class="ask">あいことばを入れてください</p>
+    <input class="field" id="pwIn" type="text" inputmode="text" autocomplete="off"
+           autocapitalize="off" spellcheck="false" placeholder="あいことば">
+    <button class="go" id="pwGo">ひらく</button>
+    <p class="ng" id="pwNg"></p>
+  </section>
+
+  <!-- 名前をえらぶ -->
+  <section class="screen" id="scWho" hidden>
+    <div class="logo">🍅</div>
+    <h1>シフトきぼう</h1>
+    <p class="farm">ハッピートマトファーム</p>
+    <p class="ask">おなまえを おしてください</p>
+    <div class="names" id="names"></div>
+    <p class="tip">自分の名前がないときは知らせてください</p>
+  </section>
+
+  <!-- あんしょうばんごう（設定されている人だけ出ます） -->
+  <section class="screen" id="scPin" hidden>
+    <div class="logo">🍅</div>
+    <h1 id="pinWho">　</h1>
+    <p class="farm">あんしょうばんごう（4けた）</p>
+    <div class="pins" id="pins"><i></i><i></i><i></i><i></i></div>
+    <p class="ng" id="pinNg"></p>
+    <div class="keys" id="keys"></div>
+    <p class="tip"><button style="background:none;border:0;color:var(--muted);font-weight:700;
+      font-size:11.5px;cursor:pointer;text-decoration:underline" id="pinBack">名前をえらびなおす</button></p>
+  </section>
+
+  <!-- 本体 -->
+  <header id="head" hidden>
+    <div class="htop">
+      <h2 id="hWho">　</h2>
+      <button id="btnOut">名前をかえる</button>
+    </div>
+    <select id="selPeriod" aria-label="どの期間を出すか"></select>
+    <div class="state" id="state">　</div>
+  </header>
+
+  <main id="main" hidden></main>
+
+  <footer id="foot" hidden>
+    <div class="sum"><span>出る日</span><span><b id="sumD">0</b> 日／実働 <b id="sumH">0:00</b></span></div>
+    <button class="send" id="btnSend">この内容で出す</button>
+  </footer>
+</div>
+
+<!-- 時間をえらぶ -->
+<div class="sheet" id="shTime"><div class="sheet-in">
+  <h3 id="shT">時間をえらぶ</h3>
+  <p class="hint" id="shH">　</p>
+  <div class="grp">よく使う時間</div>
+  <div class="tchoice" id="shC"></div>
+  <div class="grp">自分で入れる</div>
+  <div class="free">
+    <select id="fS" aria-label="はじまり"></select><span>〜</span><select id="fE" aria-label="おわり"></select>
+  </div>
+  <div class="freeout" id="fOut">　</div>
+  <div id="fWarn"></div>
+  <button class="ok" id="fOk">この時間にする</button>
+  <button class="alt" id="fRest">この日は休む</button>
+</div></div>
+
+<!-- 出す前の確認 -->
+<div class="sheet" id="shConf"><div class="sheet-in">
+  <div class="namecheck">
+    <div class="nm" id="cNm">　</div>
+    <div class="q">この名前で まちがいないですか？</div>
+  </div>
+  <div class="recap" id="cRecap"></div>
+  <button class="ok" id="cOk">はい、出します</button>
+  <button class="alt" id="cNg">ちがう人をえらぶ</button>
+</div></div>
+
+<div class="bar" id="bar"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ====================================================================
+   シフトきぼう － パートさんが希望を出す画面
+
+   データは Apps Script（保存係）にあるスプレッドシートに入ります。
+   この画面には、名前も休憩のきまりも書いてありません。
+   すべて保存係から受け取ります（このファイルは誰でも読めるためです）。
+   ==================================================================== */
+
+var API = "https://script.google.com/macros/s/AKfycbzYkVlVngoC6CXf9HKPlfnFbJHs5lrarw2J9dLjdqaqvdVQFIN15aMr5EyNSA8tj1UU/exec";
+
+var PW_KEY   = "htf_kibou_pw";      // あいことばを覚えておく場所
+var WHO_KEY  = "htf_kibou_who";     // 前回えらんだ名前
+var DATA_KEY = "htf_kibou_cache";   // 電波が無いときに出す控え
+var PWA_KEY  = "htf_kibou_pwa";     // ホーム画面のおすすめを閉じたか
+
+var WD = ["日","月","火","水","木","金","土"];
+
+var $ = function(id){ return document.getElementById(id); };
+
+/* ---- 端末に覚えさせる（LINEのブラウザでは消えることがあります） ---- */
+function oboeru(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+function omoidasu(k){ try{ return localStorage.getItem(k) || ""; }catch(e){ return ""; } }
+function wasureru(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+/* ---- 画面の下に出る知らせ ---- */
+var barTimer = null;
+function shiraseru(msg, warui){
+  var el = $("bar");
+  el.textContent = msg;
+  el.className = "bar on" + (warui ? " bad" : "");
+  clearTimeout(barTimer);
+  barTimer = setTimeout(function(){ el.className = "bar"; }, warui ? 6000 : 2600);
+}
+
+/* ====================================================================
+   時刻と休憩の計算
+   ==================================================================== */
+
+function mins(t){ var a = String(t).split(":"); return (+a[0]) * 60 + (+a[1]); }
+function hhmm(m){ return ("0" + Math.floor(m/60)).slice(-2) + ":" + ("0" + (m % 60)).slice(-2); }
+function fmt(m){ return Math.floor(m/60) + ":" + ("0" + (m % 60)).slice(-2); }
+
+/* 「09:00-14:30」を「9:00–14:30」の形にします（画面に出す用） */
+function label(p){
+  var a = String(p).split("-");
+  return a[0].replace(/^0/,"") + "–" + a[1].replace(/^0/,"");
+}
+
+/* その人の休憩のきまりから、実際に付く休憩を出します。
+
+   きまりは people シートにあり、管理者が直せます。
+   休憩は「まるごと勤務時間の中におさまる日」だけ付きます。
+   例）昼休憩が 12:00 から45分の人は、12:45 まで働く日にだけ付きます。
+       12:00 で上がる日には付きません。 */
+function restsOf(hito, pat){
+  var a = String(pat).split("-"), s = mins(a[0]), e = mins(a[1]), out = [];
+  var kimari = [
+    { at: hito.amAt,   min: hito.amMin },
+    { at: hito.noonAt, min: hito.noonMin }
+  ];
+  kimari.forEach(function(b){
+    if (!b.at || !b.min) return;
+    var bs = mins(b.at), be = bs + b.min;
+    if (bs >= s && be <= e) out.push({ from: b.at, to: hhmm(be), min: b.min });
+  });
+  return out;
+}
+function restMin(hito, pat){
+  var t = 0;
+  restsOf(hito, pat).forEach(function(b){ t += b.min; });
+  return t;
+}
+function workMin(hito, pat){
+  var a = String(pat).split("-");
+  return mins(a[1]) - mins(a[0]) - restMin(hito, pat);
+}
+
+/* ====================================================================
+   期間（1日〜15日 と 16日〜末日）
+   ==================================================================== */
+
+function lastDay(y, m){ return new Date(y, m + 1, 0).getDate(); }
+function ymd(y, m, d){
+  return y + "-" + ("0" + (m + 1)).slice(-2) + "-" + ("0" + d).slice(-2);
+}
+
+/* きょうを基準に、前2つ・先3つの期間を作ります。
+   「つぎに出すぶん」＝きょうより後に始まる最初の期間 を最初に選んでおきます。 */
+function makePeriods(){
+  var now = new Date();
+  var kyou = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var list = [];
+
+  for (var k = -2; k <= 4; k++){
+    var d = new Date(kyou.getFullYear(), kyou.getMonth() + k, 1);
+    var y = d.getFullYear(), m = d.getMonth();
+    list.push({ y:y, m:m, from:1,  to:15 });
+    list.push({ y:y, m:m, from:16, to:lastDay(y, m) });
+  }
+  list.forEach(function(p){
+    p.key   = ymd(p.y, p.m, p.from);
+    p.start = new Date(p.y, p.m, p.from);
+    p.label = (p.m + 1) + "月" + p.from + "日〜" + p.to + "日";
+  });
+
+  var next = 0;
+  for (var i = 0; i < list.length; i++){
+    if (list[i].start > kyou){ next = i; break; }
+  }
+  return { list: list.slice(Math.max(0, next - 2), next + 3), current: list[next].key };
+}
+
+var PERIODS = makePeriods();
+
+function periodOf(key){
+  for (var i = 0; i < PERIODS.list.length; i++){
+    if (PERIODS.list[i].key === key) return PERIODS.list[i];
+  }
+  return PERIODS.list[0];
+}
+function daysOf(p){
+  var out = [];
+  for (var d = p.from; d <= p.to; d++){
+    out.push({ d: d, w: new Date(p.y, p.m, d).getDay() });
+  }
+  return out;
+}
+
+/* ====================================================================
+   いまの状態
+   ==================================================================== */
+
+var pw     = "";      // あいことば
+var people = [];      // 働く人の設定（保存係からもらう）
+var who    = null;    // いま選んでいる人
+var pin    = "";      // その人の暗証番号（設定されている人だけ）
+var perKey = PERIODS.current;
+var work   = {};      // 期間 → { days:{}, memo:"", sentAt:0 }
+
+function hitoOf(name){
+  for (var i = 0; i < people.length; i++){
+    if (people[i].name === name) return people[i];
+  }
+  return null;
+}
+
+/* その期間の下書きを用意します。
+   まだ出していない期間は「いつもの出方」を入れておきます（土日は休み）。 */
+function ensure(){
+  if (work[perKey]) return work[perKey];
+  var hito = hitoOf(who), days = {};
+  daysOf(periodOf(perKey)).forEach(function(x){
+    days[x.d] = (x.w === 0 || x.w === 6) ? null : hito.usual;
+  });
+  work[perKey] = { days: days, memo: "", sentAt: 0 };
+  return work[perKey];
+}
+
+function totals(){
+  var st = ensure(), hito = hitoOf(who), days = 0, m = 0;
+  Object.keys(st.days).forEach(function(d){
+    if (st.days[d]){ days++; m += workMin(hito, st.days[d]); }
+  });
+  return { days: days, mins: m };
+}
+
+/* ====================================================================
+   通信
+   ==================================================================== */
+
+/* 返事が来ないまま固まらないよう、20秒で打ち切ります */
+function toru(url){
+  if (!window.AbortController) return fetch(url).then(function(r){ return r.json(); });
+  var ac = new AbortController();
+  var t = setTimeout(function(){ ac.abort(); }, 20000);
+  return fetch(url, { signal: ac.signal })
+    .then(function(r){ return r.json(); })
+    .then(function(j){ clearTimeout(t); return j; },
+          function(e){ clearTimeout(t); throw e; });
+}
+
+/* Apps Script は Content-Type を text/plain にしないと、
+   ブラウザが事前確認（プリフライト）を投げ、それが弾かれて失敗します。 */
+function okuru(payload){
+  return fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  }).then(function(r){ return r.json(); }).then(function(j){
+    if (!j.ok) throw new Error(j.error || "保存できませんでした");
+    return j;
+  });
+}
+
+function miseru(which){
+  ["scLoad","scPw","scWho","scPin"].forEach(function(id){
+    $(id).hidden = (id !== which);
+  });
+  var honbun = (which === "app");
+  ["head","main","foot"].forEach(function(id){ $(id).hidden = !honbun; });
+}
+
+/* ---- 働く人の設定をとってくる（画面をひらいたとき） ---- */
+function hitoWoToru(aikotoba){
+  miseru("scLoad");
+  $("loadMsg").textContent = "よみこんでいます…";
+
+  return toru(API + "?want=kibou&pw=" + encodeURIComponent(aikotoba))
+    .then(function(j){
+      if (!j.ok){
+        if (j.need === "aikotoba"){
+          wasureru(PW_KEY);
+          miseru("scPw");
+          $("pwNg").textContent = "あいことばがちがいます";
+          return;
+        }
+        throw new Error(j.error || "読みこめませんでした");
+      }
+      // 保存係がまだ新しくなっていないと、people が付いてこない。
+      // そのままだと名前が1つも出ない画面になってしまうので、はっきり知らせる
+      if (!j.people || !j.people.length){
+        miseru("scPw");
+        $("pwNg").textContent = "保存係がまだ新しくなっていません（管理者に知らせてください）";
+        return;
+      }
+
+      pw = aikotoba;
+      oboeru(PW_KEY, pw);
+      people = j.people;
+      namaeWoNarabu();
+      miseru("scWho");
+    })
+    .catch(function(){
+      // 電波が無いときは、前に取っておいた控えで名前だけ出します
+      var hikae = null;
+      try{ hikae = JSON.parse(omoidasu(DATA_KEY) || "null"); }catch(e){}
+      if (hikae && hikae.people && hikae.people.length){
+        pw = aikotoba;
+        people = hikae.people;
+        namaeWoNarabu();
+        miseru("scWho");
+        shiraseru("つながりません。前回の控えを出しています", true);
+      } else {
+        miseru("scPw");
+        $("pwNg").textContent = "つながりません。電波を確かめてください";
+      }
+    });
+}
+
+/* ---- えらんだ人のきぼうをとってくる ---- */
+function kibouWoToru(name, bangou){
+  miseru("scLoad");
+  $("loadMsg").textContent = name + "さんの ないようを よみこんでいます…";
+
+  var url = API + "?want=kibou&pw=" + encodeURIComponent(pw) +
+            "&who=" + encodeURIComponent(name);
+  if (bangou) url += "&pin=" + encodeURIComponent(bangou);
+
+  return toru(url)
+    .then(function(j){
+      if (!j.ok){
+        if (j.need === "pin"){
+          pinWoKiku(name);
+          $("pinNg").textContent = "ばんごうが ちがいます";
+          return;
+        }
+        throw new Error(j.error || "読みこめませんでした");
+      }
+
+      who = name;
+      pin = bangou || "";
+      if (j.people && j.people.length) people = j.people;
+      oboeru(WHO_KEY, who);
+
+      // 出してあるものを取りこみます。無い期間はあとで下書きを作ります
+      work = {};
+      (j.kibou || []).forEach(function(k){
+        work[k.period] = {
+          days: k.days || {},
+          memo: String(k.memo || ""),
+          sentAt: Number(k.at) || 0
+        };
+      });
+
+      // 電波が無いときのための控え
+      try{
+        oboeru(DATA_KEY, JSON.stringify({ people: people, who: who, kibou: j.kibou || [] }));
+      }catch(e){}
+
+      hirakuApp();
+    })
+    .catch(function(err){
+      var hikae = null;
+      try{ hikae = JSON.parse(omoidasu(DATA_KEY) || "null"); }catch(e){}
+      if (hikae && hikae.who === name){
+        who = name;
+        work = {};
+        (hikae.kibou || []).forEach(function(k){
+          work[k.period] = { days: k.days || {}, memo: String(k.memo || ""), sentAt: Number(k.at) || 0 };
+        });
+        hirakuApp();
+        shiraseru("つながりません。前回の控えを出しています", true);
+      } else {
+        miseru("scWho");
+        shiraseru("よみこめませんでした。" + (err && err.message ? err.message : ""), true);
+      }
+    });
+}
+
+function hirakuApp(){
+  $("hWho").textContent = who + "さんのきぼう";
+  miseru("app");
+  kaku();
+}
+
+/* ====================================================================
+   名前をえらぶ画面
+   ==================================================================== */
+
+function namaeWoNarabu(){
+  var box = $("names");
+  box.innerHTML = "";
+  var maeno = omoidasu(WHO_KEY);
+
+  people.forEach(function(h){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = h.name + " さん";
+    if (h.name === maeno){
+      var s = document.createElement("span");
+      s.className = "last";
+      s.textContent = "前回";
+      b.appendChild(s);
+    }
+    b.onclick = function(){
+      if (h.needPin) pinWoKiku(h.name);
+      else kibouWoToru(h.name, "");
+    };
+    box.appendChild(b);
+  });
+}
+
+/* ====================================================================
+   あんしょうばんごう（設定されている人だけ）
+   ==================================================================== */
+
+var pinName = "", uchikomi = "";
+
+function pinWoKiku(name){
+  pinName = name;
+  uchikomi = "";
+  $("pinWho").textContent = name + " さん";
+  $("pinNg").textContent = "";
+  pinWoKaku(false);
+  miseru("scPin");
+}
+
+function pinWoKaku(warui){
+  var el = $("pins");
+  el.className = "pins" + (warui ? " bad" : "");
+  for (var i = 0; i < 4; i++){
+    el.children[i].className = (i < uchikomi.length && !warui) ? "on" : "";
+  }
+}
+
+(function keysWoTsukuru(){
+  var box = $("keys");
+  ["1","2","3","4","5","6","7","8","9","del","0","go"].forEach(function(k){
+    var b = document.createElement("button");
+    b.type = "button";
+    if (k === "del"){ b.textContent = "けす"; b.className = "ghost"; }
+    else if (k === "go"){ b.textContent = "はいる"; b.className = "act"; }
+    else b.textContent = k;
+
+    b.onclick = function(){
+      if (k === "del"){ uchikomi = uchikomi.slice(0, -1); $("pinNg").textContent = ""; pinWoKaku(false); return; }
+      if (k === "go"){ if (uchikomi.length === 4) kibouWoToru(pinName, uchikomi); return; }
+      if (uchikomi.length >= 4) return;
+      uchikomi += k;
+      $("pinNg").textContent = "";
+      pinWoKaku(false);
+      if (uchikomi.length === 4) setTimeout(function(){ kibouWoToru(pinName, uchikomi); }, 160);
+    };
+    box.appendChild(b);
+  });
+})();
+
+$("pinBack").onclick = function(){ uchikomi = ""; miseru("scWho"); };
+
+/* ====================================================================
+   時間をえらぶシート
+   ==================================================================== */
+
+var shTime = $("shTime");
+var fS = $("fS"), fE = $("fE");
+
+(function jikanWoNarabu(){
+  // 6:00 から 19:00 まで、15分きざみ
+  for (var m = 6 * 60; m <= 19 * 60; m += 15){
+    var t = hhmm(m);
+    fS.appendChild(new Option(t, t));
+    fE.appendChild(new Option(t, t));
+  }
+})();
+
+function freePat(){ return fS.value + "-" + fE.value; }
+
+function freeWoMiseru(){
+  var hito = hitoOf(who);
+  var a = freePat().split("-"), s = mins(a[0]), e = mins(a[1]);
+  var ok = $("fOk");
+
+  if (e <= s){
+    $("fOut").textContent = "おわりの時刻を、はじまりより後にしてください";
+    $("fWarn").innerHTML = "";
+    ok.disabled = true; ok.style.opacity = ".45";
+    return;
+  }
+
+  var rs = restsOf(hito, freePat()), w = workMin(hito, freePat());
+  $("fOut").innerHTML = "休憩 " +
+    (rs.length ? rs.map(function(b){ return b.from + "〜" + b.to; }).join("／") : "なし") +
+    " ・ 実働 <b>" + fmt(w) + "</b>";
+
+  // 実働が6時間を超える日は、法律で45分以上の休憩が要ります
+  $("fWarn").innerHTML = (w > 360 && restMin(hito, freePat()) < 45)
+    ? '<div class="warn">実働が6時間を超えます。休憩を45分以上とる必要があるので、' +
+      'このまま出す場合は下のひとことに書いてください。</div>'
+    : "";
+  ok.disabled = false; ok.style.opacity = "1";
+}
+fS.onchange = freeWoMiseru;
+fE.onchange = freeWoMiseru;
+
+function jikanWoErabu(day){
+  var st = ensure(), hito = hitoOf(who), ima = st.days[day], p = periodOf(perKey);
+
+  $("shT").textContent = (p.m + 1) + "月" + day + "日の時間";
+  $("shH").textContent = who + "さん・" + WD[new Date(p.y, p.m, day).getDay()] + "曜日";
+
+  var box = $("shC");
+  box.innerHTML = "";
+
+  // よく使う時間（people シートの often）。いつもの時間は必ず先頭に出します
+  var tachi = [hito.usual];
+  (hito.often || []).forEach(function(t){ if (tachi.indexOf(t) < 0) tachi.push(t); });
+
+  tachi.forEach(function(pat){
+    if (!/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(pat)) return;   // 書き方が変なものは出しません
+    var b = document.createElement("button");
+    b.type = "button";
+    b.innerHTML = "<span>" + label(pat) + (pat === hito.usual ? "（いつも）" : "") + "</span>" +
+                  "<small>休憩" + restMin(hito, pat) + "分・実働" + fmt(workMin(hito, pat)) + "</small>";
+    if (pat === ima) b.className = "cur";
+    b.onclick = function(){ st.days[day] = pat; shTime.classList.remove("open"); kaku(); };
+    box.appendChild(b);
+  });
+
+  var moto = String(ima || hito.usual).split("-");
+  fS.value = moto[0]; fE.value = moto[1];
+  freeWoMiseru();
+
+  $("fOk").onclick = function(){
+    st.days[day] = freePat(); shTime.classList.remove("open"); kaku();
+  };
+  $("fRest").onclick = function(){
+    st.days[day] = null; shTime.classList.remove("open"); kaku();
+  };
+
+  shTime.classList.add("open");
+}
+shTime.onclick = function(e){ if (e.target === shTime) shTime.classList.remove("open"); };
+
+/* ====================================================================
+   出す前の確認（名前が合っているかを、いちばん大きく見せる）
+   ==================================================================== */
+
+var shConf = $("shConf");
+shConf.onclick = function(e){ if (e.target === shConf) shConf.classList.remove("open"); };
+
+$("cNg").onclick = function(){
+  shConf.classList.remove("open");
+  modoru();
+};
+
+function kakuninWoDasu(){
+  var st = ensure(), p = periodOf(perKey), t = totals();
+  $("cNm").textContent = who + " さん";
+
+  var html =
+    '<div><span class="k">期間</span><b>' + p.label + '</b></div>' +
+    '<div><span class="k">出る日</span><b>' + t.days + ' 日</b></div>' +
+    '<div><span class="k">実働の合計</span><b>' + fmt(t.mins) + '</b></div>';
+
+  if (st.memo){
+    var yasashii = st.memo.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    html += '<div><span class="k">ひとこと</span><b>あり</b></div>' +
+            '<span class="memotxt">' + yasashii + '</span>';
+  } else {
+    html += '<div><span class="k">ひとこと</span><b style="color:var(--faint)">なし</b></div>';
+  }
+  $("cRecap").innerHTML = html;
+  shConf.classList.add("open");
+}
+
+$("cOk").onclick = function(){
+  shConf.classList.remove("open");
+  dasu();
+};
+
+function dasu(){
+  var st = ensure(), p = periodOf(perKey), t = totals();
+  var b = $("btnSend");
+
+  b.disabled = true;
+  b.textContent = "おくっています…";
+
+  okuru({
+    action: "saveKibou",
+    aikotoba: pw,
+    person: who,
+    pin: pin,
+    period: perKey,
+    days: st.days,
+    memo: st.memo
+  }).then(function(j){
+    st.sentAt = Number(j.at) || Date.now();
+
+    $("main").innerHTML =
+      '<div class="done"><div class="mk">🍅</div><h3>出しました</h3>' +
+      '<p>' + who + 'さんの ' + p.label + 'ぶん<br>' +
+      t.days + '日／実働 ' + fmt(t.mins) +
+      (st.memo ? '<br>ひとことも届けました' : '') +
+      '<br>いつでも直せます。</p>' +
+      '<button type="button">もどる</button></div>';
+    $("main").querySelector("button").onclick = kaku;
+
+    b.textContent = "出しました";
+    b.className = "send done";
+    b.disabled = true;
+    jotaiWoKaku();
+  }).catch(function(err){
+    b.disabled = false;
+    b.textContent = "この内容で出す";
+    shiraseru("送れませんでした。" + (err && err.message ? err.message : "電波を確かめてください"), true);
+  });
+}
+
+/* ====================================================================
+   本体を描く
+   ==================================================================== */
+
+function jotaiWoKaku(){
+  var st = work[perKey];
+  var el = $("state");
+  if (st && st.sentAt){
+    var d = new Date(st.sentAt);
+    el.textContent = (d.getMonth() + 1) + "月" + d.getDate() + "日に出しました。直せます";
+    el.className = "state sent";
+  } else {
+    el.textContent = "まだ出していません";
+    el.className = "state";
+  }
+}
+
+function kaku(){
+  if (!who) return;
+  var st = ensure(), hito = hitoOf(who), p = periodOf(perKey), main = $("main");
+  main.innerHTML = "";
+
+  // ホーム画面へのおすすめ（アイコンから開いているときと、閉じたあとは出しません）
+  var tateuchi = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
+  if (!tateuchi && !navigator.standalone && omoidasu(PWA_KEY) !== "no"){
+    var bar = document.createElement("div");
+    bar.className = "pwa";
+    bar.innerHTML = '<span>📲 ホーム画面に追加すると、次から1タップで開けます</span>';
+    var x = document.createElement("button");
+    x.type = "button";
+    x.setAttribute("aria-label", "閉じる");
+    x.textContent = "×";
+    x.onclick = function(){ oboeru(PWA_KEY, "no"); kaku(); };
+    bar.appendChild(x);
+    main.appendChild(bar);
+  }
+
+  var rows = document.createElement("div");
+  rows.className = "rows";
+
+  daysOf(p).forEach(function(x){
+    var pat = st.days[x.d];
+    var row = document.createElement("div");
+    row.className = "row" + (pat ? " on" : "");
+
+    var top = document.createElement("div");
+    top.className = "rtop";
+
+    var dt = document.createElement("div");
+    dt.className = "rdate" + (x.w === 6 ? " s6" : x.w === 0 ? " s0" : "");
+    dt.innerHTML = (p.m + 1) + "/" + x.d + "<small>" + WD[x.w] + "</small>";
+    top.appendChild(dt);
+
+    var seg = document.createElement("div");
+    seg.className = "seg";
+
+    var bR = document.createElement("button");
+    bR.type = "button";
+    bR.textContent = "休み";
+    if (!pat) bR.className = "sel rest";
+    bR.onclick = function(){ st.days[x.d] = null; kaku(); };
+
+    var bU = document.createElement("button");
+    bU.type = "button";
+    bU.textContent = label(hito.usual);
+    if (pat === hito.usual) bU.className = "sel";
+    bU.onclick = function(){ st.days[x.d] = hito.usual; kaku(); };
+
+    var bO = document.createElement("button");
+    bO.type = "button";
+    bO.textContent = (pat && pat !== hito.usual) ? label(pat) : "別の時間";
+    if (pat && pat !== hito.usual) bO.className = "sel";
+    bO.onclick = function(){ jikanWoErabu(x.d); };
+
+    seg.appendChild(bR); seg.appendChild(bU); seg.appendChild(bO);
+    top.appendChild(seg);
+    row.appendChild(top);
+
+    if (pat){
+      var rs = restsOf(hito, pat);
+      var det = document.createElement("div");
+      det.className = "rdet";
+      det.innerHTML = "休憩 " +
+        (rs.length ? rs.map(function(b){ return b.from + "〜" + b.to; }).join("／") : "なし") +
+        "（" + restMin(hito, pat) + "分）・実働 <em>" + fmt(workMin(hito, pat)) + "</em>";
+      row.appendChild(det);
+    }
+
+    rows.appendChild(row);
+  });
+  main.appendChild(rows);
+
+  // その期間ぶんを、まとめて書くひとこと
+  var memo = document.createElement("div");
+  memo.className = "memo";
+  memo.innerHTML =
+    '<label for="memoT">ひとこと（この期間ぶん・書かなくてもよい）</label>' +
+    '<textarea id="memoT" placeholder="例）10日は通院で30分ほど遅れます"></textarea>' +
+    '<p class="eg">日にちを書きそえてもらえると助かります。ここに書いたことは管理者だけが見ます。</p>';
+  main.appendChild(memo);
+
+  var ta = memo.querySelector("textarea");
+  ta.value = st.memo;
+  ta.oninput = function(){ st.memo = ta.value; };
+
+  var t = totals();
+  $("sumD").textContent = t.days;
+  $("sumH").textContent = fmt(t.mins);
+
+  jotaiWoKaku();
+
+  var b = $("btnSend");
+  b.textContent = st.sentAt ? "出しなおす" : "この内容で出す";
+  b.className = "send";
+  b.disabled = false;
+  b.onclick = kakuninWoDasu;
+}
+
+/* ====================================================================
+   まわりの仕掛け
+   ==================================================================== */
+
+function modoru(){
+  who = null; pin = ""; work = {};
+  miseru("scWho");
+}
+$("btnOut").onclick = modoru;
+
+(function kikanWoNarabu(){
+  var sel = $("selPeriod");
+  PERIODS.list.forEach(function(p){
+    sel.appendChild(new Option(p.label + (p.key === PERIODS.current ? "（つぎ）" : ""), p.key));
+  });
+  sel.value = perKey;
+  sel.onchange = function(){ perKey = sel.value; kaku(); };
+})();
+
+$("pwGo").onclick = function(){
+  var v = $("pwIn").value.trim();
+  if (!v){ $("pwNg").textContent = "あいことばを入れてください"; return; }
+  hitoWoToru(v);
+};
+$("pwIn").addEventListener("keydown", function(e){
+  if (e.key === "Enter") $("pwGo").click();
+});
+
+/* ---- 入口の判定 ----
+   ①リンクの #pw= → ②端末が覚えているもの → ③あいことばの画面
+   LINEのアプリ内ブラウザは閉じるたびに②を捨てるので、配るリンクには①を付けます。 */
+(function hajimeru(){
+  var kara = "";
+  var h = String(location.hash || "");
+  var m = /[#&]pw=([^&]*)/.exec(h);
+  if (m) kara = decodeURIComponent(m[1]);
+
+  if (!kara) kara = omoidasu(PW_KEY);
+
+  if (kara) hitoWoToru(kara);
+  else miseru("scPw");
+})();
+
+/* ---- ホーム画面用の仕掛け ---- */
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){
+      /* 登録できなくても、画面はふつうに動きます */
+    });
+  });
+}
+})();
+</script>
+</body>
+</html>
