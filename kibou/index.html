@@ -162,6 +162,8 @@ footer{
   font-variant-numeric:tabular-nums; line-height:1.4}
 .seg button.sel{background:var(--teal); border-color:var(--teal); color:var(--on-teal)}
 .seg button.sel.rest{background:var(--faint); border-color:var(--faint); color:var(--card)}
+/* 時間のボタンが2つならぶ人は場所が足りないので、両はしを細くする */
+.seg button.narrow{flex:0 0 auto; padding-left:9px; padding-right:9px}
 .rdet{font-size:11px; color:var(--muted); font-weight:700; margin:6px 0 0 60px;
   font-variant-numeric:tabular-nums; line-height:1.5}
 .rdet em{font-style:normal; color:var(--ink)}
@@ -485,13 +487,50 @@ function hitoOf(name){
   return null;
 }
 
+/* 曜日ごとの既定を読みときます。
+
+   people シートの weekly 欄に「月火水木金=09:00-14:30」の形で書いてあります。
+   いくつもあるときは空白かカンマで区切ります。
+     例）「月火水木金=09:00-14:30 土=09:00-12:00」
+   書いていない曜日は休みです。
+
+   欄が空のときは、昔の決め打ち（平日はいつもの時間・土日は休み）にします。 */
+function weeklyOf(hito){
+  var hyo = {};                       // 0=日 … 6=土
+  var s = String(hito.weekly || "").trim();
+
+  if (!s){
+    [1,2,3,4,5].forEach(function(w){ hyo[w] = hito.usual; });
+    return hyo;
+  }
+
+  s.split(/[,\s]+/).forEach(function(kumi){
+    var a = kumi.split("=");
+    if (a.length !== 2) return;
+    var pat = a[1].trim();
+    if (!tadashiiPat(pat)) return;    // 書き方が変なものは無視します
+    a[0].trim().split("").forEach(function(ji){
+      var w = WD.indexOf(ji);         // 「月」→1 のように直します
+      if (w >= 0) hyo[w] = pat;
+    });
+  });
+  return hyo;
+}
+
+/* 日ごとの行に、1タップのボタンとして出す時間（多くても2つ）。
+   people シートの quick 欄。空ならいつもの時間が1つだけ出ます。 */
+function quickOf(hito){
+  var q = (hito.quick && hito.quick.length) ? hito.quick : [hito.usual];
+  return q.filter(tadashiiPat).slice(0, 2);
+}
+
 /* その期間の下書きを用意します。
-   まだ出していない期間は「いつもの出方」を入れておきます（土日は休み）。 */
+   まだ出していない期間は、その人の曜日ごとの既定を入れておきます。 */
 function ensure(){
   if (work[perKey]) return work[perKey];
-  var hito = hitoOf(who), days = {};
+  var hito = hitoOf(who), hyo = weeklyOf(hito), days = {};
   daysOf(periodOf(perKey)).forEach(function(x){
-    days[x.d] = (x.w === 0 || x.w === 6) ? null : hito.usual;
+    days[x.d] = hyo[x.w] || null;     // 決まっていない曜日は休み
   });
   work[perKey] = { days: days, memo: "", sentAt: 0 };
   return work[perKey];
@@ -782,9 +821,10 @@ function jikanWoErabu(day){
   var box = $("shC");
   box.innerHTML = "";
 
-  // よく使う時間（people シートの often）。いつもの時間は必ず先頭に出します
-  var tachi = [hito.usual];
+  // よく使う時間。行のボタンに出ているものを先に、そのあと often を並べます
+  var tachi = quickOf(hito).slice();
   (hito.often || []).forEach(function(t){ if (tachi.indexOf(t) < 0) tachi.push(t); });
+  if (tachi.indexOf(hito.usual) < 0) tachi.unshift(hito.usual);
 
   tachi.forEach(function(pat){
     if (!tadashiiPat(pat)) return;        // 設定シートの書き方が変なものは出しません
@@ -953,25 +993,36 @@ function kaku(){
     var seg = document.createElement("div");
     seg.className = "seg";
 
+    // 休み
     var bR = document.createElement("button");
     bR.type = "button";
     bR.textContent = "休み";
-    if (!pat) bR.className = "sel rest";
+    bR.className = "narrow" + (pat ? "" : " sel rest");
     bR.onclick = function(){ st.days[x.d] = null; kaku(); };
+    seg.appendChild(bR);
 
-    var bU = document.createElement("button");
-    bU.type = "button";
-    bU.textContent = label(hito.usual);
-    if (pat === hito.usual) bU.className = "sel";
-    bU.onclick = function(){ st.days[x.d] = hito.usual; kaku(); };
+    // 1タップのボタン（その人の quick。1つか2つ）
+    var quick = quickOf(hito);
+    quick.forEach(function(q){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = label(q);
+      if (pat === q) b.className = "sel";
+      b.onclick = function(){ st.days[x.d] = q; kaku(); };
+      seg.appendChild(b);
+    });
 
+    // それ以外の時間。ボタンが2つあるときは場所が足りないので「他」と短くする
+    var hoka = (pat && quick.indexOf(pat) < 0);
     var bO = document.createElement("button");
     bO.type = "button";
-    bO.textContent = (pat && pat !== hito.usual) ? label(pat) : "別の時間";
-    if (pat && pat !== hito.usual) bO.className = "sel";
+    if (hoka)                  bO.textContent = label(pat);
+    else if (quick.length > 1) bO.textContent = "他";
+    else                       bO.textContent = "別の時間";
+    bO.className = (hoka ? "sel" : "") + (quick.length > 1 && !hoka ? " narrow" : "");
     bO.onclick = function(){ jikanWoErabu(x.d); };
+    seg.appendChild(bO);
 
-    seg.appendChild(bR); seg.appendChild(bU); seg.appendChild(bO);
     top.appendChild(seg);
     row.appendChild(top);
 
