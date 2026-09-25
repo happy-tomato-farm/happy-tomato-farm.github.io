@@ -1,0 +1,17 @@
+{
+  "name": "シフトきぼう",
+  "short_name": "きぼう",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3F5F0",
+  "theme_color": "#2A8FA8",
+  "description": "シフトの希望を出す画面。日ごとに出る・休むをえらぶと、休憩と実働が自動で計算されます",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
