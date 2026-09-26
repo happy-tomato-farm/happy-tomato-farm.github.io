@@ -217,6 +217,17 @@ td.total, th.total{background:var(--sub); min-width:76px; font-variant-numeric:t
 .out b{color:var(--ink); font-size:17px}
 .warn{background:var(--tomato-soft); color:var(--tomato); border-radius:10px; padding:9px 12px;
   font-size:12.5px; font-weight:700; line-height:1.6; margin-top:10px}
+
+/* ひとこと（管理者がパートさんへ書くもの） */
+.memoin{width:100%; border:1px solid var(--line); border-radius:11px; background:var(--sub);
+  color:var(--ink); font-family:var(--ui); font-size:14.5px; line-height:1.7; padding:10px 12px;
+  resize:vertical; min-height:56px}
+.memoin:focus{outline:2px solid var(--teal); border-color:var(--teal)}
+.memohint{font-size:11.5px; color:var(--faint); font-weight:700; margin:6px 0 0; line-height:1.6}
+
+/* ひとことの付いたマスに出る印 */
+td.cell .fuda{display:block; font-size:9.5px; color:var(--teal); font-weight:800; line-height:1.3}
+td.cell.off .fuda{color:var(--teal)}
 .sheet .ok{width:100%; margin-top:13px; border:0; border-radius:12px; background:var(--teal);
   color:var(--on-teal); font-weight:800; font-size:15.5px; padding:13px; cursor:pointer}
 .sheet .alt{width:100%; margin-top:9px; border:1px solid var(--line); background:var(--card);
@@ -265,6 +276,15 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
   #printArea .hi{width:7mm} #printArea .yo{width:7mm} #printArea .nin{width:9mm}
   #printArea tr{page-break-inside:avoid}
   #printArea .note{margin-top:4mm; font-size:8.5pt; color:#444; text-align:left}
+
+  #printArea .renraku{margin-top:5mm; page-break-inside:avoid}
+  #printArea .renraku h2{font-size:11pt; font-weight:800; margin:0 0 1.5mm;
+    border-bottom:0.6pt solid #666; padding-bottom:1mm; color:#000}
+  #printArea .renraku ul{list-style:none; margin:0; padding:0}
+  #printArea .renraku li{font-size:9.5pt; line-height:1.55; padding:0.8mm 0;
+    display:flex; gap:3mm; align-items:baseline}
+  #printArea .renraku li b{flex:none; font-weight:700; white-space:nowrap}
+  #printArea .renraku li span{color:#222}
 }
 </style>
 </head>
@@ -372,6 +392,11 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
 
   <div class="out" id="cOut">　</div>
   <div id="cWarn"></div>
+
+  <div class="grp">ひとこと（シフト表に出ます）</div>
+  <textarea id="cMemo" class="memoin" rows="2"
+            placeholder="例）調整のためのお休みです"></textarea>
+  <p class="memohint">休みの日にも付けられます。パートさん全員が見られます。</p>
 
   <button class="ok" id="cOk">この内容にする</button>
   <button class="alt" id="cRest">この日は休みにする</button>
@@ -532,6 +557,21 @@ var perKey = PERIODS.current;
 /* マス目に何を映すか。"kakutei"＝組んだ内容／"kibou"＝出されたまま */
 var hyoji = "kakutei";
 
+/* パートさんへのひとこと。memos[名前][日] = "調整のためのお休みです" など。
+   勤務とは別に持ちます。休みの日にも付けられるようにするためです。
+   ここに書いたものは /shift/ に出て、パートさん全員が見られます。 */
+var memos = {};
+
+function memoOf(name, day){
+  return (memos[name] && memos[name][day]) ? memos[name][day] : "";
+}
+function memoSet(name, day, s){
+  if (!memos[name]) memos[name] = {};
+  s = String(s || "").trim();
+  if (s) memos[name][day] = s;
+  else   delete memos[name][day];
+}
+
 /* マス目。 grid[名前][日] = null（休み） か
    { s,e,b1s,b1e,b2s,b2e, naoshita:true/false } */
 var grid = {};
@@ -600,6 +640,7 @@ function onaji(a, b){
    すでに確定してあればそれを、なければ希望を広げたものを入れます。 */
 function gridWoTsukuru(){
   grid = {};
+  memos = {};
   var p = periodOf(perKey), hibi = daysOf(p);
 
   // 確定ずみを引きやすい形にします
@@ -620,12 +661,16 @@ function gridWoTsukuru(){
 
     hibi.forEach(function(x){
       var k = kaku[x.ymd + "|" + h.name];
-      if (k){
+
+      if (k && k.memo) memoSet(h.name, x.d, k.memo);
+
+      if (k && k.start && k.end){
         // 確定ずみ。そのまま出します（きまりを変えても過去は動かしません）
         gyo[x.d] = { s:k.start, e:k.end, b1s:k.b1s, b1e:k.b1e, b2s:k.b2s, b2e:k.b2e,
                      naoshita:false, kakuteizumi:true };
-      } else if (zumi){
-        gyo[x.d] = null;                 // 確定ずみの期間で行が無い＝休み
+      } else if (k || zumi){
+        // 時間の無い行（ひとことだけの行）と、確定ずみの期間で行が無い日は休み
+        gyo[x.d] = null;
       } else {
         gyo[x.d] = kibouCell(h, x.d);    // まだ確定していないので希望のまま
       }
@@ -805,6 +850,17 @@ function kakuGrid(){
           bt.innerHTML = '−<span class="moto">希望 ' + shortT(kib.s) + '</span>';
         }
       }
+
+      // ひとことが付いていれば札を出す。組んでいるときだけ
+      var memo = memoOf(h.name, x.d);
+      if (!yomu && memo){
+        var fuda = document.createElement("span");
+        fuda.className = "fuda";
+        fuda.textContent = "📝" + memo.slice(0, 5) + (memo.length > 5 ? "…" : "");
+        bt.appendChild(fuda);
+        bt.title = memo;
+      }
+
       if (!yomu) bt.onclick = function(){ masuWoNaosu(h, x); };
       td.appendChild(bt);
       row.appendChild(td);
@@ -998,6 +1054,7 @@ function masuWoNaosu(hito, x){
   });
 
   moto(c || hirogeru(hito, hito.usual));
+  $("cMemo").value = memoOf(hito.name, x.d);
   cellWoMiseru();
   shCell.classList.add("open");
 }
@@ -1017,11 +1074,15 @@ $("cOk").onclick = function(){
   var c = ima();
   c.naoshita = true;
   grid[imaHito.name][imaHi.d] = c;
+  memoSet(imaHito.name, imaHi.d, $("cMemo").value);
   shCell.classList.remove("open");
   kaku();
 };
 $("cRest").onclick = function(){
+  // 休みにしても、ひとことは残します。
+  //「調整のためのお休みです」を伝えたいのが、まさにこの場面のため
   grid[imaHito.name][imaHi.d] = null;
+  memoSet(imaHito.name, imaHi.d, $("cMemo").value);
   shCell.classList.remove("open");
   kaku();
 };
@@ -1029,6 +1090,7 @@ $("cReset").onclick = function(){
   var kib = kibouOf(imaHito.name);
   var pat = kib ? kib.days[String(imaHi.d)] : null;
   grid[imaHito.name][imaHi.d] = (pat && tadashiiPat(pat)) ? hirogeru(imaHito, pat) : null;
+  memoSet(imaHito.name, imaHi.d, "");     // ひとことも消します
   shCell.classList.remove("open");
   kaku();
 };
@@ -1149,7 +1211,8 @@ function kakuHodoku(k){
     person: k.person,
     s: k.start, e: k.end,
     b1s: k.b1s || "", b1e: k.b1e || "", b2s: k.b2s || "", b2e: k.b2e || "",
-    yasumi: yasumi, jitsudo: e - s - yasumi
+    yasumi: yasumi, jitsudo: e - s - yasumi,
+    memo: String(k.memo || "")
   };
 }
 
@@ -1161,6 +1224,30 @@ function tsukiNoKakutei(){
     .filter(function(k){ return String(k.date).slice(0, 7) === atama && k.start && k.end; })
     .map(kakuHodoku)
     .sort(function(a, b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+}
+
+/* ひとことの付いた確定を集めます。
+   勤務のある日もない日も拾います（休みの日のひとことが主役なので）。
+   出勤日数の集計には混ぜません。混ぜると休みの日を1日と数えてしまいます。 */
+function memoIchiran(tsukiDake){
+  var p = periodOf(perKey);
+  var atama = p.y + "-" + ("0" + (p.m + 1)).slice(-2);
+  return kakutei
+    .filter(function(k){
+      if (!String(k.memo || "").trim()) return false;
+      return tsukiDake ? (String(k.date).slice(0, 7) === atama) : true;
+    })
+    .map(function(k){
+      var hi = new Date(k.date.slice(0,4), Number(k.date.slice(5,7)) - 1, k.date.slice(8,10));
+      return {
+        date: k.date, d: hi.getDate(), w: hi.getDay(),
+        person: k.person, memo: String(k.memo),
+        hataraku: !!(k.start && k.end)
+      };
+    })
+    .sort(function(a, b){
+      return (a.date + a.person) < (b.date + b.person) ? -1 : 1;
+    });
 }
 
 /* その月に出ている人だけを、画面と同じ並びで返します */
@@ -1218,6 +1305,18 @@ function insatsuWoKumu(){
   });
   h += "<td>" + fmt(sou) + "</td></tr>";
   h += "</tbody></table>";
+
+  // ひとこと。紙で配るときに抜けると意味がないので、表の下にならべます
+  var rk = memoIchiran(true);
+  if (rk.length){
+    h += '<div class="renraku"><h2>連絡</h2><ul>';
+    rk.forEach(function(x){
+      h += "<li><b>" + (p.m + 1) + "/" + x.d + "（" + WD[x.w] + "）　" + x.person + "さん</b>" +
+           "<span>" + x.memo.replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</span></li>";
+    });
+    h += "</ul></div>";
+  }
+
   h += '<p class="note">※ 休憩は各自のきまりどおりです。変更があるときは知らせてください。</p>';
 
   box.innerHTML = h;
@@ -1263,21 +1362,36 @@ function excelWoTsukuru(){
   var meisai = [[
     "日付", "曜日", "年月", "名前", "開始", "終了",
     "休憩1始", "休憩1終", "休憩2始", "休憩2終",
-    "休憩(分)", "実働(h:mm)", "実働(時間)"
+    "休憩(分)", "実働(h:mm)", "実働(時間)", "ひとこと"
   ]];
   zenbu.forEach(function(x){
     meisai.push([
       x.date, WD[x.w], x.date.slice(0, 7), x.person, x.s, x.e,
       x.b1s, x.b1e, x.b2s, x.b2e,
-      x.yasumi, fmt(x.jitsudo), Math.round(x.jitsudo / 60 * 100) / 100
+      x.yasumi, fmt(x.jitsudo), Math.round(x.jitsudo / 60 * 100) / 100,
+      x.memo
     ]);
   });
   var ws1 = XLSX.utils.aoa_to_sheet(meisai);
   ws1["!cols"] = [{wch:11},{wch:5},{wch:9},{wch:9},{wch:7},{wch:7},
-                  {wch:8},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:9}];
-  ws1["!autofilter"] = { ref: "A1:M" + meisai.length };
+                  {wch:8},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:9},{wch:28}];
+  ws1["!autofilter"] = { ref: "A1:N" + meisai.length };
   ws1["!freeze"] = { xSplit: 4, ySplit: 1 };
   XLSX.utils.book_append_sheet(wb, ws1, "明細");
+
+  // --- 連絡。ひとことだけを集めたもの。
+  // 休みの日のひとことは明細に出てこないので（勤務が無いため）、ここで拾います
+  var rk = memoIchiran(false);
+  if (rk.length){
+    var ren = [["日付", "曜日", "名前", "ひとこと", "勤務"]];
+    rk.forEach(function(x){
+      ren.push([x.date, WD[x.w], x.person, x.memo, x.hataraku ? "あり" : "休み"]);
+    });
+    var wsR = XLSX.utils.aoa_to_sheet(ren);
+    wsR["!cols"] = [{wch:11},{wch:5},{wch:9},{wch:40},{wch:6}];
+    wsR["!autofilter"] = { ref: "A1:E" + ren.length };
+    XLSX.utils.book_append_sheet(wb, wsR, "連絡");
+  }
 
   // --- 月集計。人 × 月 の 出勤日数 と 実働時間
   var tsuki = [];
@@ -1405,22 +1519,30 @@ $("btnKakutei").onclick = function(){
   var p = periodOf(perKey), hibi = daysOf(p);
   var items = [];
 
+  var memoKazu = 0;
   people.forEach(function(h){
     hibi.forEach(function(x){
       var c = grid[h.name][x.d];
-      if (!c) return;
+      var memo = memoOf(h.name, x.d);
+      if (memo) memoKazu++;
+
+      // 休みでも、ひとことが付いていれば送ります（時間は空のまま）
+      if (!c && !memo) return;
+
       items.push({
         d: x.ymd, p: h.name,
-        s: c.s, e: c.e,
-        b1s: c.b1s, b1e: c.b1e, b2s: c.b2s, b2e: c.b2e,
-        r: hhmm(restOf(c)), w: hhmm(workOf(c)),
-        m: ""
+        s: c ? c.s : "", e: c ? c.e : "",
+        b1s: c ? c.b1s : "", b1e: c ? c.b1e : "",
+        b2s: c ? c.b2s : "", b2e: c ? c.b2e : "",
+        r: c ? hhmm(restOf(c)) : "", w: c ? hhmm(workOf(c)) : "",
+        m: memo
       });
     });
   });
 
   var mada = people.filter(function(h){ return !kibouOf(h.name); });
   var kotoba = p.label + " を確定します。\n\nのべ " + items.length + " 日ぶん。" +
+    (memoKazu ? "\nひとこと " + memoKazu + " 件もシフト表に出ます。" : "") +
     (mada.length ? "\n\n※ " + mada.map(function(h){ return h.name + "さん"; }).join("、") +
                    " はまだ出していません。このまま確定しますか？" : "");
 
