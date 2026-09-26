@@ -273,6 +273,7 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
       <p class="lead">締切はないので、ここで「まだの人」をつかむだなも</p>
       <div class="subs" id="subs"></div>
       <div class="tools">
+        <button class="tool" id="btnOshirase">確定のお知らせ文をコピー</button>
         <button class="tool" id="btnSaisoku">まだの人への催促文をコピー</button>
         <button class="tool" id="btnHyou">確定シフトを表としてコピー</button>
       </div>
@@ -343,7 +344,8 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
 <div class="sheet" id="shCopy"><div class="sheet-in">
   <h3 id="pT">　</h3>
   <p class="hint" id="pH">　</p>
-  <pre class="msg" id="pBody"></pre>
+  <!-- 直せるようにしてあります。日にちや言い回しを変えてからコピーできます -->
+  <pre class="msg" id="pBody" contenteditable="true" spellcheck="false"></pre>
   <button class="ok" id="pCopy">コピーする</button>
   <button class="alt" id="pClose">とじる</button>
 </div></div>
@@ -364,8 +366,16 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
    ==================================================================== */
 
 var API = "https://script.google.com/macros/s/AKfycbzYkVlVngoC6CXf9HKPlfnFbJHs5lrarw2J9dLjdqaqvdVQFIN15aMr5EyNSA8tj1UU/exec";
-var KIBOU_URL = "https://happy-tomato-farm.github.io/kibou/";
 var PW_KEY = "htf_kanri_pw";
+
+/* LINE に貼るリンク。
+   あいことばは保存係から受け取ります（この HTML は誰でも読めるので書けません）。 */
+var KIBOU_BASE = "https://happy-tomato-farm.github.io/kibou/";
+var SHIFT_BASE = "https://happy-tomato-farm.github.io/shift/";
+var pwKibou = "", pwShift = "";
+
+function kibouUrl(){ return KIBOU_BASE + (pwKibou ? "#pw=" + encodeURIComponent(pwKibou) : ""); }
+function shiftUrl(){ return SHIFT_BASE + (pwShift ? "#pw=" + encodeURIComponent(pwShift) : ""); }
 
 var WD = ["日","月","火","水","木","金","土"];
 var $ = function(id){ return document.getElementById(id); };
@@ -431,6 +441,28 @@ function daysOf(p){
   }
   return out;
 }
+
+/* つぎの期間。1日〜15日のつぎは同じ月の16日〜末日、そのつぎは翌月の1日〜15日 */
+function tsugiNoKikan(p){
+  var q;
+  if (p.from === 1){
+    q = { y:p.y, m:p.m, from:16, to:lastDay(p.y, p.m) };
+  } else {
+    var d = new Date(p.y, p.m + 1, 1);
+    q = { y:d.getFullYear(), m:d.getMonth(), from:1, to:15 };
+  }
+  q.label = (q.m+1) + "月" + q.from + "日〜" + q.to + "日";
+  return q;
+}
+
+/* きぼうを出してもらう目安の日。もともとのきまりから出します。
+     16日〜末日ぶん … その月の10日まで
+     1日〜15日ぶん  … 前の月の25日まで
+   締切そのものは設けていないので、過ぎても出せます。声かけの目安です。 */
+function shimekiriOf(p){
+  return (p.from === 16) ? new Date(p.y, p.m, 10) : new Date(p.y, p.m - 1, 25);
+}
+function hiKanji(d){ return (d.getMonth()+1) + "月" + d.getDate() + "日"; }
 
 /* ====================================================================
    いまの状態
@@ -592,6 +624,8 @@ function yomikomu(aikotoba){
       people  = j.people  || [];
       kibou   = j.kibou   || [];
       kakutei = j.kakutei || [];
+      pwKibou = j.pwKibou || "";
+      pwShift = j.pwShift || "";
       gridWoTsukuru();
       miseru("app");
       kaku();
@@ -958,7 +992,9 @@ function copyWoDasu(title, hint, body){
 }
 
 $("pCopy").onclick = function(){
-  var moji = $("pBody").textContent;
+  // 直せるようにしてあるので、改行が残る innerText のほうで読みます
+  var el = $("pBody");
+  var moji = (el.innerText !== undefined ? el.innerText : el.textContent);
   var owari = function(){ shiraseru("コピーしました"); shCopy.classList.remove("open"); };
 
   if (navigator.clipboard && navigator.clipboard.writeText){
@@ -985,6 +1021,25 @@ $("pCopy").onclick = function(){
   }
 };
 
+/* 確定したときに、LINE の全体トークへ貼るお知らせ文を組み立てます。
+   日にちは決まりから自動で入りますが、貼る前に画面で直せます。 */
+function oshiraseBun(){
+  var p = periodOf(perKey);
+  var tsugi = tsugiNoKikan(p);
+  var shime = shimekiriOf(tsugi);
+
+  return (p.m+1) + "月" + p.from + "日～" + (p.m+1) + "月" + p.to + "日" +
+         "のシフトを確定しましたので確認をお願いします！\n" +
+         shiftUrl() + "\n\n" +
+         "次回分（" + tsugi.label + "）のシフト希望は" + hiKanji(shime) +
+         "までに提出をお願いしますm(__)m\n" +
+         kibouUrl();
+}
+
+$("btnOshirase").onclick = function(){
+  copyWoDasu("確定のお知らせ", "貼る前にここで直せます。LINE の全体トークへ", oshiraseBun());
+};
+
 $("btnSaisoku").onclick = function(){
   var mada = people.filter(function(h){ return !kibouOf(h.name); });
   var p = periodOf(perKey);
@@ -997,10 +1052,10 @@ $("btnSaisoku").onclick = function(){
   var body =
     "【シフトきぼうのお願い】\n" +
     p.label + "ぶんが、まだの方がいます。\n" +
-    namae + "、お手すきのときにお願いします。\n\n" +
-    KIBOU_URL;
+    namae + "、お手すきのときにお願いしますm(__)m\n\n" +
+    kibouUrl();
 
-  copyWoDasu("催促の文", "LINE の全体トークに貼ってください", body);
+  copyWoDasu("催促の文", "貼る前にここで直せます。LINE の全体トークへ", body);
 };
 
 $("btnHyou").onclick = function(){
@@ -1065,6 +1120,8 @@ $("btnKakutei").onclick = function(){
         gridWoTsukuru();
         kaku();
       }
+      // 確定した直後が、お知らせを流したい瞬間なので、そのまま出します
+      copyWoDasu("確定のお知らせ", "貼る前にここで直せます。LINE の全体トークへ", oshiraseBun());
     })
     .catch(function(err){
       b.disabled = false;
