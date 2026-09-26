@@ -234,6 +234,38 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
 .bar.bad{background:var(--tomato); color:#fff}
 
 @media (prefers-reduced-motion: reduce){*{transition:none !important}}
+
+/* ==================================================================
+   印刷（ブラウザの印刷画面から「PDFとして保存」を選べます）
+   画面用の色や影は紙では邪魔なので、ぜんぶ落として白黒に近づけます
+   ================================================================== */
+#printArea{display:none}
+
+@media print{
+  @page{ size:A4 portrait; margin:12mm 10mm; }
+  body{background:#fff; color:#000; font-size:10pt}
+  header, footer, .fixbar, .sheet, .bar, .wrap > section{display:none !important}
+  #printArea{display:block}
+
+  #printArea h1{font-size:16pt; font-weight:800; margin:0 0 2mm; color:#000}
+  #printArea .sub{font-size:9pt; color:#444; margin:0 0 4mm}
+
+  #printArea table{border-collapse:collapse; width:100%; font-size:9.5pt}
+  #printArea th, #printArea td{
+    border:0.4pt solid #666; padding:1.4mm 1mm; text-align:center; color:#000;
+  }
+  #printArea thead th{background:#EDEDED !important; font-weight:700;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  #printArea td.sat{background:#F0F4F8 !important;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  #printArea td.sun{background:#FAF1EC !important;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  #printArea tr.goukei td{background:#EDEDED !important; font-weight:700;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  #printArea .hi{width:7mm} #printArea .yo{width:7mm} #printArea .nin{width:9mm}
+  #printArea tr{page-break-inside:avoid}
+  #printArea .note{margin-top:4mm; font-size:8.5pt; color:#444; text-align:left}
+}
 </style>
 </head>
 <body>
@@ -276,6 +308,8 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
         <button class="tool" id="btnOshirase">確定のお知らせ文をコピー</button>
         <button class="tool" id="btnSaisoku">まだの人への催促文をコピー</button>
         <button class="tool" id="btnHyou">確定シフトを表としてコピー</button>
+        <button class="tool" id="btnExcel">Excelでダウンロード</button>
+        <button class="tool" id="btnPrint">印刷・PDF</button>
       </div>
     </section>
 
@@ -350,6 +384,9 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
   <button class="alt" id="pClose">とじる</button>
 </div></div>
 
+<!-- 印刷のときだけ出る紙面。画面には出ません -->
+<div id="printArea"></div>
+
 <div class="bar" id="bar"></div>
 
 <script>
@@ -375,7 +412,7 @@ var SHIFT_BASE = "https://happy-tomato-farm.github.io/shift/";
 var pwKibou = "", pwShift = "";
 
 /* リンクに入れるあいことば。
-   encodeURIComponent をそのまま使うと「とまと」が %E3%81%A8%E3%81%BE%E3%81%A8 になり、
+   encodeURIComponent をそのまま使うと、日本語が %E3%81%… の並びに化けてしまう。
    LINE に貼ったとき読めないうえ、怪しいリンクに見えてしまう。
    受け取る側（/shift/ も /kibou/ も）は decodeURIComponent を通すが、
    日本語はそこを素通りするので、リンクを壊す文字だけを置きかえる。 */
@@ -1088,6 +1125,269 @@ $("btnHyou").onclick = function(){
   copyWoDasu("確定シフトの表", "Excel やスプレッドシートにそのまま貼れます（タブ区切り）",
              gyo.join("\n"));
 };
+
+/* ====================================================================
+   持ち出し（Excel と 印刷・PDF）
+
+   紙で配るのは月ごとなので、いまの期間が入っている「月ぜんぶ」を出します。
+   前半だけ確定していれば前半だけ、両方確定していれば1か月ぶん出ます。
+   ==================================================================== */
+
+/* 確定した1件を、数えやすい形にほどきます */
+function kakuHodoku(k){
+  var s = mins(k.start), e = mins(k.end), yasumi = 0;
+  [[k.b1s, k.b1e], [k.b2s, k.b2e]].forEach(function(a){
+    if (a[0] && a[1] && mins(a[1]) > mins(a[0])) yasumi += mins(a[1]) - mins(a[0]);
+  });
+  var hi = new Date(k.date.slice(0,4), Number(k.date.slice(5,7)) - 1, k.date.slice(8,10));
+  return {
+    date: k.date, hi: hi, d: hi.getDate(), w: hi.getDay(),
+    person: k.person,
+    s: k.start, e: k.end,
+    b1s: k.b1s || "", b1e: k.b1e || "", b2s: k.b2s || "", b2e: k.b2e || "",
+    yasumi: yasumi, jitsudo: e - s - yasumi
+  };
+}
+
+/* いま見ている期間が入っている月の、確定ぶんを全部集めます */
+function tsukiNoKakutei(){
+  var p = periodOf(perKey);
+  var atama = p.y + "-" + ("0" + (p.m + 1)).slice(-2);
+  return kakutei
+    .filter(function(k){ return String(k.date).slice(0, 7) === atama && k.start && k.end; })
+    .map(kakuHodoku)
+    .sort(function(a, b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+}
+
+/* その月に出ている人だけを、画面と同じ並びで返します */
+function detaHito(list){
+  var iru = {};
+  list.forEach(function(x){ iru[x.person] = true; });
+  return people.map(function(h){ return h.name; }).filter(function(n){ return iru[n]; });
+}
+
+/* ---- 印刷の紙面を組む ---- */
+function insatsuWoKumu(){
+  var p = periodOf(perKey);
+  var list = tsukiNoKakutei();
+  var namae = detaHito(list);
+  var box = $("printArea");
+
+  if (!list.length){
+    box.innerHTML = "<h1>" + (p.m + 1) + "月のシフト</h1>" +
+                    '<p class="sub">確定したシフトがありません</p>';
+    return false;
+  }
+
+  var hiki = {};
+  list.forEach(function(x){ hiki[x.d + "|" + x.person] = x; });
+  var sue = lastDay(p.y, p.m);
+
+  var h = "<h1>シフト表　" + p.y + "年" + (p.m + 1) + "月</h1>" +
+          '<p class="sub">確定ぶん　（' + new Date().getFullYear() + "年" +
+          (new Date().getMonth() + 1) + "月" + new Date().getDate() + "日 作成）</p>";
+
+  h += "<table><thead><tr><th class='hi'>日</th><th class='yo'>曜</th>";
+  namae.forEach(function(n){ h += "<th>" + n + "</th>"; });
+  h += "<th class='nin'>人数</th></tr></thead><tbody>";
+
+  for (var d = 1; d <= sue; d++){
+    var w = new Date(p.y, p.m, d).getDay();
+    var cls = (w === 6 ? " class='sat'" : (w === 0 ? " class='sun'" : ""));
+    h += "<tr><td" + cls + ">" + d + "</td><td" + cls + ">" + WD[w] + "</td>";
+    var nin = 0;
+    namae.forEach(function(n){
+      var x = hiki[d + "|" + n];
+      if (x) nin++;
+      h += "<td" + cls + ">" + (x ? shortT(x.s) + "-" + shortT(x.e) : "") + "</td>";
+    });
+    h += "<td" + cls + ">" + (nin || "") + "</td></tr>";
+  }
+
+  h += "<tr class='goukei'><td colspan='2'>実働計</td>";
+  var sou = 0;
+  namae.forEach(function(n){
+    var g = 0;
+    list.forEach(function(x){ if (x.person === n) g += x.jitsudo; });
+    sou += g;
+    h += "<td>" + fmt(g) + "</td>";
+  });
+  h += "<td>" + fmt(sou) + "</td></tr>";
+  h += "</tbody></table>";
+  h += '<p class="note">※ 休憩は各自のきまりどおりです。変更があるときは知らせてください。</p>';
+
+  box.innerHTML = h;
+  return true;
+}
+
+$("btnPrint").onclick = function(){
+  if (!insatsuWoKumu()){
+    shiraseru("この月の確定シフトがありません", true);
+    return;
+  }
+  // 印刷の画面で「PDFとして保存」を選べば、そのままPDFになります
+  window.print();
+};
+
+/* ---- Excel で持ち出す ----
+   その場で作って、ブラウザのダウンロードに落とします。
+   Python も Excel 本体も要りません。 */
+var XLSX_URL = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+
+function xlsxWoYomu(){
+  if (window.XLSX) return Promise.resolve();
+  return new Promise(function(res, rej){
+    var s = document.createElement("script");
+    s.src = XLSX_URL;
+    s.onload = function(){ res(); };
+    s.onerror = function(){ rej(new Error("Excelを作る部品を読みこめませんでした")); };
+    document.head.appendChild(s);
+  });
+}
+
+function excelWoTsukuru(){
+  var zenbu = kakutei.filter(function(k){ return k.start && k.end; }).map(kakuHodoku);
+  zenbu.sort(function(a, b){
+    return (a.date + a.person) < (b.date + b.person) ? -1 : 1;
+  });
+  if (!zenbu.length) return null;
+
+  var namae = detaHito(zenbu);
+  var wb = XLSX.utils.book_new();
+
+  // --- 明細。1行が「1人の1日」。ここから並べ替えもピボットもできます
+  var meisai = [[
+    "日付", "曜日", "年月", "名前", "開始", "終了",
+    "休憩1始", "休憩1終", "休憩2始", "休憩2終",
+    "休憩(分)", "実働(h:mm)", "実働(時間)"
+  ]];
+  zenbu.forEach(function(x){
+    meisai.push([
+      x.date, WD[x.w], x.date.slice(0, 7), x.person, x.s, x.e,
+      x.b1s, x.b1e, x.b2s, x.b2e,
+      x.yasumi, fmt(x.jitsudo), Math.round(x.jitsudo / 60 * 100) / 100
+    ]);
+  });
+  var ws1 = XLSX.utils.aoa_to_sheet(meisai);
+  ws1["!cols"] = [{wch:11},{wch:5},{wch:9},{wch:9},{wch:7},{wch:7},
+                  {wch:8},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:9}];
+  ws1["!autofilter"] = { ref: "A1:M" + meisai.length };
+  ws1["!freeze"] = { xSplit: 4, ySplit: 1 };
+  XLSX.utils.book_append_sheet(wb, ws1, "明細");
+
+  // --- 月集計。人 × 月 の 出勤日数 と 実働時間
+  var tsuki = [];
+  zenbu.forEach(function(x){
+    var t = x.date.slice(0, 7);
+    if (tsuki.indexOf(t) < 0) tsuki.push(t);
+  });
+  tsuki.sort();
+
+  function hyou(midashi, toru){
+    var a = [[midashi]];
+    a.push(["名前"].concat(tsuki).concat(["合計"]));
+    namae.forEach(function(n){
+      var gyo = [n], kei = 0;
+      tsuki.forEach(function(t){
+        var v = toru(n, t);
+        kei += v;
+        gyo.push(Math.round(v * 100) / 100);
+      });
+      gyo.push(Math.round(kei * 100) / 100);
+      a.push(gyo);
+    });
+    var shita = ["合計"];
+    for (var j = 0; j < tsuki.length + 1; j++){
+      var kei2 = 0;
+      for (var i = 2; i < a.length; i++) kei2 += Number(a[i][j + 1]) || 0;
+      shita.push(Math.round(kei2 * 100) / 100);
+    }
+    a.push(shita);
+    return a;
+  }
+
+  var hi = hyou("出勤日数（日）", function(n, t){
+    var c = 0;
+    zenbu.forEach(function(x){ if (x.person === n && x.date.slice(0,7) === t) c++; });
+    return c;
+  });
+  var ji = hyou("実働時間（時間）", function(n, t){
+    var m = 0;
+    zenbu.forEach(function(x){ if (x.person === n && x.date.slice(0,7) === t) m += x.jitsudo; });
+    return m / 60;
+  });
+
+  var ws2 = XLSX.utils.aoa_to_sheet(hi.concat([[]], ji));
+  ws2["!cols"] = [{wch:10}].concat(tsuki.map(function(){ return {wch:10}; })).concat([{wch:10}]);
+  XLSX.utils.book_append_sheet(wb, ws2, "月集計");
+
+  // --- 月表。いま見ている月ぶん。印刷の紙面と同じ中身
+  var p = periodOf(perKey);
+  var sono = tsukiNoKakutei();
+  if (sono.length){
+    var sonoNamae = detaHito(sono);
+    var hiki = {};
+    sono.forEach(function(x){ hiki[x.d + "|" + x.person] = x; });
+
+    var a = [["シフト表　" + p.y + "年" + (p.m + 1) + "月（確定ぶん）"], [],
+             ["日", "曜"].concat(sonoNamae).concat(["人数"])];
+    var sue = lastDay(p.y, p.m);
+    for (var d = 1; d <= sue; d++){
+      var w = new Date(p.y, p.m, d).getDay();
+      var gyo = [d, WD[w]], nin = 0;
+      sonoNamae.forEach(function(n){
+        var x = hiki[d + "|" + n];
+        if (x) nin++;
+        gyo.push(x ? shortT(x.s) + "-" + shortT(x.e) : "");
+      });
+      gyo.push(nin || "");
+      a.push(gyo);
+    }
+    var kei = ["", "実働計"], souk = 0;
+    sonoNamae.forEach(function(n){
+      var g = 0;
+      sono.forEach(function(x){ if (x.person === n) g += x.jitsudo; });
+      souk += g;
+      kei.push(fmt(g));
+    });
+    kei.push(fmt(souk));
+    a.push(kei);
+
+    var ws3 = XLSX.utils.aoa_to_sheet(a);
+    ws3["!cols"] = [{wch:4},{wch:4}]
+      .concat(sonoNamae.map(function(){ return {wch:12}; })).concat([{wch:6}]);
+    XLSX.utils.book_append_sheet(wb, ws3, "月表");
+  }
+
+  return wb;
+}
+
+$("btnExcel").onclick = function(){
+  var b = $("btnExcel");
+  var moto = b.textContent;
+  b.disabled = true;
+  b.textContent = "作っています…";
+
+  xlsxWoYomu().then(function(){
+    var wb = excelWoTsukuru();
+    if (!wb){
+      shiraseru("確定したシフトがまだありません", true);
+      return;
+    }
+    var kyou = new Date();
+    var na = "シフト記録_" + kyou.getFullYear() +
+             ("0" + (kyou.getMonth() + 1)).slice(-2) +
+             ("0" + kyou.getDate()).slice(-2) + ".xlsx";
+    XLSX.writeFile(wb, na);
+    shiraseru("ダウンロードしました（" + na + "）");
+  }).catch(function(err){
+    shiraseru((err && err.message) || "作れませんでした", true);
+  }).then(function(){
+    b.disabled = false;
+    b.textContent = moto;
+  });
+};
+
 
 /* ====================================================================
    確定
