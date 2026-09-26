@@ -311,6 +311,10 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
         <button class="tool" id="btnExcel">Excelでダウンロード</button>
         <button class="tool" id="btnPrint">印刷・PDF</button>
       </div>
+      <p class="lead" style="margin-top:10px">
+        Excel には<strong>確定ぶんが全部</strong>入ります（明細と月集計は全期間、月表はいま見ている月）。
+        半月ごとに分けて残す必要はありません。印刷は<strong>いま見ている月</strong>ぶんです。
+      </p>
     </section>
 
     <section>
@@ -1356,10 +1360,12 @@ function excelWoTsukuru(){
     var ws3 = XLSX.utils.aoa_to_sheet(a);
     ws3["!cols"] = [{wch:4},{wch:4}]
       .concat(sonoNamae.map(function(){ return {wch:12}; })).concat([{wch:6}]);
-    XLSX.utils.book_append_sheet(wb, ws3, "月表");
+    // 何月ぶんの表なのかが名前で分かるようにします。
+    // 明細と月集計は全期間ぶんなので、ここだけ月ごとだと伝わるように
+    XLSX.utils.book_append_sheet(wb, ws3, "月表" + p.y + ("0" + (p.m + 1)).slice(-2));
   }
 
-  return wb;
+  return { wb: wb, ken: zenbu.length, tsuki: tsuki };
 }
 
 $("btnExcel").onclick = function(){
@@ -1369,17 +1375,19 @@ $("btnExcel").onclick = function(){
   b.textContent = "作っています…";
 
   xlsxWoYomu().then(function(){
-    var wb = excelWoTsukuru();
-    if (!wb){
+    var r = excelWoTsukuru();
+    if (!r){
       shiraseru("確定したシフトがまだありません", true);
       return;
     }
-    var kyou = new Date();
-    var na = "シフト記録_" + kyou.getFullYear() +
-             ("0" + (kyou.getMonth() + 1)).slice(-2) +
-             ("0" + kyou.getDate()).slice(-2) + ".xlsx";
-    XLSX.writeFile(wb, na);
-    shiraseru("ダウンロードしました（" + na + "）");
+    // 名前は固定。中身はいつも「確定ぶん全部」なので、
+    // 日付を付けると半月ごとの控えのように見えてしまうため
+    XLSX.writeFile(r.wb, "シフト記録.xlsx");
+
+    var haba = (r.tsuki.length > 1)
+      ? (r.tsuki[0] + " 〜 " + r.tsuki[r.tsuki.length - 1])
+      : r.tsuki[0];
+    shiraseru("確定ぶん全部を入れました（" + haba + "・" + r.ken + "件）");
   }).catch(function(err){
     shiraseru((err && err.message) || "作れませんでした", true);
   }).then(function(){
