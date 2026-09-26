@@ -374,8 +374,18 @@ var KIBOU_BASE = "https://happy-tomato-farm.github.io/kibou/";
 var SHIFT_BASE = "https://happy-tomato-farm.github.io/shift/";
 var pwKibou = "", pwShift = "";
 
-function kibouUrl(){ return KIBOU_BASE + (pwKibou ? "#pw=" + encodeURIComponent(pwKibou) : ""); }
-function shiftUrl(){ return SHIFT_BASE + (pwShift ? "#pw=" + encodeURIComponent(pwShift) : ""); }
+/* リンクに入れるあいことば。
+   encodeURIComponent をそのまま使うと「とまと」が %E3%81%A8%E3%81%BE%E3%81%A8 になり、
+   LINE に貼ったとき読めないうえ、怪しいリンクに見えてしまう。
+   受け取る側（/shift/ も /kibou/ も）は decodeURIComponent を通すが、
+   日本語はそこを素通りするので、リンクを壊す文字だけを置きかえる。 */
+function pwMoji(pw){
+  return String(pw).replace(/[%#&?\s]/g, function(c){
+    return "%" + ("0" + c.charCodeAt(0).toString(16).toUpperCase()).slice(-2);
+  });
+}
+function kibouUrl(){ return KIBOU_BASE + (pwKibou ? "#pw=" + pwMoji(pwKibou) : ""); }
+function shiftUrl(){ return SHIFT_BASE + (pwShift ? "#pw=" + pwMoji(pwShift) : ""); }
 
 var WD = ["日","月","火","水","木","金","土"];
 var $ = function(id){ return document.getElementById(id); };
@@ -463,6 +473,12 @@ function shimekiriOf(p){
   return (p.from === 16) ? new Date(p.y, p.m, 10) : new Date(p.y, p.m - 1, 25);
 }
 function hiKanji(d){ return (d.getMonth()+1) + "月" + d.getDate() + "日"; }
+
+/* お知らせ文に出す期間。「10月1日～10月15日」の形でそろえます。
+   期間は月をまたがない（1〜15日 か 16日〜末日）ので、月は同じものを2回使います。 */
+function kikanMoji(p){
+  return (p.m+1) + "月" + p.from + "日～" + (p.m+1) + "月" + p.to + "日";
+}
 
 /* ====================================================================
    いまの状態
@@ -1028,10 +1044,9 @@ function oshiraseBun(){
   var tsugi = tsugiNoKikan(p);
   var shime = shimekiriOf(tsugi);
 
-  return (p.m+1) + "月" + p.from + "日～" + (p.m+1) + "月" + p.to + "日" +
-         "のシフトを確定しましたので確認をお願いします！\n" +
+  return kikanMoji(p) + "のシフトを確定しましたので確認をお願いします！\n" +
          shiftUrl() + "\n\n" +
-         "次回分（" + tsugi.label + "）のシフト希望は" + hiKanji(shime) +
+         "次回分（" + kikanMoji(tsugi) + "）のシフト希望は" + hiKanji(shime) +
          "までに提出をお願いしますm(__)m\n" +
          kibouUrl();
 }
