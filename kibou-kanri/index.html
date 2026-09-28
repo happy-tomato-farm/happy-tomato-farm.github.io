@@ -237,6 +237,20 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
   padding:13px 15px; font-family:var(--ui); font-size:13.5px; line-height:1.8; white-space:pre-wrap;
   color:var(--ink); max-height:40vh; overflow-y:auto}
 
+/* LINE のリマインド用 */
+.namelist{display:flex; flex-direction:column; gap:5px}
+.namelist label{display:flex; align-items:center; gap:10px; padding:9px 11px;
+  border:1px solid var(--line); border-radius:10px; background:var(--card);
+  font-weight:700; font-size:14px; cursor:pointer}
+.namelist label.nashi{opacity:.6; cursor:default}
+.namelist input{width:19px; height:19px; accent-color:var(--teal); flex:none}
+.namelist .note{margin-left:auto; font-size:11.5px; font-weight:700; color:var(--faint)}
+.namelist .note.ng{color:var(--amber)}
+.namelist .kara{font-size:13px; font-weight:700; color:var(--muted); padding:4px 2px}
+textarea.msgin{width:100%; box-sizing:border-box; background:var(--sub);
+  border:1px solid var(--line); border-radius:11px; padding:12px 13px; color:var(--ink);
+  font-family:var(--ui); font-size:13.5px; line-height:1.75; resize:vertical}
+
 .bar{position:fixed; left:50%; transform:translateX(-50%); bottom:-90px; z-index:80;
   background:var(--ink); color:var(--ground); font-weight:700; font-size:13.5px;
   border-radius:999px; padding:10px 22px; box-shadow:var(--shadow); transition:bottom .22s ease;
@@ -327,6 +341,7 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
       <div class="tools">
         <button class="tool" id="btnOshirase">確定のお知らせ文をコピー</button>
         <button class="tool" id="btnSaisoku">まだの人への催促文をコピー</button>
+        <button class="tool" id="btnLine">LINEで個別にリマインド</button>
         <button class="tool" id="btnHyou">確定シフトを表としてコピー</button>
         <button class="tool" id="btnExcel">Excelでダウンロード</button>
         <button class="tool" id="btnPrint">印刷・PDF</button>
@@ -411,6 +426,26 @@ pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-ra
   <pre class="msg" id="pBody" contenteditable="true" spellcheck="false"></pre>
   <button class="ok" id="pCopy">コピーする</button>
   <button class="alt" id="pClose">とじる</button>
+</div></div>
+
+<!-- LINE の個別リマインド。送る前に、相手と文面をここで確かめます -->
+<div class="sheet" id="shLine"><div class="sheet-in">
+  <h3 id="lT">　</h3>
+  <p class="hint" id="lH">　</p>
+
+  <div class="grp">送る相手</div>
+  <div class="namelist" id="lWho"></div>
+
+  <div class="grp">文面</div>
+  <textarea id="lBody" class="msgin" rows="7" spellcheck="false"></textarea>
+  <p class="hint" style="margin:6px 0 0; text-align:left">
+    {名前}{期間}{URL} のところは、送るときに1人ずつ入れかわります
+  </p>
+
+  <div class="out" id="lOut" hidden>　</div>
+
+  <button class="ok" id="lGo">送る</button>
+  <button class="alt" id="lClose">とじる</button>
 </div></div>
 
 <!-- 印刷のときだけ出る紙面。画面には出ません -->
@@ -1174,6 +1209,145 @@ $("btnSaisoku").onclick = function(){
     kibouUrl();
 
   copyWoDasu("催促の文", "貼る前にここで直せます。LINE の全体トークへ", body);
+};
+
+/* ====================================================================
+   LINE の個別リマインド
+
+   「まだ出していない人」だけへ、それぞれの LINE に送ります。
+   だれに送るのか・どんな文面かを必ず見せてから送ります。
+   押しまちがいで全員に飛ぶことがないようにするためです。
+   ==================================================================== */
+
+var shLine = $("shLine");
+shLine.onclick = function(e){ if (e.target === shLine) shLine.classList.remove("open"); };
+$("lClose").onclick = function(){ shLine.classList.remove("open"); };
+
+$("btnLine").onclick = function(){
+  var btn = this;
+  btn.disabled = true;
+
+  okuru({ action: "remindList", aikotoba: pw, period: perKey })
+    .then(function(j){
+      lineSheetWoKaku(j);
+      shLine.classList.add("open");
+    })
+    .catch(function(e){ shiraseru(e.message || "読みこめませんでした", true); })
+    .then(function(){ btn.disabled = false; });
+};
+
+function lineSheetWoKaku(j){
+  $("lT").textContent = "LINEで個別にリマインド";
+  $("lH").textContent = j.kikan + " のきぼう・まだ " + j.mada.length + "人";
+
+  var box = $("lWho");
+  box.innerHTML = "";
+
+  if (!j.line){
+    box.appendChild(hitokoto("LINE の用意がまだです（Apps Script のスクリプト プロパティを見てください）"));
+  } else if (!j.mada.length){
+    box.appendChild(hitokoto("全員そろっています。送る相手はいません"));
+  }
+
+  j.mada.forEach(function(h){
+    var okuraeru = !!h.line && !!j.line;
+
+    var lab = document.createElement("label");
+    if (!okuraeru) lab.className = "nashi";
+
+    var cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = h.name;
+    cb.checked  = okuraeru;
+    cb.disabled = !okuraeru;
+
+    var na = document.createElement("span");
+    na.textContent = h.name;
+
+    var no = document.createElement("span");
+    no.className = "note" + (h.line ? "" : " ng");
+    no.textContent = h.line ? "送れます" : "友だち追加がまだ";
+
+    lab.appendChild(cb);
+    lab.appendChild(na);
+    lab.appendChild(no);
+    box.appendChild(lab);
+  });
+
+  // 出しおわっている人は、送らないことが分かるよう名前だけ出します
+  if (j.zumi && j.zumi.length){
+    box.appendChild(hitokoto("提出ずみ（送りません）… " + j.zumi.join("、")));
+  }
+
+  $("lBody").value = j.honbun || "";
+  $("lOut").hidden = true;
+  lineBotanWoNaosu();
+
+  function hitokoto(moji){
+    var d = document.createElement("div");
+    d.className = "kara";
+    d.textContent = moji;
+    return d;
+  }
+}
+
+function lineErabareta(){
+  var cbs = $("lWho").querySelectorAll("input[type=checkbox]");
+  var out = [];
+  for (var i = 0; i < cbs.length; i++){
+    if (cbs[i].checked) out.push(cbs[i].value);
+  }
+  return out;
+}
+
+function lineBotanWoNaosu(){
+  var n = lineErabareta().length;
+  var b = $("lGo");
+  b.textContent = n ? n + "人に送る" : "送る相手をえらんでください";
+  b.disabled = !n;
+}
+
+$("lWho").onchange = lineBotanWoNaosu;
+
+$("lGo").onclick = function(){
+  var namae = lineErabareta();
+  if (!namae.length) return;
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = "送っています…";
+
+  okuru({
+    action: "remindSend",
+    aikotoba: pw,
+    period: perKey,
+    honbun: $("lBody").value,
+    names: namae
+  }).then(function(j){
+    var dame = (j.kekka || []).filter(function(k){ return !k.ok; });
+
+    var out = $("lOut");
+    out.hidden = false;
+    out.textContent = j.okutta + "人に送りました" +
+                      (dame.length ? "／" + dame.length + "人は送れませんでした" : "");
+
+    // 送れなかった理由は、隠さずそのまま出します
+    dame.forEach(function(k){
+      var d = document.createElement("div");
+      d.className = "warn";
+      d.textContent = k.name + "さん … " + k.error;
+      out.appendChild(d);
+    });
+
+    shiraseru(j.okutta + "人に送りました" +
+              (dame.length ? "（" + dame.length + "人は送れず）" : ""),
+              dame.length > 0);
+    btn.textContent = "送りおわりました";
+  }).catch(function(e){
+    shiraseru(e.message || "送れませんでした", true);
+    btn.disabled = false;
+    lineBotanWoNaosu();
+  });
 };
 
 $("btnHyou").onclick = function(){
