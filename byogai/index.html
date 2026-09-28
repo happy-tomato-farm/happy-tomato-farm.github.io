@@ -178,6 +178,30 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balanc
   background:var(--card-sub);border:1px solid var(--line);
   border-radius:6px;padding:1px 8px;
 }
+/* 記録カードに出す本数。数えていないもの（過去の取り込みなど）には付けない */
+.hon{
+  font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;
+  color:color-mix(in srgb, var(--accent) 68%, var(--ink));
+  background:color-mix(in srgb, var(--accent) 13%, var(--card));
+  border:1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+  border-radius:6px;padding:1px 8px;
+}
+
+/* 件数と本数の切りかえ */
+.toggle{
+  display:inline-flex;flex:none;background:var(--card);
+  border:1.5px solid var(--line);border-radius:var(--r-chip);overflow:hidden;
+}
+.tg{
+  font-family:inherit;font-size:11.5px;font-weight:800;letter-spacing:.06em;
+  color:var(--muted);background:none;border:none;padding:4px 11px;cursor:pointer;
+}
+.tg[aria-pressed="true"]{
+  background:color-mix(in srgb, var(--accent) 18%, var(--card));
+  color:color-mix(in srgb, var(--accent) 62%, var(--ink));
+}
+.tg:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.mnote{font-size:11.5px;font-weight:700;color:var(--muted);margin:0 0 6px;padding:0 3px;line-height:1.6}
 .pests{display:flex;gap:6px;flex-wrap:wrap}
 .pest{
   font-size:12px;font-weight:800;letter-spacing:.03em;padding:2px 10px;
@@ -251,6 +275,11 @@ dialog::backdrop{background:rgba(24,29,22,.5);backdrop-filter:blur(3px)}
 .sheet .hint{font-size:12.5px;color:var(--muted);margin:-8px 0 0}
 .field{display:flex;flex-direction:column;gap:7px}
 .field > span{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.1em}
+/* 本数の欄。数字は短いので欄も短くし、単位を右に添える */
+.field > span.hrow{display:flex;align-items:center;gap:9px;letter-spacing:0}
+.hrow input{width:104px}
+.hrow .unit{font-size:14.5px;font-weight:800;color:var(--muted)}
+.field > span.hint{font-size:11.5px;font-weight:700;letter-spacing:0;line-height:1.5}
 input[type="text"],input[type="date"],textarea{
   font-family:inherit;font-size:16px;color:var(--ink);background:var(--card-sub);
   border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;width:100%;
@@ -382,12 +411,17 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
 
   <div id="body" hidden>
     <div class="sec-head">
-      <h2>月ごとの件数</h2>
+      <h2>月ごとの</h2>
+      <div class="toggle" id="mode-toggle" role="group" aria-label="なにを数えるか">
+        <button type="button" class="tg" data-mode="ken" aria-pressed="true">件数</button>
+        <button type="button" class="tg" data-mode="hon" aria-pressed="false">本数</button>
+      </div>
       <span class="count" id="m-total">0</span>
       <span class="rule"></span>
       <button class="linkbtn" type="button" id="m-clear" hidden>月のしぼりこみを外す</button>
     </div>
     <div class="months" id="months"></div>
+    <p class="mnote" id="m-note" hidden></p>
 
     <div class="sec-head">
       <h2>あたらしい順</h2>
@@ -435,6 +469,18 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     <label class="field">
       <span>ほかの名前をたす</span>
       <input type="text" id="f-pest-new" placeholder="一覧にないときはここに書いてください">
+    </label>
+
+    <label class="field">
+      <span>なん本みつけたか</span>
+      <span class="hrow">
+        <!-- type="number" にすると上下の矢印が出て、スマホで押しまちがえる。
+             また矢印キーが数の増減に取られ、欄の移動ができなくなる。
+             数字だけを打ちたいので inputmode="numeric" で数字キーボードを出す -->
+        <input type="text" id="f-count" inputmode="numeric" value="1" autocomplete="off">
+        <span class="unit">本</span>
+      </span>
+      <span class="hint">数えていないときは空にしてください（合計には入りません）</span>
     </label>
 
     <label class="field">
@@ -489,6 +535,31 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
   var PESTS_ALL = PESTS.slice();     /* 記録から見つかった名前も足していく */
   var ITEMS = [];
   var filter = { house:"", pest:"", month:0, season:"" };
+
+  /* 月ごとのグラフで何を数えるか。"ken"＝記録の件数、"hon"＝見つけた本数。
+     この端末に覚えておき、次に開いたときも同じ見え方にする */
+  var MODE_LS = "htf_byogai_mode";
+  var mode = "ken";
+  try{ if(localStorage.getItem(MODE_LS) === "hon") mode = "hon"; }catch(e){}
+
+  /* 本数。入っていない記録（本数欄ができる前のもの、過去の4週記録）は 0 になる */
+  var honOf = function(n){ return Number(n.count) || 0; };
+
+  /* いま選ばれている数え方で、この記録がいくつ分になるか。
+     件数モードでは本数に関わらず 1 件として数える */
+  var kazu = function(n){ return mode === "hon" ? honOf(n) : 1; };
+  var tani = function(){ return mode === "hon" ? "本" : "件"; };
+
+  /* 入力欄に打たれた本数を数に直す。読めないときは 0（＝数えていない）。
+     スマホの日本語入力では「３」のように全角になりやすいので、半角に直してから読む。
+     ※ 打っている途中の欄に書き戻すと入力が壊れるので、読むだけにして欄はさわらない */
+  var yomuHonsuu = function(v){
+    var s = String(v || "").replace(/[０-９]/g, function(z){
+      return String.fromCharCode(z.charCodeAt(0) - 0xFEE0);
+    }).replace(/[^0-9]/g, "");
+    var n = parseInt(s, 10);
+    return (n && n > 0) ? n : 0;
+  };
   var shown = PAGE;
 
   var $ = function(s){ return document.querySelector(s); };
@@ -576,6 +647,7 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     return '<article class="card" style="animation-delay:' + (Math.min(i,12) * 30) + 'ms">' +
       '<div class="when">' + fmtDate(n.date) + '</div>' +
       '<div class="meta">' + houseTags(n.houses) +
+        (honOf(n) ? '<span class="hon">' + honOf(n) + '本</span>' : "") +
         (n.spot ? '<span class="spot">' + esc(n.spot) + '</span>' : "") + '</div>' +
       pests +
       (n.body ? '<p>' + esc(n.body) + '</p>' : "") +
@@ -610,7 +682,7 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     var cnt = {};
     base.forEach(function(n){
       var m = +String(n.date).slice(5,7);
-      cnt[m] = (cnt[m] || 0) + 1;
+      cnt[m] = (cnt[m] || 0) + kazu(n);
     });
     var max = Math.max.apply(null, [1].concat(Object.keys(cnt).map(function(k){ return cnt[k]; })));
 
@@ -638,7 +710,23 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
       box.appendChild(col);
     });
 
-    $("#m-total").textContent = base.length;
+    /* 右上の合計。しぼりこみが効いた状態の数を出す（月のしぼりこみは除く） */
+    var kei = 0;
+    base.forEach(function(n){ kei += kazu(n); });
+    $("#m-total").textContent = kei + tani();
+
+    /* 本数モードのとき、本数が入っていない記録は数に入らない。
+       数が少なく見える理由が分からないと不安になるので、その件数を添える */
+    var mikinyu = base.filter(function(n){ return !honOf(n); }).length;
+    var note = $("#m-note");
+    if(mode === "hon" && mikinyu){
+      note.textContent = "※ 本数が入っていない記録 " + mikinyu +
+        " 件は数えていません（4週記録から取り込んだ過去のぶんなど）。「なおす」から本数を入れると数に入ります。";
+      note.hidden = false;
+    } else {
+      note.hidden = true;
+    }
+
     $("#m-clear").hidden = !filter.month;
   };
 
@@ -648,7 +736,12 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
       return a.id < b.id ? 1 : -1;
     });
 
-    $("#list-count").textContent = list.length;
+    /* 一覧は記録そのものを並べるので、まず件数。
+       本数が分かっているぶんがあれば、その合計も添える */
+    var hon = 0;
+    list.forEach(function(n){ hon += honOf(n); });
+    $("#list-count").textContent = list.length + "件" + (hon ? "・" + hon + "本" : "");
+
     var cut = list.slice(0, shown);
 
     $("#list").innerHTML = cut.length
@@ -681,6 +774,10 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
   var renderAll = function(){
     $("#loading").hidden = true;
     $("#body").hidden = false;
+    /* 前に選んだ数え方を覚えているので、ボタンの見た目もそれに合わせる */
+    document.querySelectorAll("#mode-toggle .tg").forEach(function(b){
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-mode") === mode));
+    });
     renderMonths();
     renderList();
   };
@@ -747,6 +844,18 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
         b.setAttribute("aria-pressed", String(b.getAttribute("data-house") === filter.house));
       });
       shown = PAGE;
+      renderAll();
+    });
+  });
+
+  /* 件数と本数の切りかえ */
+  document.querySelectorAll("#mode-toggle .tg").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      mode = btn.getAttribute("data-mode");
+      try{ localStorage.setItem(MODE_LS, mode); }catch(e){}
+      document.querySelectorAll("#mode-toggle .tg").forEach(function(b){
+        b.setAttribute("aria-pressed", String(b.getAttribute("data-mode") === mode));
+      });
       renderAll();
     });
   });
@@ -873,6 +982,8 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     if(n){
       $("#f-date").value = n.date || "";
       $("#f-spot").value = n.spot || "";
+      /* 本数が入っていない記録（取り込んだ過去のぶん）は、勝手に 1 を入れず空にする */
+      $("#f-count").value = honOf(n) ? String(honOf(n)) : "";
       $("#f-body").value = n.body || "";
       $("#f-who").value = n.who || "";
       shots = (n.images || []).slice();
@@ -883,6 +994,7 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     } else {
       var d = new Date();
       $("#f-date").value = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+      $("#f-count").value = "1";    // いちばん多いのは1本なので、既定にしておく
       try{ $("#f-who").value = localStorage.getItem(NAME_LS) || ""; }catch(e){}
       housePick.querySelectorAll(".chip.house").forEach(function(b){ b.setAttribute("aria-pressed","false"); });
       renderPestPick([]);
@@ -904,15 +1016,19 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     var pest = pickedPests();
     var spot = $("#f-spot").value.trim();
     var body = $("#f-body").value.trim();
+    var count = yomuHonsuu($("#f-count").value);
     var okuru = shots.slice();
 
     if(!editing){ try{ localStorage.setItem(NAME_LS, who); }catch(e){} }
     $("#fab").disabled = true; $("#submit").disabled = true;
     bar(editing ? "なおしています…" : "きろくしています…");
 
+    /* count は 0 のとき空文字で送る。保存側で「数えていない」あつかいになる */
+    var okuruCount = count || "";
+
     var payload = editing
-      ? { action:"editPest", id:editing, date:date, houses:houses, spot:spot, pest:pest, body:body, images:okuru }
-      : { action:"addPest", date:date, houses:houses, spot:spot, pest:pest, body:body, who:who, images:okuru };
+      ? { action:"editPest", id:editing, date:date, houses:houses, spot:spot, pest:pest, body:body, count:okuruCount, images:okuru }
+      : { action:"addPest", date:date, houses:houses, spot:spot, pest:pest, body:body, count:okuruCount, who:who, images:okuru };
     var target = editing;
 
     send(payload).then(function(j){
@@ -920,13 +1036,13 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
         var n = ITEMS.filter(function(x){ return x.id === target; })[0];
         if(n){
           n.date = date; n.houses = houses; n.spot = spot;
-          n.pest = pest; n.body = body; n.images = j.images || [];
+          n.pest = pest; n.body = body; n.count = count; n.images = j.images || [];
         }
         bar("なおしました");
       } else {
         ITEMS.unshift({
           id:j.id, date:date, houses:houses, spot:spot, pest:pest,
-          body:body, who:who, images:j.images || [], source:""
+          body:body, count:count, who:who, images:j.images || [], source:""
         });
         bar("きろくしました");
       }
