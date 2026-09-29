@@ -202,6 +202,10 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balanc
 }
 .tg:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
 .mnote{font-size:11.5px;font-weight:700;color:var(--muted);margin:0 0 6px;padding:0 3px;line-height:1.6}
+
+/* まだGoogleに届いていない記録。届くまでのあいだ、少し薄く出す */
+.card.matteru{border-style:dashed;opacity:.72}
+.matteru-n{font-size:12.5px;font-weight:800;color:var(--muted)}
 .pests{display:flex;gap:6px;flex-wrap:wrap}
 .pest{
   font-size:12px;font-weight:800;letter-spacing:.03em;padding:2px 10px;
@@ -413,8 +417,8 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     <div class="sec-head">
       <h2>月ごとの</h2>
       <div class="toggle" id="mode-toggle" role="group" aria-label="なにを数えるか">
-        <button type="button" class="tg" data-mode="ken" aria-pressed="true">件数</button>
-        <button type="button" class="tg" data-mode="hon" aria-pressed="false">本数</button>
+        <button type="button" class="tg" data-mode="ken" aria-pressed="false">件数</button>
+        <button type="button" class="tg" data-mode="hon" aria-pressed="true">本数</button>
       </div>
       <span class="count" id="m-total">0</span>
       <span class="rule"></span>
@@ -537,10 +541,13 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
   var filter = { house:"", pest:"", month:0, season:"" };
 
   /* 月ごとのグラフで何を数えるか。"ken"＝記録の件数、"hon"＝見つけた本数。
-     この端末に覚えておき、次に開いたときも同じ見え方にする */
-  var MODE_LS = "htf_byogai_mode";
-  var mode = "ken";
-  try{ if(localStorage.getItem(MODE_LS) === "hon") mode = "hon"; }catch(e){}
+     ふだん見たいのは本数なので、はじめは本数にしておく。
+     切り替えたらこの端末に覚え、次に開いたときも同じ見え方にする。
+     ※ キーに 2 が付いているのは、前の作り（はじめは件数）で "ken" を
+        覚えた端末があり、それを引きずらないようにするため */
+  var MODE_LS = "htf_byogai_mode2";
+  var mode = "hon";
+  try{ if(localStorage.getItem(MODE_LS) === "ken") mode = "ken"; }catch(e){}
 
   /* 本数。入っていない記録（本数欄ができる前のもの、過去の4週記録）は 0 になる */
   var honOf = function(n){ return Number(n.count) || 0; };
@@ -602,6 +609,9 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
   };
 
   var gazoURL = function(id, w){
+    /* 保存を待つあいだは、この端末で読み込んだ写真そのもの（data: で始まる長い文字）を
+       そのまま出す。Googleドライブの番号に変わるのは、保存が終わってから */
+    if(String(id).indexOf("data:") === 0) return id;
     return "https://drive.google.com/thumbnail?id=" + encodeURIComponent(id) + "&sz=w" + (w || 800);
   };
 
@@ -611,6 +621,14 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     return (m >= 9 ? y : y - 1);
   };
   var seasonLabel = function(sy){ return (sy + 1) + "年度"; };
+
+  /* 今日の日付を 2026-09-29 の形で返す */
+  var kyou = function(){
+    var d = new Date();
+    return d.getFullYear() + "-" +
+           String(d.getMonth() + 1).padStart(2, "0") + "-" +
+           String(d.getDate()).padStart(2, "0");
+  };
 
   var fmtDate = function(iso){
     var p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
@@ -644,7 +662,13 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
         }).join("") + '</div>'
       : "";
 
-    return '<article class="card" style="animation-delay:' + (Math.min(i,12) * 30) + 'ms">' +
+    /* 送っている途中の記録。Googleに届く前から画面には出しておくので、
+       まだ確定していないことが分かるようにし、押せるボタンも出さない
+       （番号が決まっていないため、なおす・けすが使えない） */
+    var matteru = !!n.matteru;
+
+    return '<article class="card' + (matteru ? " matteru" : "") +
+      '" style="animation-delay:' + (Math.min(i,12) * 30) + 'ms">' +
       '<div class="when">' + fmtDate(n.date) + '</div>' +
       '<div class="meta">' + houseTags(n.houses) +
         (honOf(n) ? '<span class="hon">' + honOf(n) + '本</span>' : "") +
@@ -653,11 +677,13 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
       (n.body ? '<p>' + esc(n.body) + '</p>' : "") +
       shotsHTML +
       '<div class="acts">' +
-        (imgs.length && (n.pest || []).length
+        (matteru ? '<span class="matteru-n">ほぞん中…</span>' : "") +
+        (!matteru && imgs.length && (n.pest || []).length
           ? '<button class="linkbtn" type="button" data-zureg="' + esc(n.id) + '">図鑑に登録</button>'
           : "") +
-        '<button class="linkbtn" type="button" data-edit="' + esc(n.id) + '">なおす</button>' +
-        '<button class="linkbtn" type="button" data-del="' + esc(n.id) + '">けす</button>' +
+        (matteru ? "" :
+          '<button class="linkbtn" type="button" data-edit="' + esc(n.id) + '">なおす</button>' +
+          '<button class="linkbtn" type="button" data-del="' + esc(n.id) + '">けす</button>') +
       '</div>' +
       '<div class="by"><span>' + esc(n.who || "") + '</span>' +
         (n.source ? '<span class="src">' + esc(n.source) + '</span>' : "") + '</div>' +
@@ -992,8 +1018,7 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
       });
       renderPestPick(n.pest || []);
     } else {
-      var d = new Date();
-      $("#f-date").value = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+      $("#f-date").value = kyou();
       $("#f-count").value = "1";    // いちばん多いのは1本なので、既定にしておく
       try{ $("#f-who").value = localStorage.getItem(NAME_LS) || ""; }catch(e){}
       housePick.querySelectorAll(".chip.house").forEach(function(b){ b.setAttribute("aria-pressed","false"); });
@@ -1021,7 +1046,6 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
 
     if(!editing){ try{ localStorage.setItem(NAME_LS, who); }catch(e){} }
     $("#fab").disabled = true; $("#submit").disabled = true;
-    bar(editing ? "なおしています…" : "きろくしています…");
 
     /* count は 0 のとき空文字で送る。保存側で「数えていない」あつかいになる */
     var okuruCount = count || "";
@@ -1031,31 +1055,100 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
       : { action:"addPest", date:date, houses:houses, spot:spot, pest:pest, body:body, count:okuruCount, who:who, images:okuru };
     var target = editing;
 
-    send(payload).then(function(j){
-      if(target){
-        var n = ITEMS.filter(function(x){ return x.id === target; })[0];
-        if(n){
-          n.date = date; n.houses = houses; n.spot = spot;
-          n.pest = pest; n.body = body; n.count = count; n.images = j.images || [];
-        }
-        bar("なおしました");
-      } else {
-        ITEMS.unshift({
-          id:j.id, date:date, houses:houses, spot:spot, pest:pest,
-          body:body, count:count, who:who, images:j.images || [], source:""
-        });
-        bar("きろくしました");
+    /* ---- 返事を待たずに、まず画面へ出す ----
+       Apps Script の返事は速くても1.5〜2秒、写真があるともっとかかる。
+       待ってから出すと「押したのに何も起きない」時間ができるので、
+       先に出して裏で送る。「けす」がすでに同じ作りになっている。
+       失敗したら元にもどし、打った内容のまま開き直す */
+    var utsushi = null;          // なおすとき、失敗時に戻すための控え
+    var kariId = null;           // きろくするとき、番号が決まるまでの仮の番号
+
+    if(target){
+      var moto = ITEMS.filter(function(x){ return x.id === target; })[0];
+      if(moto){
+        utsushi = { date:moto.date, houses:moto.houses, spot:moto.spot, pest:moto.pest,
+                    body:moto.body, count:moto.count, images:moto.images };
+        moto.date = date; moto.houses = houses; moto.spot = spot;
+        moto.pest = pest; moto.body = body; moto.count = count;
+        moto.images = okuru;     // まだ data: のままでも、写真は出せる
+        moto.matteru = true;
       }
-      pest.forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
-      shots = [];
-      renderFilters(); renderAll();
+    } else {
+      kariId = "kari" + Date.now();
+      ITEMS.unshift({
+        id:kariId, date:date, houses:houses, spot:spot, pest:pest,
+        body:body, count:count, who:who, images:okuru, source:"", matteru:true
+      });
+    }
+
+    pest.forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
+    shots = [];
+    renderFilters(); renderAll();
+
+    /* 画面に出たので、次の記録をすぐ書き始められるようにする。
+       見回りでは何本も続けて見つかるため。送るほうは裏で続いていて、
+       同時に送っても Google 側で順番待ちになるだけ */
+    $("#fab").disabled = false; $("#submit").disabled = false;
+
+    var hirakinaosu = false;     // 失敗して開き直したかどうか
+
+    send(payload).then(function(j){
+      /* 仮の番号を本物に差し替え、写真もドライブの番号に入れ替える */
+      var n = ITEMS.filter(function(x){ return x.id === (target || kariId); })[0];
+      if(n){
+        n.id = target || j.id;
+        n.images = j.images || [];
+        delete n.matteru;
+      }
+      bar(target ? "なおしました" : "きろくしました");
+      renderAll();
     }).catch(function(e){
-      bar(e.message, true);
+      /* 画面を元にもどす */
+      if(target){
+        var n2 = ITEMS.filter(function(x){ return x.id === target; })[0];
+        if(n2 && utsushi){
+          n2.date = utsushi.date; n2.houses = utsushi.houses; n2.spot = utsushi.spot;
+          n2.pest = utsushi.pest; n2.body = utsushi.body; n2.count = utsushi.count;
+          n2.images = utsushi.images;
+          delete n2.matteru;
+        }
+      } else {
+        ITEMS = ITEMS.filter(function(x){ return x.id !== kariId; });
+      }
+      renderFilters(); renderAll();
+
+      bar(e.message + " 打った内容のまま開き直します", true);
+
+      /* 写真は選び直せないので、内容を残したまま開き直す */
+      hirakinaosu = true;
+      fukugen(target, { date:date, houses:houses, pest:pest, spot:spot,
+                        body:body, count:count, who:who, images:okuru });
     }).then(function(){
       $("#fab").disabled = false; $("#submit").disabled = false;
-      editing = null;
+      /* 開き直したときは、そのフォームが「なおす」なのか「きろくする」なのかを
+         fukugen が決めているので、ここで消してはいけない */
+      if(!hirakinaosu) editing = null;
     });
   });
+
+  /* 送るのに失敗したとき、打った内容のままフォームを開き直す。
+     id があれば「なおす」として、無ければ「きろくする」として開く */
+  var fukugen = function(id, v){
+    openForm(id || null);
+    $("#f-date").value = v.date || "";
+    $("#f-spot").value = v.spot || "";
+    $("#f-count").value = v.count ? String(v.count) : "";
+    $("#f-body").value = v.body || "";
+    if(v.who) $("#f-who").value = v.who;
+
+    shots = (v.images || []).slice();
+    housePick.querySelectorAll(".chip.house").forEach(function(b){
+      b.setAttribute("aria-pressed",
+        String((v.houses || []).indexOf(b.getAttribute("data-house")) >= 0));
+    });
+    renderPestPick(v.pest || []);
+    renderThumbs();
+  };
 
   var removeItem = function(id){
     var n = ITEMS.filter(function(x){ return x.id === id; })[0];
@@ -1395,6 +1488,21 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
             function(e){ clearTimeout(t); throw e; });
   };
 
+  /* 起動して最初にデータが入ったときだけ、今のシーズンをえらんだ状態にする。
+     見たいのはたいてい今シーズンのぶんで、毎回押すのは手間なので。
+     ただし、そのシーズンの記録がまだ1件も無いときは「すべて」のままにする
+     （シーズンが変わった直後に、空の画面が出て不安になるのを避ける） */
+  var shokaiSumi = false;
+
+  var hajimeNoShibori = function(){
+    if(shokaiSumi) return;
+    shokaiSumi = true;
+
+    var ima = String(seasonOf(kyou()));
+    var aru = ITEMS.some(function(n){ return String(seasonOf(n.date)) === ima; });
+    if(aru) filter.season = ima;
+  };
+
   var tsukau = function(j){
     ITEMS = j.pests || [];
     (j.zukan || []).forEach(function(z){ if(z.name) ZUKAN[z.name] = z; });
@@ -1403,6 +1511,7 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
     });
     /* 図鑑にだけある名前も、えらべるようにしておく */
     Object.keys(ZUKAN).forEach(function(p){ if(PESTS_ALL.indexOf(p) < 0) PESTS_ALL.push(p); });
+    hajimeNoShibori();
     renderFilters();
     renderAll();
   };
