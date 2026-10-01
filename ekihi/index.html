@@ -361,9 +361,17 @@ details.fold[open] > summary .hint::after{content:"　▲"}
             <input id="i-coef" type="number" step="0.1" inputmode="decimal"><span class="u">実質日射＝日射×10÷係数</span></div>
           <div class="f"><label for="i-film">フィルム劣化の減衰</label>
             <input id="i-film" type="number" step="0.01" inputmode="decimal"><span class="u">1で劣化なし</span></div>
-          <div class="f"><label for="i-plus">灌水時間の上乗せ</label>
-            <input id="i-plus" type="number" step="10" inputmode="decimal"><span class="u">秒</span></div>
+          <div class="f"><label for="i-fill">立ち上がりの容積</label>
+            <input id="i-fill" type="number" step="10" inputmode="decimal">
+            <span class="u" id="fillu">L（配管とチューブが満ちるまで）</span></div>
+          <div class="f"><label for="i-reach">立ち上がりの水</label>
+            <select id="i-reach">
+              <option value="1">抜けて土に落ちる（足さない）</option>
+              <option value="0">ハウスの外へ出る（足す）</option>
+            </select>
+            <span class="u">弁を閉じたあと点滴から抜けるか</span></div>
         </div>
+        <p class="foot" id="fillnote"></p>
       </div>
     </details>
   </section>
@@ -436,9 +444,14 @@ const CURVE_GRID_MJ = [0,1,2,3,4,5,6,8,10,12,14,16,18,20,22,24,26];
    この日数を越えたら表を捨てて、昔ながらの直線計算に戻す。 */
 const CURVE_MAX_AGE_DAYS = 10;
 
+/* plus（灌水時間の上乗せ・秒）は 2026-10-01 に fillL（立ち上がりの容積・L）へ
+   置きかえた。古い端末から読み込んだときの読み替えに残してある。
+   → 下の load() と mudaByo() を見ること。 */
 const KITEI_SET = {
-  "中央": { flow:140, need:3.2, area:1740, coef:6.5, film:0.95, plus:100 },
-  "東":   { flow:140, need:3,   area:1740, coef:6.5, film:1,    plus:100 },
+  "中央": { flow:140, need:3.2, area:1740, coef:6.5, film:0.95,
+            plus:100, fillL:null, fillReach:true },
+  "東":   { flow:140, need:3,   area:1740, coef:6.5, film:1,
+            plus:100, fillL:null, fillReach:true },
 };
 const KITEI_FERT = { fert:"トケル養液配合1号", bags:1, made:350 };
 const KITEI_DAY  = { eday:15, nkai:3, nday:0.126, bai:null, nweek:null,
@@ -493,8 +506,45 @@ function load(){
   for(const h of HOUSES){
     out.set[h]  = Object.assign({}, KITEI_SET[h],  (s.set||{})[h]  || {});
     out.fert[h] = Object.assign({}, KITEI_FERT,    (s.fert||{})[h] || {});
+    /* 古い設定からの読み替え。
+       上乗せ100秒は「流量 × 100秒」ぶんの容積を表していたので、
+       そのリットル数に直す。以後は流量を変えても容積は変わらない。 */
+    const c = out.set[h];
+    if(!has(c.fillL)) c.fillL = num(c.plus)*num(c.flow)/60;
+    if(c.fillReach === undefined || c.fillReach === null) c.fillReach = true;
   }
   return out;
+}
+
+/* 立ち上がり（配管と点滴チューブが水で満ちるまで）の扱い。
+
+   【測ったこと】
+   上乗せ100秒 ＝ 流量140 L/min なら 233 L。
+   塩ビVP50を60m と 16mm チューブ970m で 268 L なので、
+   配管の容積として桁は合っている。
+
+   【★足す必要があるかは「抜けた水がどこへ行くか」で決まる】
+   弁を閉じたあと管の水が点滴から抜けて土に落ちるなら、
+   立ち上がりに使った水も遅れて作物に届く。1サイクルを通して見れば
+
+       土に入る水 ＝ 流量 × 運転時間
+
+   になるので、「出ない時間ぶん長く回す」と同じ水を二重に数えることになる。
+   うちは抜けて土に落ちる（2026-10-01 確認）ので、足さない。
+   毎回100秒足していたぶん、ねらいの1.12倍出ていた。
+
+   ハウスの外へ抜けてしまう場合だけ fillReach を false にする。
+   そのときは立ち上がりの時間ぶんを運転時間に足し、その水は
+   「作物に届いた水」には数えない。 */
+
+/** 立ち上がりの時間 [秒]。容積 ÷ 流量 で出す（流量を変えても追随する）。 */
+function tachiagariByo(c){
+  return num(c.flow) > 0 ? num(c.fillL)/num(c.flow)*60 : 0;
+}
+
+/** 作物に届かない時間 [秒]。届くなら 0。 */
+function mudaByo(c){
+  return c.fillReach === false ? tachiagariByo(c) : 0;
 }
 let st=null;
 function save(){
@@ -579,7 +629,7 @@ function need(c, e){
 /** 朝の設定から T0（設定倍率）を出す。N量が主のとき */
 function baiFromN(c, f, eday, nkai, nday){
   const { M } = need(c, eday);
-  const Mi = M/nkai, Oi = (Mi + num(c.plus))/60;
+  const Mi = M/nkai, Oi = (Mi + mudaByo(c))/60;
   const Rday = f.n100 ? nday*num(c.area)/1000/f.n100*100 : 0;
   const Ri = Rday/nkai;
   return Ri>0 ? num(c.flow)*Oi/Ri : 0;
@@ -587,7 +637,7 @@ function baiFromN(c, f, eday, nkai, nday){
 /** 倍率が主のとき、1日のN量を逆算 */
 function nFromBai(c, f, eday, nkai, bai){
   const { M } = need(c, eday);
-  const Mi = M/nkai, Oi = (Mi + num(c.plus))/60;
+  const Mi = M/nkai, Oi = (Mi + mudaByo(c))/60;
   const Ri = bai>0 ? num(c.flow)*Oi/bai : 0;
   const Di = f.n100 && num(c.area) ? Ri*10*f.n100/num(c.area) : 0;
   return Di*nkai;
@@ -625,7 +675,7 @@ function baiFromNweek(c, f, nkai, nweek, vclear){
   if(!(num(c.flow)>0) || !(num(c.area)>0)) return 0;
   // 快晴の日に必要な運転時間。1回ぶんに分けて立ち上がりの上乗せを足す。
   const M = vclear*num(c.area)/num(c.flow)*60;
-  const Oi = (M/nkai + num(c.plus))/60;
+  const Oi = (M/nkai + mudaByo(c))/60;
   const nday = nweek/7;                              // 快晴の日に入れたいN量
   const Rday = nday*num(c.area)/1000/f.n100*100;     // 1日の液肥量 [L]
   const Ri = Rday/nkai;
@@ -637,7 +687,7 @@ function nweekFromBai(c, f, nkai, bai, vclear){
   if(!(bai>0) || !(vclear>0)) return 0;
   if(!(num(c.flow)>0) || !(num(c.area)>0)) return 0;
   const M = vclear*num(c.area)/num(c.flow)*60;
-  const Oi = (M/nkai + num(c.plus))/60;
+  const Oi = (M/nkai + mudaByo(c))/60;
   const Ri = num(c.flow)*Oi/bai;
   const Di = f.n100 && num(c.area) ? Ri*10*f.n100/num(c.area) : 0;
   return Di*nkai*7;
@@ -666,7 +716,7 @@ function joosanFromHyo(curve, e){
 /** 1回ぶん。倍率 T0 は固定、N量は追随する */
 function kaiCalc(c, f, T0, e, pOver){
   const { M, V } = need(c, e);
-  const P = has(pOver) ? num(pOver) : (M>0 ? M+num(c.plus) : 0);
+  const P = has(pOver) ? num(pOver) : (M>0 ? M+mudaByo(c) : 0);
   const O = P/60;
   const R = T0>0 ? num(c.flow)*O/T0 : 0;                          // 液肥量 L
   const D = f.n100 && num(c.area) ? R*10*f.n100/num(c.area) : 0;  // N量 kg/10a
@@ -706,15 +756,20 @@ function hiNoKeisan(house, date){
   const nkai = Math.min(Math.max(Math.round(num(d.nkai))||1,1),MAXKAI);
   const T0 = num(d.bai);
   const yoteiE = num(d.eday)/nkai;             // 朝の予定（1回ぶんの日射）
-  const plus = num(c.plus);
+  const muda = mudaByo(c);     // 作物に届かない秒数。ふだんは 0
 
-  /* その回の水 [L/㎡] から運転時間 [秒] を出す。
-     ★「潅水量」は昔から立ち上がりの上乗せを含めない量を指している。
-       数字の意味を変えると追肥管理への転記がずれるので、そのままにする。 */
+  /* 水 [L/㎡] と運転時間 [秒] の行き来。
+     ★2026-10-01 に定義をそろえた。
+       「潅水量」は **管を通って作物に届いた水の全部**。
+       立ち上がりの水も、弁を閉じたあと点滴から抜けて土に落ちるので届く。
+       N量も運転時間から出しているので、これで水とNの基準が同じになり、
+       濃度が 10 × n100 ÷ 倍率 ちょうどになる（以前は12%ずれていた）。
+     ★この変更で「1日の潅水量」は約12%大きく出る。
+       作業日誌へ転記する数字の意味が変わるので、切り替え日を控えておくこと。 */
   const mizuToByo = v => (num(c.flow)>0 && num(c.area)>0)
-                       ? v*num(c.area)/num(c.flow)*60 : 0;
+                       ? v*num(c.area)/num(c.flow)*60 + muda : 0;
   const byoToMizu = sec => (num(c.area)>0)
-                         ? num(c.flow)*(Math.max(sec-plus,0)/60)/num(c.area) : 0;
+                         ? num(c.flow)*(Math.max(sec-muda,0)/60)/num(c.area) : 0;
 
   // --- 1日の見込み日射 ---
   const es = [];
@@ -751,8 +806,7 @@ function hiNoKeisan(house, date){
   for(let i=0;i<nkai;i++){
     const row = d.rows[i] || {e:"",p:""};
     const kakuteiKai = has(row.p);
-    const sec = kakuteiKai ? num(row.p)
-                           : (perV>0 ? mizuToByo(perV)+plus : 0);
+    const sec = kakuteiKai ? num(row.p) : (perV>0 ? mizuToByo(perV) : 0);
     const V = kakuteiKai ? byoToMizu(sec) : perV;
     const O = sec/60;
     const R = T0>0 ? num(c.flow)*O/T0 : 0;                          // 液肥量 L
@@ -873,8 +927,12 @@ function settoWoModosu(){
     if(!ks.length) continue;
 
     const conf = state.days[ks[ks.length-1]].saved.conf || {};
-    for(const k of ["flow","need","area","coef","film","plus"])
+    for(const k of ["flow","need","area","coef","film","plus","fillL","fillReach"])
       if(conf[k] !== undefined && conf[k] !== "") state.set[h][k] = conf[k];
+    // 古い記録には fillL が無い。上乗せの秒数から読み替える。
+    if(!has(state.set[h].fillL)){
+      state.set[h].fillL = num(state.set[h].plus)*num(state.set[h].flow)/60;
+    }
     if(conf.fert) Object.assign(state.fert[h], conf.fert);
   }
 }
@@ -1044,9 +1102,33 @@ function render(){
 
   setVal("#i-fert",fg.fert); setVal("#i-bags",fg.bags); setVal("#i-made",fg.made);
   setVal("#i-flow",c.flow); setVal("#i-need",c.need); setVal("#i-area",c.area);
-  setVal("#i-coef",c.coef); setVal("#i-film",c.film); setVal("#i-plus",c.plus);
+  setVal("#i-coef",c.coef); setVal("#i-film",c.film);
+  // 古い設定から読み替えた値は 233.33333… のような端数になる。桁を落として見せる。
+  setVal("#i-fill", has(c.fillL) ? Math.round(num(c.fillL)*10)/10 : "");
+  setVal("#i-reach", c.fillReach === false ? "0" : "1");
+  const tachiByo = tachiagariByo(c);
+  $("#fillu").textContent =
+    `L ＝ ${hms(tachiByo)}（流量 ${fmt(num(c.flow),0)} L/min のとき）`;
+  // 昔のやり方（毎回足す）だと、1日でどれだけ余分に出ていたか
+  const mukashiL = num(c.fillL)*nkai;                       // ハウス全体 [L]
+  const mukashi = num(c.area)>0 ? mukashiL/num(c.area) : 0; // [L/㎡]
+  $("#fillnote").innerHTML = c.fillReach === false
+    ? `立ち上がりの ${fmt(num(c.fillL),0)} L は作物に届かないものとして、`
+      + `1回ごとに ${fmt(tachiByo,0)} 秒を足しています。`
+      + `その水は「潅水量」に数えません。`
+    : `弁を閉じたあと管の水が点滴から抜けて土に落ちるので、`
+      + `立ち上がりの ${fmt(num(c.fillL),0)} L も遅れて作物に届きます。`
+      + `1サイクルで見れば「土に入る水 ＝ 流量 × 運転時間」なので、`
+      + `<b>運転時間には足しません</b>。`
+      + `以前は毎回 ${fmt(tachiByo,0)} 秒足していたので、`
+      + `1日 ${nkai} 回なら <b>${fmt(mukashi,2)} L/㎡</b>`
+      + `（${fmt(mukashiL,0)} L）余分に出ていました。`
+      + `2026-10-01 に直したので、ここから「1日の潅水量」は大きく出ます。`;
   $("#fsum").textContent = `${fg.fert}　${fg.bags}袋 / ${fg.made}L`;
-  $("#ssum").textContent = `${fmt(num(c.flow),0)} L/min ・ ${fmt(num(c.area),0)} ㎡ ・ 係数 ${fmt(num(c.coef),1)}`;
+  $("#ssum").textContent =
+    `${fmt(num(c.flow),0)} L/min ・ ${fmt(num(c.area),0)} ㎡ ・ `
+    + `係数 ${fmt(num(c.coef),1)} ・ 立ち上がり ${fmt(num(c.fillL),0)} L`
+    + (c.fillReach === false ? "（足す）" : "（足さない）");
   $("#fert-out").innerHTML =
       o("肥料の量",fmt(f.ryo,1),"kg") + o("溶かす水",fmt(f.mizu,0),"L")
     + o("含有N量",fmt(f.m.n*100,1),"％") + o("液肥N量",fmt(f.n100,3),"kg/100L")
@@ -1181,7 +1263,12 @@ function render(){
     + o("日射（外・近似）", fmt(jSoto,1), "MJ/㎡", "hi");
   $("#usenote").innerHTML =
     `使用量 ＝ ハウス全体のN量 ${fmt(zenN,3)} kg ÷ 含有N率 ${fmt(f.m.n*100,1)}％。`
-    + `　肥料を変えるときは「液肥のもと」で選びなおしてください。`;
+    + `　肥料を変えるときは「液肥のもと」で選びなおしてください。<br>`
+    + `<b>2026-10-01 に「1日の潅水量」の意味を変えました。</b>`
+    + `立ち上がりの水も作物に届くので、いまは<b>管を通った水の全部</b>です`
+    + `（以前は立ち上がりぶんを除いていました）。`
+    + `水とN量の基準がそろったので、N濃度は `
+    + `${fmt(T0>0 ? 10*f.n100/T0*1000 : 0,1)} ppm ちょうどになります。`;
 
   // ---- 1週間のN量の着地 ----
   // 倍率は動かさない方針なので、足りないときは「足りない」と出すだけにする。
@@ -1400,9 +1487,13 @@ function wire(){
     $(s).addEventListener("input", e=>{ ferg()[k]=e.target.value; render(); });
 
   const setMap = { "#i-flow":"flow","#i-need":"need","#i-area":"area",
-                   "#i-coef":"coef","#i-film":"film","#i-plus":"plus" };
+                   "#i-coef":"coef","#i-film":"film","#i-fill":"fillL" };
   for(const [s,k] of Object.entries(setMap))
     $(s).addEventListener("input", e=>{ setg()[k]=e.target.value; render(); });
+  // 立ち上がりの水が作物に届くか。届くなら運転時間に足さない
+  $("#i-reach").addEventListener("change", e=>{
+    setg().fillReach = e.target.value === "1"; save(); render();
+  });
 
   /* 欄から離れたら、もう一度えがき直して形を整える。
      打っている最中は setVal() が書き戻しを控えているので、
