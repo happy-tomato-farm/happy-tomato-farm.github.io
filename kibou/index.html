@@ -162,6 +162,8 @@ footer{
   font-variant-numeric:tabular-nums; line-height:1.4}
 .seg button.sel{background:var(--teal); border-color:var(--teal); color:var(--on-teal)}
 .seg button.sel.rest{background:var(--faint); border-color:var(--faint); color:var(--card)}
+/* 未定。休みとも勤務とも別ものだと、色で分かるようにする */
+.seg button.sel.mitei{background:var(--sun); border-color:var(--sun); color:var(--card)}
 /* 時間のボタンが2つならぶ人は場所が足りないので、両はしを細くする */
 .seg button.narrow{flex:0 0 auto; padding-left:9px; padding-right:9px}
 .rdet{font-size:11px; color:var(--muted); font-weight:700; margin:6px 0 0 60px;
@@ -203,6 +205,8 @@ footer{
   color:var(--on-teal); font-weight:800; font-size:15.5px; padding:13px; cursor:pointer}
 .sheet .alt{width:100%; margin-top:9px; border:1px solid var(--line); background:var(--card);
   color:var(--muted); border-radius:12px; font-weight:700; font-size:14.5px; padding:12px; cursor:pointer}
+.sheet .alt.cur{border-color:var(--sun); color:var(--ink)}
+.sum .mitei{color:var(--sun)}
 .warn{background:var(--tomato-soft); color:var(--tomato); border-radius:10px; padding:9px 12px;
   font-size:12.5px; font-weight:700; line-height:1.6; margin-top:10px}
 
@@ -298,7 +302,7 @@ footer{
   <main id="main" hidden></main>
 
   <footer id="foot" hidden>
-    <div class="sum"><span>出る日</span><span><b id="sumD">0</b> 日／実働 <b id="sumH">0:00</b></span></div>
+    <div class="sum"><span>出る日</span><span><b id="sumD">0</b> 日／実働 <b id="sumH">0:00</b><b class="mitei" id="sumM"></b></span></div>
     <button class="send" id="btnSend">この内容で出す</button>
   </footer>
 </div>
@@ -316,6 +320,8 @@ footer{
   <div class="freeout" id="fOut">　</div>
   <div id="fWarn"></div>
   <button class="ok" id="fOk">この時間にする</button>
+  <!-- 出るかどうか決めきれない日のためのもの。休みとは分けて伝わります -->
+  <button class="alt" id="fMitei">まだ決まっていない（未定）</button>
   <button class="alt" id="fRest">この日は休む</button>
 </div></div>
 
@@ -380,6 +386,15 @@ function fmt(m){ return Math.floor(m/60) + ":" + ("0" + (m % 60)).slice(-2); }
 
 /* 時間の書き方が「09:00-14:30」の形になっているか */
 function tadashiiPat(p){ return /^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/.test(String(p || "")); }
+
+/* 「まだ決まっていない」日をあらわす値。
+   1日ぶんの値は3とおりです。
+     null      … 休み
+     "09:00-…" … その時間に出る
+     "未定"    … 出るかどうか、まだ決まっていない
+   未定の日は実働が分からないので、日数にも時間の合計にも入れません。 */
+var MITEI = "未定";
+function miteiKa(p){ return String(p || "") === MITEI; }
 
 /* 「09:00-14:30」を「9:00–14:30」の形にします（画面に出す用）。
    設定シートの書き方が崩れていても画面が止まらないよう、そのまま返します。 */
@@ -537,11 +552,15 @@ function ensure(){
 }
 
 function totals(){
-  var st = ensure(), hito = hitoOf(who), days = 0, m = 0;
+  var st = ensure(), hito = hitoOf(who), days = 0, m = 0, mitei = 0;
   Object.keys(st.days).forEach(function(d){
-    if (st.days[d]){ days++; m += workMin(hito, st.days[d]); }
+    var pat = st.days[d];
+    if (!pat) return;                      // 休み
+    if (miteiKa(pat)){ mitei++; return; }  // 未定は、時間が分からないので数えません
+    days++;
+    m += workMin(hito, pat);
   });
-  return { days: days, mins: m };
+  return { days: days, mins: m, mitei: mitei };
 }
 
 /* ====================================================================
@@ -837,16 +856,23 @@ function jikanWoErabu(day){
     box.appendChild(b);
   });
 
-  var moto = String(ima || hito.usual).split("-");
+  // 未定のときは時間として読めないので、いつもの時間を出しておきます
+  var moto = String((tadashiiPat(ima) ? ima : hito.usual)).split("-");
   fS.value = moto[0]; fE.value = moto[1];
   freeWoMiseru();
 
   $("fOk").onclick = function(){
     st.days[day] = freePat(); shTime.classList.remove("open"); kaku();
   };
+  $("fMitei").onclick = function(){
+    st.days[day] = MITEI; shTime.classList.remove("open"); kaku();
+  };
   $("fRest").onclick = function(){
     st.days[day] = null; shTime.classList.remove("open"); kaku();
   };
+
+  // いま未定なら、そのボタンが選ばれていると分かるようにします
+  $("fMitei").className = "alt" + (miteiKa(ima) ? " cur" : "");
 
   shTime.classList.add("open");
 }
@@ -871,7 +897,10 @@ function kakuninWoDasu(){
   var html =
     '<div><span class="k">期間</span><b>' + p.label + '</b></div>' +
     '<div><span class="k">出る日</span><b>' + t.days + ' 日</b></div>' +
-    '<div><span class="k">実働の合計</span><b>' + fmt(t.mins) + '</b></div>';
+    '<div><span class="k">実働の合計</span><b>' + fmt(t.mins) + '</b></div>' +
+    (t.mitei
+      ? '<div><span class="k">未定の日</span><b>' + t.mitei + ' 日</b></div>'
+      : '');
 
   if (st.memo){
     var yasashii = st.memo.replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -1012,21 +1041,29 @@ function kaku(){
       seg.appendChild(b);
     });
 
-    // それ以外の時間。ボタンが2つあるときは場所が足りないので「他」と短くする
+    // それ以外の時間。ボタンが2つあるときは場所が足りないので「他」と短くする。
+    // 未定もここに出ます（1タップのボタンには無い値なので hoka になります）
     var hoka = (pat && quick.indexOf(pat) < 0);
     var bO = document.createElement("button");
     bO.type = "button";
     if (hoka)                  bO.textContent = label(pat);
     else if (quick.length > 1) bO.textContent = "他";
     else                       bO.textContent = "別の時間";
-    bO.className = (hoka ? "sel" : "") + (quick.length > 1 && !hoka ? " narrow" : "");
+    bO.className = (hoka ? "sel" : "") +
+                   (miteiKa(pat) ? " mitei" : "") +
+                   (quick.length > 1 && !hoka ? " narrow" : "");
     bO.onclick = function(){ jikanWoErabu(x.d); };
     seg.appendChild(bO);
 
     top.appendChild(seg);
     row.appendChild(top);
 
-    if (pat){
+    if (miteiKa(pat)){
+      var detM = document.createElement("div");
+      detM.className = "rdet";
+      detM.innerHTML = "出るかどうか、まだ決まっていません（時間はあとで決めます）";
+      row.appendChild(detM);
+    } else if (pat){
       var rs = restsOf(hito, pat);
       var det = document.createElement("div");
       det.className = "rdet";
@@ -1056,6 +1093,7 @@ function kaku(){
   var t = totals();
   $("sumD").textContent = t.days;
   $("sumH").textContent = fmt(t.mins);
+  $("sumM").textContent = t.mitei ? "／未定 " + t.mitei + "日" : "";
 
   jotaiWoKaku();
 
