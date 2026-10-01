@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -182,6 +182,7 @@ details.fold[open] > summary .hint::after{content:"　▲"}
   padding:10px 18px;border:2px solid var(--aqua);background:var(--aqua);color:#fff;cursor:pointer;
 }
 .btn.ghost{background:none;color:var(--aqua)}
+.btn:disabled{opacity:.45;cursor:default}
 .btn:focus-visible{outline:3px solid var(--aqua);outline-offset:2px}
 .mini{font-family:inherit;font-size:11.5px;font-weight:800;color:var(--aqua);
       background:none;border:none;border-bottom:1.5px solid currentColor;cursor:pointer;padding:0}
@@ -254,39 +255,39 @@ details.fold[open] > summary .hint::after{content:"　▲"}
       <div class="grid">
         <div class="f">
           <label for="i-eday">1日の日射予測</label>
-          <input id="i-eday" type="number" step="0.5" inputmode="decimal">
+          <input id="i-eday" type="text" inputmode="decimal">
           <span class="u">MJ/㎡（ハウスセンサーの値）</span>
         </div>
         <div class="f">
           <label for="i-need">10MJあたり潅水量</label>
-          <input id="i-need" type="number" step="0.1" inputmode="decimal">
+          <input id="i-need" type="text" inputmode="decimal">
           <span class="u">L/㎡（実質日射 10MJ/㎡ に対して）</span>
         </div>
         <div class="f">
           <label for="i-nkai">潅水の回数</label>
-          <input id="i-nkai" type="number" step="1" min="1" max="7" inputmode="numeric">
+          <input id="i-nkai" type="text" inputmode="numeric">
           <span class="u">回</span>
         </div>
         <div class="f linked" id="f-nweek">
           <label for="i-nweek">1週間で使いたいN量</label>
-          <input id="i-nweek" type="number" step="0.01" inputmode="decimal">
+          <input id="i-nweek" type="text" inputmode="decimal">
           <span class="u">kg/10a（快晴が7日つづいた場合の量）</span>
-        </div>
-        <div class="f" id="f-vclear">
-          <label for="i-vclear">基準の潅水量（快晴の日）</label>
-          <input id="i-vclear" type="number" step="0.01" inputmode="decimal">
-          <span class="u">L/㎡　めやすアプリから受け取る</span>
         </div>
         <div class="f linked" id="f-nday">
           <label for="i-nday">1日に流したいN量</label>
-          <input id="i-nday" type="number" step="0.001" inputmode="decimal">
+          <input id="i-nday" type="text" inputmode="decimal">
           <span class="u">kg/10a</span>
         </div>
         <div class="f linked" id="f-bai">
           <label for="i-bai">設定倍率</label>
-          <input id="i-bai" type="number" step="1" inputmode="decimal">
+          <input id="i-bai" type="text" inputmode="decimal">
           <span class="u">倍（薄くしたいときはここを上げる）</span>
         </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <button class="btn ghost" id="maemodosu" type="button">前回の実績を入れる</button>
+        <p class="foot" id="maenote" style="margin-top:6px"></p>
       </div>
 
       <div class="nissha">
@@ -336,9 +337,9 @@ details.fold[open] > summary .hint::after{content:"　▲"}
         <div class="grid">
           <div class="f"><label for="i-fert">使用する肥料</label><select id="i-fert"></select></div>
           <div class="f"><label for="i-bags">袋数</label>
-            <input id="i-bags" type="number" step="1" min="0" inputmode="decimal"><span class="u">袋</span></div>
+            <input id="i-bags" type="text" inputmode="decimal"><span class="u">袋</span></div>
           <div class="f"><label for="i-made">出来上がり量</label>
-            <input id="i-made" type="number" step="10" min="1" inputmode="decimal"><span class="u">L</span></div>
+            <input id="i-made" type="text" inputmode="decimal"><span class="u">L</span></div>
         </div>
         <div class="outs" id="fert-out"></div>
       </div>
@@ -354,15 +355,15 @@ details.fold[open] > summary .hint::after{content:"　▲"}
       <div class="sec-body">
         <div class="grid">
           <div class="f"><label for="i-flow">流量</label>
-            <input id="i-flow" type="number" step="1" inputmode="decimal"><span class="u">L/min</span></div>
+            <input id="i-flow" type="text" inputmode="decimal"><span class="u">L/min</span></div>
           <div class="f"><label for="i-area">面積</label>
-            <input id="i-area" type="number" step="10" inputmode="decimal"><span class="u">㎡</span></div>
+            <input id="i-area" type="text" inputmode="decimal"><span class="u">㎡</span></div>
           <div class="f"><label for="i-coef">日射センサーの係数</label>
-            <input id="i-coef" type="number" step="0.1" inputmode="decimal"><span class="u">実質日射＝日射×10÷係数</span></div>
+            <input id="i-coef" type="text" inputmode="decimal"><span class="u">実質日射＝日射×10÷係数</span></div>
           <div class="f"><label for="i-film">フィルム劣化の減衰</label>
-            <input id="i-film" type="number" step="0.01" inputmode="decimal"><span class="u">1で劣化なし</span></div>
+            <input id="i-film" type="text" inputmode="decimal"><span class="u">1で劣化なし</span></div>
           <div class="f"><label for="i-fill">立ち上がりの容積</label>
-            <input id="i-fill" type="number" step="10" inputmode="decimal">
+            <input id="i-fill" type="text" inputmode="decimal">
             <span class="u" id="fillu">L（配管とチューブが満ちるまで）</span></div>
           <div class="f"><label for="i-reach">立ち上がりの水</label>
             <select id="i-reach">
@@ -460,7 +461,6 @@ const KITEI_DAY  = { eday:15, nkai:3, nday:0.126, bai:null, nweek:null,
                      curve:null,        // 日射ごとの蒸散量 [L/㎡] の表
                      curveDate:null,    // その表を作った日付
                      leach:null,        // 塩を流すための上乗せ [%]
-                     vclear:null,       // 快晴の日の合計潅水量 [L/㎡]
                      rows:Array.from({length:MAXKAI},()=>({e:"",p:""})) };
 
 const $  = s => document.querySelector(s);
@@ -588,7 +588,7 @@ function dayOf(house, date, tsukuru){
          快晴の潅水量は季節でゆっくり動くので、引き継いだうえで直せる形にする。 */
       moto = { eday:mae.eday, nkai:mae.nkai, nday:mae.nday, bai:mae.bai,
                nweek:mae.nweek, master:mae.master,
-               vclear:mae.vclear, leach:mae.leach };
+               leach:mae.leach };
       /* 表だけは古くなりすぎたら引き継がない（CURVE_MAX_AGE_DAYS 参照）。
          捨てた日は昔ながらの直線計算に戻るので、壊れはしない。 */
       if(mae.curve && mae.curveDate &&
@@ -644,54 +644,28 @@ function nFromBai(c, f, eday, nkai, bai){
 }
 
 /* ---------------------------------------------------------------------
-   1週間で使いたいN量から設定倍率を出す
+   1週間で使いたいN量
    ---------------------------------------------------------------------
-   【考え方】
-   設定倍率は、そのまま「水に混ざるN の濃さ」である。
+       週N量 ÷ 7 ＝ 1日N量
+
+   「1週間 快晴がつづいたらこの量を入れる」を1日に直しただけ。
+   そのあとは 1日N量 → 設定倍率 の既存の経路（baiFromN）に乗せる。
+
+   【★EC は日射で動くことを知っておくこと】
+   設定倍率は、そのまま「水に混ざるNの濃さ」である。
 
        潅水水中のN濃度 ＝ 10 × n100 ÷ 設定倍率
 
-   日射・回数・流量・面積・灌水時間は、この式から全部消える。
-   だから倍率をひとつ決めれば EC は一日中、一週間ずっと一定になる。
-
-   【★基準は「快晴の日の潅水量」。今日の予報で割ってはいけない】
-   今日の日射で割ると、曇った日に液肥が濃くなりすぎる。
-   1日N量を 0.126 kg/10a に固定したまま日射だけ変えると、
+   1日N量を固定したまま日射だけ変えると、水が減るぶん濃くなる。
 
        日射 15MJ →  17.0 ppm（基準）
        日射  8MJ →  30.4 ppm（1.79倍）
        日射  4MJ →  55.4 ppm（3.26倍）
        日射  2MJ →  94.2 ppm（5.55倍）
 
-   快晴基準にしておけば、曇った日は水が少ないぶんNも自動で減る。
-   平年なみの週だと週N量の 5〜9割の着地になる（9月 49%・12月 87%）。
-   これは意図どおり：日射が無い週は成長もしないので肥料も要らない。
-   足りているかは「直近7日の実績」で見る。倍率は動かさない。
+   暗い日は潅水そのものを止めることが多いので実害は出にくいが、
+   曇りの日に同じN量を入れると濃くなる。画面に ppm を出して見えるようにした。
    --------------------------------------------------------------------- */
-
-/** 週N量 [kg/10a] から設定倍率を出す。vclear は快晴の日の合計潅水量 [L/㎡]。 */
-function baiFromNweek(c, f, nkai, nweek, vclear){
-  if(!(nweek>0) || !(vclear>0) || !f.n100) return 0;
-  if(!(num(c.flow)>0) || !(num(c.area)>0)) return 0;
-  // 快晴の日に必要な運転時間。1回ぶんに分けて立ち上がりの上乗せを足す。
-  const M = vclear*num(c.area)/num(c.flow)*60;
-  const Oi = (M/nkai + mudaByo(c))/60;
-  const nday = nweek/7;                              // 快晴の日に入れたいN量
-  const Rday = nday*num(c.area)/1000/f.n100*100;     // 1日の液肥量 [L]
-  const Ri = Rday/nkai;
-  return Ri>0 ? num(c.flow)*Oi/Ri : 0;
-}
-
-/** 倍率が主のとき、週N量を逆算 */
-function nweekFromBai(c, f, nkai, bai, vclear){
-  if(!(bai>0) || !(vclear>0)) return 0;
-  if(!(num(c.flow)>0) || !(num(c.area)>0)) return 0;
-  const M = vclear*num(c.area)/num(c.flow)*60;
-  const Oi = (M/nkai + mudaByo(c))/60;
-  const Ri = num(c.flow)*Oi/bai;
-  const Di = f.n100 && num(c.area) ? Ri*10*f.n100/num(c.area) : 0;
-  return Di*nkai*7;
-}
 
 /** 表を直線で結んで、その日射の蒸散量を読む [L/㎡]。表が無ければ null。
 
@@ -826,6 +800,22 @@ function hiNoKeisan(house, date){
            perV, dashisugi, kais, V, D, R, P };
 }
 
+/** そのハウスで、その日より前の「記録してある」いちばん新しい日を返す。
+
+    めやすアプリの値は目安で、実際は作物の大きさを見て加減する。
+    とくに秋は苗が小さく、計画どおりの葉枚数が無いのでモデルが大きめに出る。
+    そういうときに「前回どう出したか」を戻せるようにしておく。 */
+function maeNoKiroku(house, date){
+  const keys = Object.keys(state.days)
+    .filter(k => k.startsWith(house+"|")
+              && k.split("|")[1] < date
+              && state.days[k].saved)
+    .sort();
+  if(!keys.length) return null;
+  const k = keys[keys.length-1];
+  return { date: k.split("|")[1], rec: state.days[k].saved };
+}
+
 /** そのハウスの、直近7日に実際に入ったN量 [kg/10a]。記録してある日だけ数える。 */
 function nanokaNoN(house, date){
   let total = 0, days = 0;
@@ -861,7 +851,7 @@ function matome(house, date){
     Vday: r.Vday,                               // モデルが言う1日の必要量 L/㎡
     hyo: r.hyo,                                 // 表を使って出したか
     "in": { eday:dd.eday, nkai:nkai, nday:dd.nday, bai:dd.bai, master:dd.master,
-            nweek:dd.nweek, vclear:dd.vclear, leach:dd.leach,
+            nweek:dd.nweek, leach:dd.leach,
             curve:dd.curve, curveDate:dd.curveDate,
             rows: dd.rows.slice(0,nkai) },
     conf: Object.assign({}, c, { fert:{ fert:fg.fert, bags:fg.bags, made:fg.made } }),
@@ -965,7 +955,6 @@ async function pull(){
         master: inn.master || "n",
         // 週N量とめやすアプリから来た値。古い記録には入っていないので ?? で受ける。
         nweek:  inn.nweek ?? null,
-        vclear: inn.vclear ?? null,
         leach:  inn.leach ?? null,
         curve:  Array.isArray(inn.curve) ? inn.curve : null,
         curveDate: inn.curveDate ?? null,
@@ -1002,12 +991,12 @@ function drawKaiFrames(){
         <div class="grid" style="margin-top:11px">
           <div class="f">
             <label for="ke${i}">この回の日射量</label>
-            <input id="ke${i}" data-i="${i}" data-k="e" type="number" step="0.1" inputmode="decimal">
+            <input id="ke${i}" data-i="${i}" data-k="e" type="text" inputmode="decimal">
             <span class="u" id="keu${i}">MJ/㎡</span>
           </div>
           <div class="f">
             <label for="kp${i}">実際の灌水時間</label>
-            <input id="kp${i}" data-i="${i}" data-k="p" type="number" step="1" inputmode="decimal">
+            <input id="kp${i}" data-i="${i}" data-k="p" type="text" inputmode="decimal">
             <span class="u" id="kpu${i}">秒</span>
           </div>
         </div>
@@ -1034,9 +1023,11 @@ const o = (k,v,u,cls) => `<div class="o"><span class="k">${k}</span>
 
 /* 入力欄へ値を書き戻す。ただし【いま打っている欄には書き戻さない】。
 
-   type="number" の欄は、打ちかけの「0.」を"数として正しくない"とみなし、
-   JavaScript から読むと空文字が返る（HTML の決まりごと）。
-   そこへ書き戻すと、打った文字ごと消えて小数点が入力できなくなる。
+   打ちかけの「0.」に書き戻すと、打った文字ごと消えてしまう。
+   （2026-10-01 に type="number" をやめた。上下の矢印が指で動いてしまうのと、
+     打ちかけの「0.」を不正な数として空文字で返す決まりがあったため。
+     いまは type="text" + inputmode なので後者は起きないが、
+     打っている最中に書き戻さない作りはそのまま残してある。）
 
    打ち終わって欄から離れたときに render() をもう一度呼ぶので、
    そのときに正しい形へ整えられる。 */
@@ -1070,35 +1061,44 @@ function render(){
   //
   // どれを打っても残りが追随する。打った欄が「主」になる（d.master）。
   //
-  // ★週N量が主のときは、倍率を【快晴の日の潅水量】から決める。
-  //   今日の予報は使わない。今日の日射で割ると、曇った日に液肥が
-  //   5倍以上濃くなる（上の baiFromNweek のコメント参照）。
-  //   快晴基準にしておけば EC は一日中・一週間ずっと一定になる。
-  const vclear = num(d.vclear);
-  const nweekTsukaeru = d.master === "nweek" && has(d.nweek) && vclear > 0;
-  if(nweekTsukaeru){
-    d.bai  = baiFromNweek(c, f, nkai, num(d.nweek), vclear);
-    d.nday = nFromBai(c, f, num(d.eday), nkai, num(d.bai));
+  //     週N量 ÷ 7 ＝ 1日N量 → 今日の日射と回数から 設定倍率
+  //
+  // 「1週間快晴がつづいたらこの量を入れる、を1日に直す」という考え方を
+  // そのまま式にしたもの。ほかの入力に紐づかない欄は置かない。
+  if(d.master === "nweek" && has(d.nweek)){
+    d.nday = num(d.nweek)/7;
+    d.bai  = baiFromN(c, f, num(d.eday), nkai, num(d.nday));
   }else if(d.master === "bai" && has(d.bai)){
-    d.nday = nFromBai(c, f, num(d.eday), nkai, num(d.bai));
-    if(vclear > 0) d.nweek = nweekFromBai(c, f, nkai, num(d.bai), vclear);
+    d.nday  = nFromBai(c, f, num(d.eday), nkai, num(d.bai));
+    d.nweek = num(d.nday)*7;
   }else{
-    d.bai = baiFromN(c, f, num(d.eday), nkai, num(d.nday));
-    if(vclear > 0) d.nweek = nweekFromBai(c, f, nkai, num(d.bai), vclear);
+    d.bai   = baiFromN(c, f, num(d.eday), nkai, num(d.nday));
+    d.nweek = num(d.nday)*7;
   }
   const T0 = num(d.bai);
 
   setVal("#i-eday", d.eday); setVal("#i-nkai", nkai);
-  setVal("#i-nweek",  has(d.nweek)  ? fmt(num(d.nweek),3) : "");
-  setVal("#i-vclear", has(d.vclear) ? fmt(vclear,2)       : "");
+  setVal("#i-nweek", fmt(num(d.nweek),3));
   setVal("#i-nday", fmt(num(d.nday),4));
   setVal("#i-bai",  fmt(T0,0));
   $("#f-nweek").classList.toggle("master", d.master==="nweek");
   $("#f-nday").classList.toggle("master",  d.master==="n");
   $("#f-bai").classList.toggle("master",   d.master==="bai");
-  // 週N量を主にしたのに基準の潅水量が無いと計算できない。黙って別の式に
-  // すり替わると気づけないので、そのことを言う。
-  $("#f-vclear").classList.toggle("master", d.master==="nweek" && !(vclear>0));
+
+  // ---- 前回の実績（ボタンで入れられる中身を先に見せる）----
+  const mae = maeNoKiroku(state.house, state.date);
+  $("#maemodosu").disabled = !mae;
+  $("#maenote").innerHTML = mae
+    ? `${state.house}の前回の記録は <b>${mae.date}</b>　`
+      + `10MJあたり <b>${fmt(num((mae.rec.conf||{}).need),2)}</b> L/㎡　／　`
+      + `潅水量 <b>${fmt(num(mae.rec.V),2)}</b> L/㎡　／　`
+      + `<b>${fmt(num(mae.rec.nkai),0)}</b> 回　／　`
+      + `N <b>${fmt(num(mae.rec.D),4)}</b> kg/10a<br>`
+      + `押すと中央・東それぞれの直近の記録から`
+      + `「10MJあたり潅水量・回数・N量」を入れます`
+      + `（日射予測は今日の天気のものなので入れ替えません）。`
+    : `${state.house}の前の記録がまだありません。`
+      + `「この日を記録する」を押すと、次から前回の値を戻せます。`;
 
   setVal("#i-fert",fg.fert); setVal("#i-bags",fg.bags); setVal("#i-made",fg.made);
   setVal("#i-flow",c.flow); setVal("#i-need",c.need); setVal("#i-area",c.area);
@@ -1156,7 +1156,14 @@ function render(){
   // ---- 朝の予定（均等割り）----
   const yoteiE = num(d.eday)/nkai;
   const yotei  = kaiCalc(c,f,T0,yoteiE,null);
-  $("#v-bai").innerHTML   = T0>0 ? `${fmt(T0,0)}<small>倍</small>` : "—";
+  /* 倍率はそのまま「水に混ざるNの濃さ」。
+     濃度 ＝ 10 × n100 ÷ 倍率 で、日射も回数も流量も式から消える。
+     日射が少ない日に同じN量を入れると濃くなるので、見えるように並べて出す。 */
+  const ppm = T0>0 ? 10*f.n100/T0*1000 : 0;
+  $("#v-bai").innerHTML = T0>0
+    ? `${fmt(T0,0)}<small>倍</small>`
+      + `<br><small>水の中のN ${fmt(ppm,1)} ppm</small>`
+    : "—";
   $("#v-jikan").innerHTML = yotei.P>0 ? hms(yotei.P) : "—";
 
   // ---- 1分あたり液肥量の余裕 ----
@@ -1271,20 +1278,20 @@ function render(){
     + `${fmt(T0>0 ? 10*f.n100/T0*1000 : 0,1)} ppm ちょうどになります。`;
 
   // ---- 1週間のN量の着地 ----
-  // 倍率は動かさない方針なので、足りないときは「足りない」と出すだけにする。
+  // 不足を見せるだけにして、こちらから倍率は動かさない。
   // 追いつかせようとして倍率を上げると EC が上がり、塩類集積の危険が増える。
   const nw = nanokaNoN(state.house, state.date);
   if(has(d.nweek) && num(d.nweek)>0){
     const mokuhyo = num(d.nweek);
     $("#nweeknote").innerHTML =
-        `<b>1週間のN量</b>　目標 ${fmt(mokuhyo,3)} kg/10a に対して、`
+        `<b>1週間のN量</b>　目標 ${fmt(mokuhyo,3)} kg/10a`
+      + `（＝1日 ${fmt(mokuhyo/7,4)}、快晴が7日つづいた場合）に対して、`
       + `記録のある直近7日（${nw.days}日ぶん）の合計は `
       + `<b>${fmt(nw.total,3)}</b> kg/10a`
       + `（${fmt(nw.total/mokuhyo*100,0)}％）。`
-      + `　曇った日は水が少ないぶんNも減ります。`
-      + `平年なみの週なら5〜9割の着地がふつうです`
-      + `（9月 49%・12月 87%）。`
-      + `<b>倍率は動かしません</b>（EC を一定に保つため）。`;
+      + `　潅水を止めた日はNも入らないので、目標に届かないのがふつうです。`
+      + `足りないと思ったときだけ、1日N量か週N量を手で上げてください`
+      + `（こちらからは動かしません）。`;
   }else{
     $("#nweeknote").innerHTML =
       `「1週間で使いたいN量」を入れると、ここに直近7日の実績とのくらべが出ます。`;
@@ -1342,9 +1349,12 @@ function drawRecs(){
      need    10MJあたり潅水量 [L/㎡]
      eday    日射予測（ハウスセンサー基準）[MJ/㎡]
      leach   塩を流すための上乗せ [%]
-     vclear  快晴の日の合計潅水量 [L/㎡]  ← 週N量から倍率を出す基準
      curve   日射ごとの蒸散量の表 [L/㎡]  ← 日中の立て直しに使う
      coef / film  めやすアプリ側の設定（ずれていないかの照合用）
+
+   ★中央と東の**両方**に入れる。どれも面積あたりの値なので、
+     ハウスが違っても同じ数字でよい。URL の house はどちらのタブを
+     開くかを決めるだけ。片方だけ入ると、もう片方を手で直すことになる。
 
    ★すでに記録してある日は勝手に上書きしない。
      記録を書きかえるのは取り返しがつかないので、押したときだけ入れる。
@@ -1372,26 +1382,27 @@ function paramsWoYomu(){
     house: HOUSES.includes(house) ? house : null,
     date:  /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
     need:  toNum("need"),  eday: toNum("eday"), leach: toNum("leach"),
-    vclear:toNum("vclear"),coef: toNum("coef"), film:  toNum("film"),
+    coef:  toNum("coef"),  film: toNum("film"),
     curve: curve,
   };
 }
 
-/** 受け取った中身を、その日の入力欄へ入れる */
+/** 受け取った中身を、中央と東の両方に入れる */
 function atehameru(p){
-  const house = p.house || state.house;
-  const date  = p.date  || state.date;
-  state.house = house;
+  const date = p.date || state.date;
+  state.house = p.house || state.house;
   state.date  = date;
   linkPayload = p;
 
-  const c = state.set[house];
-  const d = dayOf(house, date, true);
-  if(p.need   !== null) c.need   = p.need;    // 10MJあたり潅水量（ハウスの設定）
-  if(p.eday   !== null) d.eday   = p.eday;
-  if(p.leach  !== null) d.leach  = p.leach;
-  if(p.vclear !== null) d.vclear = p.vclear;
-  if(p.curve){ d.curve = p.curve; d.curveDate = date; }
+  // ★どれも面積あたりの値なので、両ハウスに同じものを入れる
+  for(const h of HOUSES){
+    const c = state.set[h];
+    const d = dayOf(h, date, true);
+    if(p.need  !== null) c.need  = p.need;    // 10MJあたり潅水量（ハウスの設定）
+    if(p.eday  !== null) d.eday  = p.eday;
+    if(p.leach !== null) d.leach = p.leach;
+    if(p.curve){ d.curve = p.curve; d.curveDate = date; }
+  }
 
   document.querySelectorAll(".tab").forEach(x=>
     x.setAttribute("aria-pressed", String(x.dataset.house===state.house)));
@@ -1400,24 +1411,27 @@ function atehameru(p){
   const u = $("#uketori");
   u.classList.remove("hide");
   u.innerHTML =
-      `<b>めやすアプリから受け取りました</b>（${house}・${date}）<br>`
-    + `10MJあたり潅水量 <b>${fmt(num(c.need),2)}</b> L/㎡　／　`
-    + `日射予測 <b>${fmt(num(d.eday),1)}</b> MJ/㎡`
-    + (p.leach  !== null ? `　／　上乗せ <b>${fmt(p.leach,0)}</b>％` : "")
-    + (p.vclear !== null ? `　／　快晴の潅水量 <b>${fmt(p.vclear,2)}</b> L/㎡` : "")
+      `<b>めやすアプリから受け取りました</b>`
+    + `（${HOUSES.join("・")}の両方・${date}）<br>`
+    + `10MJあたり潅水量 <b>${fmt(num(p.need),2)}</b> L/㎡　／　`
+    + `日射予測 <b>${fmt(num(p.eday),1)}</b> MJ/㎡`
+    + (p.leach !== null ? `　／　上乗せ <b>${fmt(p.leach,0)}</b>％` : "")
     + (p.curve ? `　／　立て直し用の表 <b>${p.curve.length}</b> 点` : "");
 
   /* 設定のずれを知らせる。
      日射センサーの係数とフィルム劣化は、分子（潅水量）と分母（実質日射）で
      打ち消し合う取り決めなので、両方のアプリで同じ値でないと水がずれる。 */
   const zure = [];
-  if(p.coef !== null && Math.abs(p.coef*10 - num(c.coef)) > 1e-6){
-    zure.push(`日射センサーの係数：こちら ${fmt(num(c.coef),1)}`
-            + ` ／ めやすアプリ ${fmt(p.coef*10,1)}`);
-  }
-  if(p.film !== null && Math.abs(p.film - num(c.film)) > 1e-6){
-    zure.push(`フィルム劣化：こちら ${fmt(num(c.film),2)}`
-            + ` ／ めやすアプリ ${fmt(p.film,2)}`);
+  for(const h of HOUSES){
+    const c = state.set[h];
+    if(p.coef !== null && Math.abs(p.coef*10 - num(c.coef)) > 1e-6){
+      zure.push(`${h}の日射センサーの係数：こちら ${fmt(num(c.coef),1)}`
+              + ` ／ めやすアプリ ${fmt(p.coef*10,1)}`);
+    }
+    if(p.film !== null && Math.abs(p.film - num(c.film)) > 1e-6){
+      zure.push(`${h}のフィルム劣化：こちら ${fmt(num(c.film),2)}`
+              + ` ／ めやすアプリ ${fmt(p.film,2)}`);
+    }
   }
   const z = $("#zure");
   if(zure.length){
@@ -1437,17 +1451,20 @@ function uketoru(){
   if(location.search) history.replaceState(null, "", location.pathname);
   if(!p) return;
 
-  const house = p.house || state.house;
-  const date  = p.date  || state.date;
-  const kk = state.days[house+"|"+date];
-  if(kk && kk.saved){
+  const date = p.date || state.date;
+  // 中央と東の両方に入れるので、どちらかでも記録済みなら確認する
+  const kiroku = HOUSES.filter(h => {
+    const kk = state.days[h+"|"+date];
+    return kk && kk.saved;
+  });
+  if(kiroku.length){
     machiUke = p;
     const u = $("#uketori");
     u.classList.remove("hide");
     u.innerHTML =
-        `<b>めやすアプリから数字が届いています</b>（${house}・${date}）<br>`
-      + `この日はすでに記録してあります。入れると、記録のもとになった数字が`
-      + `書きかわります。<br>`
+        `<b>めやすアプリから数字が届いています</b>（${date}）<br>`
+      + `${kiroku.join("・")}はこの日をすでに記録してあります。`
+      + `入れると、記録のもとになった数字が書きかわります。<br>`
       + `<button class="btn" id="uketori-ok" type="button">それでも入れる</button>`;
     $("#uketori-ok").addEventListener("click", ()=>{
       atehameru(machiUke); machiUke = null;
@@ -1476,11 +1493,6 @@ function wire(){
   $("#i-nweek").addEventListener("input", e=>{
     const d=day(); d.nweek=e.target.value; d.master="nweek"; render();
   });
-  /* 基準の潅水量は「主」にしない。倍率の分母になる値なので、
-     打ったときはいま主になっている欄の意味で計算し直すだけでよい。 */
-  $("#i-vclear").addEventListener("input", e=>{
-    day().vclear=e.target.value; render();
-  });
 
   const fertMap = { "#i-fert":"fert", "#i-bags":"bags", "#i-made":"made" };
   for(const [s,k] of Object.entries(fertMap))
@@ -1503,7 +1515,7 @@ function wire(){
      setTimeout で少し待つのは、blur の最中はまだ
      document.activeElement がその欄のままのことがあり、
      すぐ呼ぶと setVal() が「入力中」と判断して書き戻さないため。 */
-  document.querySelectorAll('input[type="number"]').forEach(el=>{
+  document.querySelectorAll('input[inputmode]').forEach(el=>{
     el.addEventListener("blur", ()=>setTimeout(render, 0));
   });
 
@@ -1515,6 +1527,33 @@ function wire(){
       render();
     });
   });
+  /* 前回の実績を入れる。中央と東それぞれの、自分の直近の記録から。
+     めやすアプリの値は目安で、実際は作物の大きさを見て加減する。
+     日射予測だけは今日の天気のものなので入れ替えない。 */
+  $("#maemodosu").addEventListener("click", ()=>{
+    const done = [];
+    for(const h of HOUSES){
+      const mae = maeNoKiroku(h, state.date);
+      if(!mae) continue;
+      const inn = mae.rec["in"] || {};
+      const conf = mae.rec.conf || {};
+      const c = state.set[h];
+      const d = dayOf(h, state.date, true);
+      if(conf.need !== undefined && conf.need !== "") c.need = conf.need;
+      if(has(inn.nkai)) d.nkai = inn.nkai;
+      // 前回どちらを主にして決めたかを引き継ぐ
+      if(inn.master === "bai" && has(inn.bai)){
+        d.bai = inn.bai; d.master = "bai";
+      }else if(has(inn.nday)){
+        d.nday = inn.nday; d.master = "n";
+      }
+      done.push(`${h} ${mae.date}`);
+    }
+    if(!done.length){ tell("前の記録がまだありません"); return; }
+    save(); render();
+    tell("前回の実績を入れました（" + done.join("・") + "）");
+  });
+
   $("#prev").addEventListener("click",()=>{ state.date=addDays(state.date,-1); render(); });
   $("#next").addEventListener("click",()=>{ state.date=addDays(state.date, 1); render(); });
   $("#today").addEventListener("click",()=>{ state.date=key(new Date()); render(); });
