@@ -46,16 +46,12 @@
     color:var(--muted);
   }
 
-  h2{
-    font-size:13px;
-    font-weight:700;
-    letter-spacing:.14em;
-    color:var(--muted);
-    margin:32px 0 12px;
-  }
-
   a.tool{
-    display:block;
+    /* アイコンと文字を横並びにする。
+       align-items:flex-start で、説明が2行になってもアイコンは上端に揃う */
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
     border:2px solid var(--ink);
     padding:18px 18px;
     margin-bottom:12px;
@@ -65,6 +61,16 @@
   }
   a.tool:active{background:var(--tint)}
   a.tool:focus-visible{outline:3px solid var(--tomato);outline-offset:3px}
+
+  /* アイコン欄。幅を固定しているので、絵文字の幅が違っても題名の先頭が揃う */
+  .tool .ic{
+    flex:none;
+    width:30px;
+    text-align:center;
+    font-size:23px;
+    line-height:1.2;
+  }
+  .tool .txt{flex:1;min-width:0}
   .tool .t{font-size:19px;font-weight:700;display:block}
   .tool .d{font-size:14px;color:var(--muted);display:block;margin-top:3px}
 
@@ -112,76 +118,111 @@
   <p>栽培管理ツール</p>
 </header>
 
-<h2>記録</h2>
+<!-- よく使う順にひとつながりで並べている。
+     この順は以前の分類（記録・シフト・計算・環境設定）をまたぐため、
+     分類の見出しは置いていない。順番を変えるときは、この並びを入れ替えるだけでよい。
+
+     アイコンは絵文字。画像ファイルも外部からの読み込みも要らず、
+     電波の無いハウスの中でも必ず出る。
+     aria-hidden を付けているのは、読み上げソフトが
+     「しずく　今日の潅水量のめやす」と二重に読まないようにするため -->
+
+<a class="tool" href="https://kansui.streamlit.app/">
+  <span class="ic" aria-hidden="true">💧</span>
+  <span class="txt">
+    <span class="t">今日の潅水量のめやす</span>
+    <span class="d">日射予測から蒸散量を出して水の量を決める（開くのに少し待ちます）</span>
+  </span>
+</a>
+
+<a class="tool" href="ekihi/">
+  <span class="ic" aria-hidden="true">🧪</span>
+  <span class="txt">
+    <span class="t">液肥混入機レシピ</span>
+    <span class="d">中央・東の設定倍率と灌水時間（自分専用）</span>
+  </span>
+</a>
+
+<a class="tool" href="minna/">
+  <span class="ic" aria-hidden="true">👥</span>
+  <span class="txt">
+    <span class="t">みんなのページ</span>
+    <span class="d">ノート・病害虫・シフト・シフトきぼう・今週のめやす・栽培記録・実績</span>
+  </span>
+</a>
 
 <a class="tool" href="shuryo/">
-  <span class="t">収量記録</span>
-  <span class="d">出荷伝票から入力してExcelへ反映</span>
+  <span class="ic" aria-hidden="true">🍅</span>
+  <span class="txt">
+    <span class="t">収量記録</span>
+    <span class="d">出荷伝票から入力してExcelへ反映</span>
+  </span>
 </a>
 
 <a class="tool" href="shodoku/">
-  <span class="t">消毒記録</span>
-  <span class="d">農薬散布履歴と使用回数の管理</span>
+  <span class="ic" aria-hidden="true">🧴</span>
+  <span class="txt">
+    <span class="t">消毒記録</span>
+    <span class="d">農薬散布履歴と使用回数の管理</span>
+  </span>
 </a>
-
-<a class="tool" href="dropbox-setup.html">
-  <span class="t">Dropbox接続設定</span>
-  <span class="d">端末を変えたときだけ使います</span>
-</a>
-
-<h2>シフト</h2>
 
 <!-- あいことばは付けない。このページは誰でも開けるため。
      一度入れればこの端末が覚えるので、打つのは初回だけ -->
 <a class="tool" href="kibou-kanri/">
-  <span class="t">シフト組み（管理）</span>
-  <span class="d">パートさんの希望を見て、調整して確定する（あいことばが要ります）</span>
+  <span class="ic" aria-hidden="true">🗓️</span>
+  <span class="txt">
+    <span class="t">シフト組み（管理）</span>
+    <span class="d">パートさんの希望を見て、調整して確定する（あいことばが要ります）</span>
+  </span>
 </a>
 
 <a class="tool" href="shift/">
-  <span class="t">できあがったシフト</span>
-  <span class="d">配っているものと同じ画面で確かめる</span>
-</a>
-
-<h2>パートさん用の入口</h2>
-
-<a class="tool" href="minna/">
-  <span class="t">みんなのページ</span>
-  <span class="d">ノート・病害虫・シフト・シフトきぼう・今週のめやす・栽培記録・実績</span>
-</a>
-
-<h2>計算</h2>
-
-<a class="tool" href="https://kansui.streamlit.app/">
-  <span class="t">今日の潅水量のめやす</span>
-  <span class="d">日射予測から蒸散量を出して水の量を決める（開くのに少し待ちます）</span>
-</a>
-
-<a class="tool" href="ekihi/">
-  <span class="t">液肥混入機レシピ</span>
-  <span class="d">中央・東の設定倍率と灌水時間（自分専用）</span>
-</a>
-
-<a class="tool" href="kogosei/">
-  <span class="t">光合成・蒸散</span>
-  <span class="d">葉面エネルギー収支から算出</span>
+  <span class="ic" aria-hidden="true">📋</span>
+  <span class="txt">
+    <span class="t">できあがったシフト</span>
+    <span class="d">配っているものと同じ画面で確かめる</span>
+  </span>
 </a>
 
 <a class="tool" href="shitsudo/">
-  <span class="t">湿度計算</span>
-  <span class="d">飽差・相対湿度・露点温度</span>
+  <span class="ic" aria-hidden="true">🌫️</span>
+  <span class="txt">
+    <span class="t">湿度計算</span>
+    <span class="d">飽差・相対湿度・露点温度</span>
+  </span>
+</a>
+
+<a class="tool" href="ondo/">
+  <span class="ic" aria-hidden="true">🌡️</span>
+  <span class="txt">
+    <span class="t">ハウス温度設定管理</span>
+    <span class="d">加温・換気の設定値を記録して比較</span>
+  </span>
+</a>
+
+<a class="tool" href="kogosei/">
+  <span class="ic" aria-hidden="true">🌿</span>
+  <span class="txt">
+    <span class="t">光合成・蒸散</span>
+    <span class="d">葉面エネルギー収支から算出</span>
+  </span>
 </a>
 
 <a class="tool" href="nissha/">
-  <span class="t">日射量予測</span>
-  <span class="d">快晴時日射量の24時間推移</span>
+  <span class="ic" aria-hidden="true">☀️</span>
+  <span class="txt">
+    <span class="t">日射量予測</span>
+    <span class="d">快晴時日射量の24時間推移</span>
+  </span>
 </a>
 
-<h2>環境設定</h2>
-
-<a class="tool" href="ondo/">
-  <span class="t">ハウス温度設定管理</span>
-  <span class="d">加温・換気の設定値を記録して比較</span>
+<a class="tool" href="dropbox-setup.html">
+  <span class="ic" aria-hidden="true">⚙️</span>
+  <span class="txt">
+    <span class="t">Dropbox接続設定</span>
+    <span class="d">端末を変えたときだけ使います</span>
+  </span>
 </a>
 
 <div class="status">
