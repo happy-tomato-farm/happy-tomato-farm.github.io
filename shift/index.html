@@ -256,6 +256,8 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.01em}
   color:var(--tomato);border:1.5px dashed var(--tomato);
   border-radius:var(--r-chip);padding:1px 12px;background:var(--card);
 }
+/* まだ決まっていない日。おやすみと取りちがえないよう、色を変える */
+.memochip.mitei{color:var(--sun);border-color:var(--sun);border-style:solid;margin-right:7px}
 
 /* その人あてのメモ（勤務時間があっても出せる） */
 .lanememo{display:flex;gap:9px;padding:0 0 6px}
@@ -293,8 +295,11 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.01em}
 .cal .cell.today .n{color:var(--accent)}
 .cal .dots{display:flex;flex-wrap:wrap;gap:3px}
 .cal .dots i{width:8px;height:8px;border-radius:50%;background:var(--c);display:block}
+/* 未定の日は、まんなかを抜いた丸にして、決まっている日と見分けられるようにする */
+.cal .dots i.mitei{background:none;border:2px solid var(--sun)}
 .cal .mytime{font-size:11px;font-weight:800;color:var(--c);line-height:1.35;letter-spacing:-.02em}
 .cal .mk{font-size:10px;font-weight:800;color:var(--tomato);line-height:1.3}
+.cal .mk.mitei{color:var(--sun)}
 
 /* =====================================================================
    あいことば
@@ -443,6 +448,13 @@ function toMin(t){
 }
 /** 分 → "H:MM" */
 function fromMin(n){ return Math.floor(n/60) + ":" + String(n%60).padStart(2,"0"); }
+
+/** まだ決まっていない日。管理画面で「未定のまま確定」したものがこれ。
+    休みでも勤務でもない3つめの状態なので、人数にも実働にも入れない。 */
+const MITEI = "未定";
+function mitei(r){ return !!r && String(r.s) === MITEI; }
+/** その行が「時間の決まった勤務」かどうか */
+function hataraku(r){ return !!r && !!r.s && !!r.e && !mitei(r); }
 /** "YYYY-MM-DD" → Date（地元時間・時刻なし） */
 function toDate(s){ const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); }
 /** Date → "YYYY-MM-DD" */
@@ -641,6 +653,15 @@ function laneHTML(r){
       </div>
       <div class="hrs">${r.w ? esc(String(r.w).replace(/^0/,"")) : ""}</div>
     </div>`;
+  }else if(mitei(r)){
+    // まだ決まっていない日。おやすみと取りちがえないよう、別の色の札で出す
+    html += `<div class="lane only" style="--c:${c}">
+      <div class="who"><i></i><span>${esc(r.p)}</span></div>
+      <div class="track"><span class="memochip mitei">未定</span>${
+        r.m ? `<span class="memochip">${esc(r.m)}</span>` : ""}</div>
+      <div class="hrs"></div>
+    </div>`;
+    return html;
   }else{
     // 勤務なし。メモを札で出す
     html += `<div class="lane only" style="--c:${c}">
@@ -670,12 +691,17 @@ function noteHTML(n){
 /** まとめ（人を選んだときだけ） */
 function summaryHTML(rs){
   if(!state.who) return "";
-  const days = rs.filter(r => r.s && r.e).length;
+  const days = rs.filter(hataraku).length;
+  const mi = rs.filter(mitei).length;
   let mins = 0;
-  for(const r of rs){ const w = toMin(r.w); if(w !== null) mins += w; }
+  for(const r of rs){
+    if(mitei(r)) continue;
+    const w = toMin(r.w); if(w !== null) mins += w;
+  }
   return `<div class="summary" style="--c:${colorOf(state.who)}">
     <div><span class="k">しゅっきん</span><span class="v">${days}<em>日</em></span></div>
     <div><span class="k">じつどう</span><span class="v">${fromMin(mins)}<em>時間</em></span></div>
+    ${mi ? `<div><span class="k">みてい</span><span class="v">${mi}<em>日</em></span></div>` : ""}
   </div>`;
 }
 
@@ -701,7 +727,7 @@ function renderWeek(){
         <span class="dd">${d.getMonth()+1}/${d.getDate()}</span>
         <span class="wd ${wcls}">${WD[w]}</span>
         ${isToday ? '<span class="now">きょう</span>' : ""}
-        ${rs.length ? `<span class="cnt">${rs.filter(r => r.s && r.e).length}人</span>` : ""}
+        ${rs.length ? `<span class="cnt">${rs.filter(hataraku).length}人</span>` : ""}
       </div>`;
 
     if(!rs.length && !ns.length){
@@ -745,7 +771,9 @@ function renderMonth(){
       let inner = "";
       if(state.who){
         const r = rs[0];
-        if(r && r.s && r.e){
+        if(mitei(r)){
+          inner = `<span class="mk mitei">未定</span>`;
+        }else if(hataraku(r)){
           inner = `<span class="mytime" style="--c:${colorOf(state.who)}">`
                 + `${esc(r.s)}<br>${esc(r.e)}</span>`;
         }else if(r && r.m){
@@ -754,7 +782,8 @@ function renderMonth(){
         if(rs.some(r2 => r2.s && r2.m) || ns.length) inner += `<span class="mk">メモ</span>`;
       }else{
         inner = `<div class="dots">`
-              + rs.filter(r => r.s).map(r => `<i style="--c:${colorOf(r.p)}"></i>`).join("")
+              + rs.filter(hataraku).map(r => `<i style="--c:${colorOf(r.p)}"></i>`).join("")
+              + rs.filter(mitei).map(() => `<i class="mitei"></i>`).join("")
               + `</div>`;
         if(rs.some(r => r.m) || ns.length) inner += `<span class="mk">メモ</span>`;
       }
