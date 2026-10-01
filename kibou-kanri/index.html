@@ -15,7 +15,7 @@
   --line:#DEE5D9; --hair:#EBF0E7;
   --teal:#2A8FA8; --teal-soft:#E4F1F4; --on-teal:#FFFFFF;
   --tomato:#D0432F; --tomato-soft:#FBE9E5;
-  --sat:#3E7FA8; --sun:#C2571F;
+  --sat:#3E7FA8; --sun:#C2571F; --sun-soft:#FBEBE1;
   --leaf:#2F7A46; --leaf-soft:#E4F0E7; --on-leaf:#FFFFFF;
   --amber:#B87514; --amber-soft:#FBF0DC;
   --ui:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Zen Maru Gothic",
@@ -29,7 +29,7 @@
     --line:#333A2F; --hair:#2A3026;
     --teal:#5FBDD4; --teal-soft:#1E3239; --on-teal:#0F2127;
     --tomato:#FF6E5B; --tomato-soft:#3A241F;
-    --sat:#7FB8D6; --sun:#F58E5C;
+    --sat:#7FB8D6; --sun:#F58E5C; --sun-soft:#33241B;
     --leaf:#72BA84; --leaf-soft:#1F3224; --on-leaf:#10231A;
     --amber:#E8B563; --amber-soft:#332913;
     --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 24px -16px rgba(0,0,0,.8);
@@ -41,7 +41,7 @@
   --line:#333A2F; --hair:#2A3026;
   --teal:#5FBDD4; --teal-soft:#1E3239; --on-teal:#0F2127;
   --tomato:#FF6E5B; --tomato-soft:#3A241F;
-  --sat:#7FB8D6; --sun:#F58E5C;
+  --sat:#7FB8D6; --sun:#F58E5C; --sun-soft:#33241B;
   --leaf:#72BA84; --leaf-soft:#1F3224; --on-leaf:#10231A;
   --amber:#E8B563; --amber-soft:#332913;
   --shadow:0 1px 0 rgba(0,0,0,.3), 0 10px 24px -16px rgba(0,0,0,.8);
@@ -155,6 +155,11 @@ td.cell.off button{color:var(--faint); font-size:12px}
 table.grid.yomu td.cell button{cursor:default}
 table.grid.yomu{opacity:.96}
 td.cell .moto{display:block; font-size:9.5px; color:var(--amber); font-weight:800; line-height:1.3}
+/* 未定。休みとも勤務とも別ものだと、色で分かるようにする */
+td.cell.mitei{background:var(--sun-soft)}
+td.cell.mitei button .t1{color:var(--sun)}
+.miteiN{color:var(--sun); font-size:10.5px; font-weight:800}
+.legend i.mitei{background:var(--sun-soft); border-color:var(--sun)}
 tr.noSubmit td.cell{background:repeating-linear-gradient(45deg,transparent,transparent 5px,var(--hair) 5px,var(--hair) 10px)}
 tr.noSubmit td.name{color:var(--faint)}
 
@@ -232,6 +237,7 @@ td.cell.off .fuda{color:var(--teal)}
   color:var(--on-teal); font-weight:800; font-size:15.5px; padding:13px; cursor:pointer}
 .sheet .alt{width:100%; margin-top:9px; border:1px solid var(--line); background:var(--card);
   color:var(--muted); border-radius:12px; font-weight:700; font-size:14px; padding:11px; cursor:pointer}
+.sheet .alt.cur{border-color:var(--sun); color:var(--ink); background:var(--sun-soft)}
 
 pre.msg{margin:0; background:var(--sub); border:1px solid var(--line); border-radius:11px;
   padding:13px 15px; font-family:var(--ui); font-size:13.5px; line-height:1.8; white-space:pre-wrap;
@@ -414,6 +420,8 @@ textarea.msgin{width:100%; box-sizing:border-box; background:var(--sub);
   <p class="memohint">休みの日にも付けられます。パートさん全員が見られます。</p>
 
   <button class="ok" id="cOk">この内容にする</button>
+  <!-- 未定のまま確定できます。休みとは別ものとして /shift/ に出ます -->
+  <button class="alt" id="cMitei">この日は未定にする</button>
   <button class="alt" id="cRest">この日は休みにする</button>
   <button class="alt" id="cReset">きぼうのとおりに戻す</button>
 </div></div>
@@ -510,6 +518,16 @@ function hhmm(m){ return ("0"+Math.floor(m/60)).slice(-2) + ":" + ("0"+(m%60)).s
 function fmt(m){ return Math.floor(m/60) + ":" + ("0"+(m%60)).slice(-2); }
 function tadashiiPat(p){ return /^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/.test(String(p||"")); }
 function shortT(t){ return String(t).replace(/^0/,""); }
+
+/* 「まだ決まっていない」日。
+   休みでも勤務でもない3つめの状態です。パートさんが希望に入れることも、
+   管理者が未定のまま確定することもできます。
+   実働が分からないので、日数にも時間の合計にも入れません。 */
+var MITEI = "未定";
+function miteiKa(c){ return !!(c && c.mitei); }
+function miteiCell(){
+  return { s:MITEI, e:MITEI, b1s:"", b1e:"", b2s:"", b2e:"", naoshita:true, mitei:true };
+}
 
 function ymd(y,m,d){ return y + "-" + ("0"+(m+1)).slice(-2) + "-" + ("0"+d).slice(-2); }
 function lastDay(y,m){ return new Date(y, m+1, 0).getDate(); }
@@ -638,7 +656,10 @@ function restOf(c){
   if (c.b2s && c.b2e) r += mins(c.b2e) - mins(c.b2s);
   return r;
 }
-function workOf(c){ return mins(c.e) - mins(c.s) - restOf(c); }
+function workOf(c){
+  if (miteiKa(c)) return 0;      // 未定は時間が決まっていないので 0 として扱います
+  return mins(c.e) - mins(c.s) - restOf(c);
+}
 
 /* ---- 提出のようす ---- */
 function kibouOf(name){
@@ -659,6 +680,7 @@ function kakuteiAri(){
 function kibouCell(hito, day){
   var kib = kibouOf(hito.name);
   var pat = kib ? kib.days[String(day)] : null;
+  if (String(pat || "") === MITEI) return miteiCell();
   return (pat && tadashiiPat(pat)) ? hirogeru(hito, pat) : null;
 }
 
@@ -699,7 +721,10 @@ function gridWoTsukuru(){
 
       if (k && k.memo) memoSet(h.name, x.d, k.memo);
 
-      if (k && k.start && k.end){
+      if (k && String(k.start) === MITEI){
+        // 未定のまま確定してある日
+        gyo[x.d] = miteiCell();
+      } else if (k && k.start && k.end){
         // 確定ずみ。そのまま出します（きまりを変えても過去は動かしません）
         gyo[x.d] = { s:k.start, e:k.end, b1s:k.b1s, b1e:k.b1e, b2s:k.b2s, b2e:k.b2e,
                      naoshita:false, kakuteizumi:true };
@@ -857,7 +882,7 @@ function kakuGrid(){
     tdN.textContent = h.name;
     row.appendChild(tdN);
 
-    var hi = 0, fun = 0;
+    var hi = 0, fun = 0, mitei = 0;
     hibi.forEach(function(x){
       var kum = grid[h.name][x.d];          // 組んだ内容
       var kib = kibouCell(h, x.d);          // 出されたきぼう
@@ -865,24 +890,35 @@ function kakuGrid(){
       var chigau = !onaji(kum, kib);
 
       var td = document.createElement("td");
-      td.className = "cell" + (c ? " on" : " off") + (chigau ? " chigau" : "");
+      td.className = "cell" + (c ? " on" : " off") + (chigau ? " chigau" : "") +
+                     (miteiKa(c) ? " mitei" : "");
 
       var bt = document.createElement("button");
       bt.type = "button";
-      if (c){
+      if (miteiKa(c)){
+        // 未定。時間の欄を埋めずに、そうと分かる形だけ出します
+        var nakaM = '<span class="t1">未定</span>';
+        if (!yomu && chigau){
+          nakaM += '<span class="moto">' + (kib ? (miteiKa(kib) ? "希望 未定" : "希望 " + shortT(kib.s)) : "希望 休み") + '</span>';
+        }
+        bt.innerHTML = nakaM;
+        mitei++;
+      } else if (c){
         var naka = '<span class="t1">' + shortT(c.s) + '</span>' +
                    '<span class="t2">' + shortT(c.e) + '</span>' +
                    fmt(workOf(c));
         // 組んだ内容を見ているとき、きぼうと違うならもとの時間も小さく添える
         if (!yomu && chigau){
-          naka += '<span class="moto">' + (kib ? "希望 " + shortT(kib.s) : "希望 休み") + '</span>';
+          naka += '<span class="moto">' +
+                  (kib ? (miteiKa(kib) ? "希望 未定" : "希望 " + shortT(kib.s)) : "希望 休み") + '</span>';
         }
         bt.innerHTML = naka;
         hi++; fun += workOf(c);
       } else {
         bt.textContent = "−";
         if (!yomu && chigau && kib){
-          bt.innerHTML = '−<span class="moto">希望 ' + shortT(kib.s) + '</span>';
+          bt.innerHTML = '−<span class="moto">' +
+                         (miteiKa(kib) ? "希望 未定" : "希望 " + shortT(kib.s)) + '</span>';
         }
       }
 
@@ -903,7 +939,8 @@ function kakuGrid(){
 
     var tdT = document.createElement("td");
     tdT.className = "total";
-    tdT.innerHTML = hi + "日<br>" + fmt(fun);
+    tdT.innerHTML = hi + "日<br>" + fmt(fun) +
+                    (mitei ? '<br><span class="miteiN">未定' + mitei + '</span>' : "");
     row.appendChild(tdT);
 
     tbody.appendChild(row);
@@ -917,22 +954,26 @@ function kakuGrid(){
   thN.textContent = "人数";
   trN.appendChild(thN);
 
-  var souHi = 0, souFun = 0;
+  var souHi = 0, souFun = 0, souMitei = 0;
   hibi.forEach(function(x){
-    var n = 0, f = 0;
+    var n = 0, f = 0, mi = 0;
     people.forEach(function(h){
       var c = yomu ? kibouCell(h, x.d) : grid[h.name][x.d];
+      if (miteiKa(c)){ mi++; return; }     // 未定は、人数にも時間にも数えません
       if (c){ n++; f += workOf(c); }
     });
-    souHi += n; souFun += f;
+    souHi += n; souFun += f; souMitei += mi;
+
     var td = document.createElement("td");
     td.className = (n === 0 ? "low" : "");
-    td.textContent = n ? n : "0";
+    // 未定がある日は「2+1」のように、決まっている人数と未定の数を分けて出します
+    td.innerHTML = (n ? n : "0") + (mi ? '<span class="miteiN">+' + mi + '</span>' : "");
     trN.appendChild(td);
   });
   var tdNT = document.createElement("td");
   tdNT.className = "total";
-  tdNT.innerHTML = "のべ" + souHi + "日<br>" + fmt(souFun);
+  tdNT.innerHTML = "のべ" + souHi + "日<br>" + fmt(souFun) +
+                   (souMitei ? '<br><span class="miteiN">未定' + souMitei + '</span>' : "");
   trN.appendChild(tdNT);
   tbody.appendChild(trN);
 
@@ -945,10 +986,19 @@ function kakuGrid(){
       if (!onaji(grid[h.name][x.d], kibouCell(h, x.d))) chigauKazu++;
     });
   });
+  var miteiKazu = 0;
+  people.forEach(function(h){
+    hibi.forEach(function(x){
+      if (miteiKa(yomu ? kibouCell(h, x.d) : grid[h.name][x.d])) miteiKazu++;
+    });
+  });
+
   $("legend").innerHTML =
     '<span><i class="deru"></i>出る日</span>' +
     '<span><i class="chigau"></i>きぼうと違う日' +
       (chigauKazu ? "（" + chigauKazu + "）" : "（なし）") + '</span>' +
+    (miteiKazu ? '<span><i class="mitei"></i>未定（' + miteiKazu +
+                 '）日数と時間には入れていません</span>' : '') +
     (chigauKazu ? '<span>「出されたきぼう」に切り替えると、出されたままが見られます</span>' : '');
 }
 
@@ -1067,7 +1117,7 @@ function masuWoNaosu(hito, x){
 
   $("cT").textContent = hito.name + " さん";
   $("cH").textContent = (periodOf(perKey).m + 1) + "月" + x.d + "日（" + WD[x.w] + "）" +
-                        (c ? "" : "　いまは休み");
+                        (miteiKa(c) ? "　いまは未定" : c ? "" : "　いまは休み");
 
   // よく使う時間のボタン
   var box = $("cQuick");
@@ -1079,7 +1129,7 @@ function masuWoNaosu(hito, x){
     var bt = document.createElement("button");
     bt.type = "button";
     bt.textContent = shortT(pat.split("-")[0]) + "–" + shortT(pat.split("-")[1]);
-    if (c && (c.s + "-" + c.e) === pat) bt.className = "cur";
+    if (c && !miteiKa(c) && (c.s + "-" + c.e) === pat) bt.className = "cur";
     bt.onclick = function(){
       var hiro = hirogeru(hito, pat);
       moto(hiro);
@@ -1088,7 +1138,9 @@ function masuWoNaosu(hito, x){
     box.appendChild(bt);
   });
 
-  moto(c || hirogeru(hito, hito.usual));
+  // 未定のマスは時間として読めないので、いつもの時間を入れておきます
+  moto((c && !miteiKa(c)) ? c : hirogeru(hito, hito.usual));
+  $("cMitei").className = "alt" + (miteiKa(c) ? " cur" : "");
   $("cMemo").value = memoOf(hito.name, x.d);
   cellWoMiseru();
   shCell.classList.add("open");
@@ -1113,6 +1165,13 @@ $("cOk").onclick = function(){
   shCell.classList.remove("open");
   kaku();
 };
+$("cMitei").onclick = function(){
+  // 未定にしても、ひとことは残します
+  grid[imaHito.name][imaHi.d] = miteiCell();
+  memoSet(imaHito.name, imaHi.d, $("cMemo").value);
+  shCell.classList.remove("open");
+  kaku();
+};
 $("cRest").onclick = function(){
   // 休みにしても、ひとことは残します。
   //「調整のためのお休みです」を伝えたいのが、まさにこの場面のため
@@ -1124,7 +1183,10 @@ $("cRest").onclick = function(){
 $("cReset").onclick = function(){
   var kib = kibouOf(imaHito.name);
   var pat = kib ? kib.days[String(imaHi.d)] : null;
-  grid[imaHito.name][imaHi.d] = (pat && tadashiiPat(pat)) ? hirogeru(imaHito, pat) : null;
+  grid[imaHito.name][imaHi.d] =
+    (String(pat || "") === MITEI) ? miteiCell()
+    : (pat && tadashiiPat(pat))   ? hirogeru(imaHito, pat)
+    : null;
   memoSet(imaHito.name, imaHi.d, "");     // ひとことも消します
   shCell.classList.remove("open");
   kaku();
@@ -1357,6 +1419,7 @@ $("btnHyou").onclick = function(){
   hibi.forEach(function(x){
     var retsu = people.map(function(h){
       var c = grid[h.name][x.d];
+      if (miteiKa(c)) return "未定";
       return c ? (shortT(c.s) + "-" + shortT(c.e)) : "";
     });
     gyo.push((p.m+1) + "/" + x.d + "\t" + WD[x.w] + "\t" + retsu.join("\t"));
@@ -1375,19 +1438,32 @@ $("btnHyou").onclick = function(){
 
 /* 確定した1件を、数えやすい形にほどきます */
 function kakuHodoku(k){
-  var s = mins(k.start), e = mins(k.end), yasumi = 0;
-  [[k.b1s, k.b1e], [k.b2s, k.b2e]].forEach(function(a){
-    if (a[0] && a[1] && mins(a[1]) > mins(a[0])) yasumi += mins(a[1]) - mins(a[0]);
-  });
   var hi = new Date(k.date.slice(0,4), Number(k.date.slice(5,7)) - 1, k.date.slice(8,10));
-  return {
+  var moto = {
     date: k.date, hi: hi, d: hi.getDate(), w: hi.getDay(),
     person: k.person,
     s: k.start, e: k.end,
     b1s: k.b1s || "", b1e: k.b1e || "", b2s: k.b2s || "", b2e: k.b2e || "",
-    yasumi: yasumi, jitsudo: e - s - yasumi,
     memo: String(k.memo || "")
   };
+
+  // 未定の日。時間として計算できないので、ここで分けておきます。
+  // そのまま mins() に渡すと NaN になり、集計がまるごと壊れます
+  if (String(k.start) === MITEI){
+    moto.mitei = true;
+    moto.yasumi = 0;
+    moto.jitsudo = 0;
+    return moto;
+  }
+
+  var s = mins(k.start), e = mins(k.end), yasumi = 0;
+  [[k.b1s, k.b1e], [k.b2s, k.b2e]].forEach(function(a){
+    if (a[0] && a[1] && mins(a[1]) > mins(a[0])) yasumi += mins(a[1]) - mins(a[0]);
+  });
+  moto.mitei = false;
+  moto.yasumi = yasumi;
+  moto.jitsudo = e - s - yasumi;
+  return moto;
 }
 
 /* いま見ている期間が入っている月の、確定ぶんを全部集めます */
@@ -1463,8 +1539,9 @@ function insatsuWoKumu(){
     var nin = 0;
     namae.forEach(function(n){
       var x = hiki[d + "|" + n];
-      if (x) nin++;
-      h += "<td" + cls + ">" + (x ? shortT(x.s) + "-" + shortT(x.e) : "") + "</td>";
+      if (x && !x.mitei) nin++;        // 未定は人数に数えません
+      h += "<td" + cls + ">" +
+           (x ? (x.mitei ? "未定" : shortT(x.s) + "-" + shortT(x.e)) : "") + "</td>";
     });
     h += "<td" + cls + ">" + (nin || "") + "</td></tr>";
   }
@@ -1491,6 +1568,11 @@ function insatsuWoKumu(){
     h += "</ul></div>";
   }
 
+  var miteiKazu = list.filter(function(x){ return x.mitei; }).length;
+  if (miteiKazu){
+    h += '<p class="note">※「未定」はまだ決まっていない日です（' + miteiKazu +
+         '件）。人数と実働計には入れていません。</p>';
+  }
   h += '<p class="note">※ 休憩は各自のきまりどおりです。変更があるときは知らせてください。</p>';
 
   box.innerHTML = h;
@@ -1536,20 +1618,25 @@ function excelWoTsukuru(){
   var meisai = [[
     "日付", "曜日", "年月", "名前", "開始", "終了",
     "休憩1始", "休憩1終", "休憩2始", "休憩2終",
-    "休憩(分)", "実働(h:mm)", "実働(時間)", "ひとこと"
+    "休憩(分)", "実働(h:mm)", "実働(時間)", "未定", "ひとこと"
   ]];
   zenbu.forEach(function(x){
+    // 未定の日は、実働の欄を空にします。0 と書くと「働いて0時間」に見えて
+    // 集計をまちがえるためです。「未定」の列で絞りこめます
     meisai.push([
       x.date, WD[x.w], x.date.slice(0, 7), x.person, x.s, x.e,
       x.b1s, x.b1e, x.b2s, x.b2e,
-      x.yasumi, fmt(x.jitsudo), Math.round(x.jitsudo / 60 * 100) / 100,
+      x.mitei ? "" : x.yasumi,
+      x.mitei ? "" : fmt(x.jitsudo),
+      x.mitei ? "" : Math.round(x.jitsudo / 60 * 100) / 100,
+      x.mitei ? "未定" : "",
       x.memo
     ]);
   });
   var ws1 = XLSX.utils.aoa_to_sheet(meisai);
   ws1["!cols"] = [{wch:11},{wch:5},{wch:9},{wch:9},{wch:7},{wch:7},
-                  {wch:8},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:9},{wch:28}];
-  ws1["!autofilter"] = { ref: "A1:N" + meisai.length };
+                  {wch:8},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:9},{wch:6},{wch:28}];
+  ws1["!autofilter"] = { ref: "A1:O" + meisai.length };
   ws1["!freeze"] = { xSplit: 4, ySplit: 1 };
   XLSX.utils.book_append_sheet(wb, ws1, "明細");
 
@@ -1598,18 +1685,36 @@ function excelWoTsukuru(){
     return a;
   }
 
+  // 未定の日は、日数にも時間にも入れません。別の表で数だけ出します
   var hi = hyou("出勤日数（日）", function(n, t){
     var c = 0;
-    zenbu.forEach(function(x){ if (x.person === n && x.date.slice(0,7) === t) c++; });
+    zenbu.forEach(function(x){
+      if (!x.mitei && x.person === n && x.date.slice(0,7) === t) c++;
+    });
     return c;
   });
   var ji = hyou("実働時間（時間）", function(n, t){
     var m = 0;
-    zenbu.forEach(function(x){ if (x.person === n && x.date.slice(0,7) === t) m += x.jitsudo; });
+    zenbu.forEach(function(x){
+      if (!x.mitei && x.person === n && x.date.slice(0,7) === t) m += x.jitsudo;
+    });
     return m / 60;
   });
 
-  var ws2 = XLSX.utils.aoa_to_sheet(hi.concat([[]], ji));
+  var hyouRa = hi.concat([[]], ji);
+
+  if (zenbu.some(function(x){ return x.mitei; })){
+    var mi = hyou("未定の日数（日・上の2表には入っていません）", function(n, t){
+      var c = 0;
+      zenbu.forEach(function(x){
+        if (x.mitei && x.person === n && x.date.slice(0,7) === t) c++;
+      });
+      return c;
+    });
+    hyouRa = hyouRa.concat([[]], mi);
+  }
+
+  var ws2 = XLSX.utils.aoa_to_sheet(hyouRa);
   ws2["!cols"] = [{wch:10}].concat(tsuki.map(function(){ return {wch:10}; })).concat([{wch:10}]);
   XLSX.utils.book_append_sheet(wb, ws2, "月集計");
 
@@ -1629,8 +1734,8 @@ function excelWoTsukuru(){
       var gyo = [d, WD[w]], nin = 0;
       sonoNamae.forEach(function(n){
         var x = hiki[d + "|" + n];
-        if (x) nin++;
-        gyo.push(x ? shortT(x.s) + "-" + shortT(x.e) : "");
+        if (x && !x.mitei) nin++;      // 未定は人数に数えません
+        gyo.push(x ? (x.mitei ? "未定" : shortT(x.s) + "-" + shortT(x.e)) : "");
       });
       gyo.push(nin || "");
       a.push(gyo);
@@ -1703,12 +1808,15 @@ $("btnKakutei").onclick = function(){
       // 休みでも、ひとことが付いていれば送ります（時間は空のまま）
       if (!c && !memo) return;
 
+      // 未定は「未定」という文字を時間の欄に入れて送ります。
+      // 休憩と実働は空のままにします（決まっていないので 0:00 とは書けません）
       items.push({
         d: x.ymd, p: h.name,
         s: c ? c.s : "", e: c ? c.e : "",
-        b1s: c ? c.b1s : "", b1e: c ? c.b1e : "",
-        b2s: c ? c.b2s : "", b2e: c ? c.b2e : "",
-        r: c ? hhmm(restOf(c)) : "", w: c ? hhmm(workOf(c)) : "",
+        b1s: (c && !miteiKa(c)) ? c.b1s : "", b1e: (c && !miteiKa(c)) ? c.b1e : "",
+        b2s: (c && !miteiKa(c)) ? c.b2s : "", b2e: (c && !miteiKa(c)) ? c.b2e : "",
+        r: (c && !miteiKa(c)) ? hhmm(restOf(c)) : "",
+        w: (c && !miteiKa(c)) ? hhmm(workOf(c)) : "",
         m: memo
       });
     });
