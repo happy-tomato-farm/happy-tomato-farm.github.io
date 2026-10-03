@@ -261,7 +261,7 @@ details.fold[open] > summary .hint::after{content:"　▲"}
         <div class="f">
           <label for="i-need">10MJあたり潅水量</label>
           <input id="i-need" type="text" inputmode="decimal">
-          <span class="u">L/㎡（実質日射 10MJ/㎡ に対して）</span>
+          <span class="u" id="needu">L/㎡（実質日射 10MJ/㎡ に対して）</span>
         </div>
         <div class="f">
           <label for="i-nkai">潅水の回数</label>
@@ -461,6 +461,7 @@ const KITEI_DAY  = { eday:15, nkai:3, nday:0.126, bai:null, nweek:null,
                      curve:null,        // 日射ごとの蒸散量 [L/㎡] の表
                      curveDate:null,    // その表を作った日付
                      leach:null,        // 塩を流すための上乗せ [%]
+                     needLink:null,     // 受け取った10MJあたり潅水量。手で絞るときの基準
                      rows:Array.from({length:MAXKAI},()=>({e:"",p:""})) };
 
 const $  = s => document.querySelector(s);
@@ -590,11 +591,14 @@ function dayOf(house, date, tsukuru){
                nweek:mae.nweek, master:mae.master,
                leach:mae.leach };
       /* 表だけは古くなりすぎたら引き継がない（CURVE_MAX_AGE_DAYS 参照）。
-         捨てた日は昔ながらの直線計算に戻るので、壊れはしない。 */
+         捨てた日は昔ながらの直線計算に戻るので、壊れはしない。
+         needLink は表とひと組。表を捨てるときは一緒に捨てる
+         （基準だけ残ると、絞りの比が別の表に掛かってしまう）。 */
       if(mae.curve && mae.curveDate &&
          hiNoSa(mae.curveDate, date) <= CURVE_MAX_AGE_DAYS){
         moto.curve = mae.curve;
         moto.curveDate = mae.curveDate;
+        moto.needLink = mae.needLink;
       }
     }
     state.days[k] = Object.assign(
@@ -602,6 +606,13 @@ function dayOf(house, date, tsukuru){
   }
   const d = state.days[k];
   d.rows = naosuRows(d.rows);
+  /* 表はあるのに「受け取った10MJあたり」を控えていない日
+     （2026-10-03 より前に保存した記録）は、いまの値を基準として採る。
+     こうしないと絞りの比がいつまでも 1 のままで、
+     10MJあたり潅水量を直しても何も動かない。 */
+  if(d.curve && !has(d.needLink) && has(state.set[house].need)){
+    d.needLink = num(state.set[house].need);
+  }
   return d;
 }
 const day  = () => dayOf(state.house, state.date, true);
@@ -626,15 +637,32 @@ function need(c, e){
   const M = num(c.flow) ? K/num(c.flow)*60 : 0;        // 秒
   return { M, V: num(c.area) ? K/num(c.area) : 0 };
 }
-/** 朝の時点で決まる「1日の潅水量」[L/㎡]。
+/** その日射に対する「1日の潅水量」[L/㎡]。
     めやすアプリの表があればそちら、無ければ昔ながらの直線。
 
-    ★ここが1日の水の正本。設定倍率も1回ごとの配分も、すべてこの値から出す。 */
-function asaNoVday(c, d, eday){
+    ★ここが1日の水の正本。設定倍率も1回ごとの配分も、すべてこの値から出す。
+
+    【10MJあたり潅水量は“絞り”として効かせる】（2026-10-03 に足した）
+    表がある日は、日射に対する曲がり方は表にまかせる。そのうえで
+
+        1日の潅水量 ＝ 表の量 × (1+上乗せ) × （いまの10MJあたり ÷ 受け取った10MJあたり）
+
+    とし、手で入れた「10MJあたり潅水量」を**比**として掛ける。
+    めやすアプリは作業計画の葉枚数で LAI を出すので、苗が計画どおりでない時期
+    （とくに9〜10月）は大きめに出る。現場で絞れないと使えない。
+    受け取ったままなら比は 1 で、表のとおりになる。 */
+function VdayNo(c, d, e){
   const leach  = has(d.leach) ? num(d.leach)/100 : null;
-  const joosan = joosanFromHyo(d.curve, eday);
-  return (joosan !== null && leach !== null) ? joosan*(1+leach) : need(c, eday).V;
+  const joosan = joosanFromHyo(d.curve, e);
+  if(joosan === null || leach === null)
+    return { V: need(c, e).V, hyo:false, hairitsu:1 };
+  // めやすアプリの値を控えていない古い日は、比を掛けない（表のまま）
+  const hairitsu = (has(d.needLink) && num(d.needLink)>0)
+                 ? num(c.need)/num(d.needLink) : 1;
+  return { V: joosan*(1+leach)*hairitsu, hyo:true, hairitsu };
 }
+/** 朝の時点で決まる1日の潅水量 [L/㎡]。設定倍率はこれで決まる */
+const asaNoVday = (c, d, eday) => VdayNo(c, d, eday).V;
 /** 1日N量から T0（設定倍率）を出す。
 
     1日のN量 ＝ 1日の潅水量 × 10 × 液肥N量 ÷ 倍率　なので、裏返して
@@ -791,9 +819,9 @@ function hiNoKeisan(house, date){
 
   // --- 1日の合計潅水量 ---
   const leach = has(d.leach) ? num(d.leach)/100 : null;
-  const joosan = joosanFromHyo(d.curve, eMikomi);
-  const hyo = joosan !== null && leach !== null;
-  const Vday = hyo ? joosan*(1+leach) : need(c, eMikomi).V;
+  const mikomi = VdayNo(c, d, eMikomi);
+  const hyo = mikomi.hyo, hairitsu = mikomi.hairitsu;
+  const Vday = mikomi.V;
   const Vchokusen = need(c, eMikomi).V;        // くらべるため（直線のほう）
 
   /* --- 回ごとの立場 ---
@@ -847,7 +875,7 @@ function hiNoKeisan(house, date){
   const P = kais.reduce((a,k)=>a+k.P, 0);
 
   return { d, c, f, fg, nkai, T0, yoteiE, es, eMikomi, leach,
-           VdayAsa, perVAsa, asaByo, chosei, tachiba,
+           VdayAsa, perVAsa, asaByo, chosei, tachiba, hairitsu,
            Vday, Vchokusen, hyo, sumida, kakutei, nokoriKai, nokori,
            perV, dashisugi, kais, V, D, R, P };
 }
@@ -904,7 +932,7 @@ function matome(house, date){
     hyo: r.hyo,                                 // 表を使って出したか
     "in": { eday:dd.eday, nkai:nkai, nday:dd.nday, bai:dd.bai, master:dd.master,
             nweek:dd.nweek, leach:dd.leach,
-            curve:dd.curve, curveDate:dd.curveDate,
+            curve:dd.curve, curveDate:dd.curveDate, needLink:dd.needLink,
             rows: dd.rows.slice(0,nkai) },
     conf: Object.assign({}, c, { fert:{ fert:fg.fert, bags:fg.bags, made:fg.made } }),
     at: Date.now(),                             // どちらが新しいかを比べるための数
@@ -1010,6 +1038,7 @@ async function pull(){
         leach:  inn.leach ?? null,
         curve:  Array.isArray(inn.curve) ? inn.curve : null,
         curveDate: inn.curveDate ?? null,
+        needLink:  inn.needLink ?? null,
         rows:   naosuRows(inn.rows),
         saved:  Object.assign({}, it, { sent:true })
       };
@@ -1155,6 +1184,14 @@ function render(){
     : `${state.house}の前の記録がまだありません。`
       + `「この日を記録する」を押すと、次から前回の値を戻せます。`;
 
+  /* 10MJあたり潅水量が、いま何として効いているかを書く。
+     表がある日は「めやすアプリの値に対する比」として効く（VdayNo を見ること）。 */
+  $("#needu").innerHTML = (r.hyo && has(d.needLink))
+    ? `L/㎡　めやすアプリの <b>${fmt(num(d.needLink),2)}</b> に対して`
+      + ` <b>${fmt(r.hairitsu*100,0)}％</b> で使う`
+      + (Math.abs(r.hairitsu-1) < 1e-9 ? "（受け取ったまま）" : "（手で絞った）")
+    : `L/㎡（実質日射 10MJ/㎡ に対して）`;
+
   setVal("#i-fert",fg.fert); setVal("#i-bags",fg.bags); setVal("#i-made",fg.made);
   setVal("#i-flow",c.flow); setVal("#i-need",c.need); setVal("#i-area",c.area);
   setVal("#i-coef",c.coef); setVal("#i-film",c.film);
@@ -1247,7 +1284,11 @@ function render(){
     ? "昔ながらの直線から（めやすアプリの表がまだ無い日）"
     : (r.d.curveDate === state.date
         ? "モデルの表から（この日の表）"
-        : `モデルの表から（${r.d.curveDate} に受け取った表）`);
+        : `モデルの表から（${r.d.curveDate} に受け取った表）`)
+      + (Math.abs(r.hairitsu-1) > 1e-9
+          ? `、<b>${fmt(r.hairitsu*100,0)}％に絞って</b>`
+            + `（10MJあたり ${fmt(num(c.need),2)} ÷ 受け取った ${fmt(num(d.needLink),2)}）`
+          : "");
   tate.innerHTML =
       `<div class="outs">`
     + o("1日の見込み日射", fmt(r.eMikomi,1), "MJ/㎡")
@@ -1470,7 +1511,9 @@ function atehameru(p){
   for(const h of HOUSES){
     const c = state.set[h];
     const d = dayOf(h, date, true);
-    if(p.need  !== null) c.need  = p.need;    // 10MJあたり潅水量（ハウスの設定）
+    // 10MJあたり潅水量は、そのまま入れると同時に「基準」としても控えておく。
+    // あとで手で絞ったとき、この基準との比が表に掛かる（VdayNo を見ること）。
+    if(p.need  !== null){ c.need = p.need; d.needLink = p.need; }
     if(p.eday  !== null) d.eday  = p.eday;
     if(p.leach !== null) d.leach = p.leach;
     if(p.curve){ d.curve = p.curve; d.curveDate = date; }
