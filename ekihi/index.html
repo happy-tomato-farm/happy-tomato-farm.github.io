@@ -626,21 +626,37 @@ function need(c, e){
   const M = num(c.flow) ? K/num(c.flow)*60 : 0;        // 秒
   return { M, V: num(c.area) ? K/num(c.area) : 0 };
 }
-/** 朝の設定から T0（設定倍率）を出す。N量が主のとき */
-function baiFromN(c, f, eday, nkai, nday){
-  const { M } = need(c, eday);
-  const Mi = M/nkai, Oi = (Mi + mudaByo(c))/60;
-  const Rday = f.n100 ? nday*num(c.area)/1000/f.n100*100 : 0;
-  const Ri = Rday/nkai;
-  return Ri>0 ? num(c.flow)*Oi/Ri : 0;
+/** 朝の時点で決まる「1日の潅水量」[L/㎡]。
+    めやすアプリの表があればそちら、無ければ昔ながらの直線。
+
+    ★ここが1日の水の正本。設定倍率も1回ごとの配分も、すべてこの値から出す。 */
+function asaNoVday(c, d, eday){
+  const leach  = has(d.leach) ? num(d.leach)/100 : null;
+  const joosan = joosanFromHyo(d.curve, eday);
+  return (joosan !== null && leach !== null) ? joosan*(1+leach) : need(c, eday).V;
+}
+/** 1日N量から T0（設定倍率）を出す。
+
+    1日のN量 ＝ 1日の潅水量 × 10 × 液肥N量 ÷ 倍率　なので、裏返して
+
+        倍率 ＝ 1日の潅水量 [L/㎡] × 10 × 液肥N量 [kg/100L] ÷ 1日N量 [kg/10a]
+
+    面積・流量・回数・日射センサーの係数・フィルム劣化は、分子と分母で
+    打ち消し合って式から消える。だから**表が同じなら中央と東で倍率は一致する**。
+
+    ★2026-10-03 に直した。以前はここで need()（昔ながらの直線）を使っていたが、
+      実際に出る水は表から決まるので、入るN量が
+          狙い × （表の潅水量 ÷ 直線の潅水量）
+      だけずれていた。10MJあたり潅水量を小さくしてあると倍率が濃い側に振れ、
+      実測では狙いの 2.00 倍（中央）／1.60 倍（東）のNが入っていた。 */
+function baiFromN(c, f, d, eday, nday){
+  const Vday = asaNoVday(c, d, eday);
+  return nday>0 ? Vday*10*f.n100/nday : 0;
 }
 /** 倍率が主のとき、1日のN量を逆算 */
-function nFromBai(c, f, eday, nkai, bai){
-  const { M } = need(c, eday);
-  const Mi = M/nkai, Oi = (Mi + mudaByo(c))/60;
-  const Ri = bai>0 ? num(c.flow)*Oi/bai : 0;
-  const Di = f.n100 && num(c.area) ? Ri*10*f.n100/num(c.area) : 0;
-  return Di*nkai;
+function nFromBai(c, f, d, eday, bai){
+  const Vday = asaNoVday(c, d, eday);
+  return bai>0 ? Vday*10*f.n100/bai : 0;
 }
 
 /* ---------------------------------------------------------------------
@@ -687,30 +703,37 @@ function joosanFromHyo(curve, e){
   const slope = (curve[n-1]-curve[n-2])/(CURVE_GRID_MJ[n-1]-CURVE_GRID_MJ[n-2]);
   return curve[n-1] + slope*(e-CURVE_GRID_MJ[n-1]);
 }
-/** 1回ぶん。倍率 T0 は固定、N量は追随する */
-function kaiCalc(c, f, T0, e, pOver){
-  const { M, V } = need(c, e);
-  const P = has(pOver) ? num(pOver) : (M>0 ? M+mudaByo(c) : 0);
-  const O = P/60;
-  const R = T0>0 ? num(c.flow)*O/T0 : 0;                          // 液肥量 L
-  const D = f.n100 && num(c.area) ? R*10*f.n100/num(c.area) : 0;  // N量 kg/10a
-  const S = O ? R/O : 0;
-  return { M, V, P, O, R, D, S, e };
-}
+/* 2026-10-03、1回ぶんを別口で計算する kaiCalc を消した。
+   表（curve）を入れたあとも、ここだけ昔ながらの直線 need() を使っていたため、
+   同じ「1回の潅水時間」が画面の上と下で食い違っていた。
+   1回ごとの値は hiNoKeisan が1か所で出す。別口で計算し直さないこと。 */
 
 /* =====================================================================
    その日ぶんをまとめて計算する
    ---------------------------------------------------------------------
    【朝】1日の合計潅水量を回数で等分する。ここは今までどおり。
 
-   【日中】日射が思ったより少なかったときに、残りの回で立て直す。
+   【日中】日射が思ったより少なかったときに、その回で立て直して打ち切る。
 
-       1日の見込み日射 ＝ Σ（各回の日射。入れていない回は朝の予定）
-       1日の合計潅水量 ＝ 表から読む（表が無ければ昔ながらの直線）
-       残りに配る量     ＝ max(1日の合計 − すでに出した量, 0) ÷ 残り回数
+   ★2026-10-03 に配り方を変えた。運用に合わせてある。
+     「日中に調整するのは、その回でその日の潅水を終わらせるとき」なので、
+     **日射を入れたいちばん下の回が、その日の最後の潅水**になる。
 
-   「すでに出した量」は、**実際の灌水時間を入れた回**だけを数える。
-   出した水は返せないので、立て直せるのは残りの回だけ。
+         それより前の回 … 朝の予定どおり出したものとして確定（もう触らない）
+         その回         … 1日の合計から、確定ぶんを引いた残りを全部
+         それより後の回 … 0（その日はもう出さない）
+
+     例：日射予報 10 MJ・4回に分ける → 1回あたり 2.5 MJ ぶん。
+         3回目で調整して 1.0 MJ と入れたら、
+           1・2回目 … 2.5 MJ ぶんで確定
+           3回目    … 1日の合計（＝表で読んだ 2.5+2.5+1.0＝6 MJ ぶん）の残り
+           4回目    … 0
+
+     以前は「実際の灌水時間を打った回」だけを確定とし、残りを等分していた。
+     そのため3回目を調整すると**済んだはずの1・2回目の数字まで動き**、
+     まだ触っていない4回目が朝の予定のまま残りを押し上げていた。
+
+   実際の灌水時間を打った回は、いつでもその時間が優先される。
    すでに足りているときは残りをゼロにして、そう言う。
 
    【なぜ表が要るのか】
@@ -745,11 +768,24 @@ function hiNoKeisan(house, date){
   const byoToMizu = sec => (num(c.area)>0)
                          ? num(c.flow)*(Math.max(sec-muda,0)/60)/num(c.area) : 0;
 
+  // --- 朝の計画（1日の合計と、1回あたり）---
+  // 日中に何を入れても、この「朝の予定」は動かない。済んだ回の基準になる。
+  const VdayAsa = asaNoVday(c, d, num(d.eday));
+  const perVAsa = VdayAsa/nkai;
+  const asaByo  = perVAsa>0 ? mizuToByo(perVAsa) : 0;
+
+  // --- 調整した回（日射を入れたいちばん下の回）---
+  // ここがその日の最後の潅水になる。入っていなければ -1（まだ朝）。
+  let chosei = -1;
+  for(let i=0;i<nkai;i++){ if(has((d.rows[i]||{}).e)) chosei = i; }
+
   // --- 1日の見込み日射 ---
   const es = [];
   for(let i=0;i<nkai;i++){
-    const row = d.rows[i] || {e:"",p:""};
-    es.push(has(row.e) ? num(row.e) : yoteiE);
+    if(chosei < 0)        es.push(yoteiE);                  // 朝。まだ調整していない
+    else if(i < chosei)   es.push(yoteiE);                  // 済んだ回は朝の予定
+    else if(i === chosei) es.push(num(d.rows[i].e));        // いま入れた実測
+    else                  es.push(0);                       // もう出さない
   }
   const eMikomi = es.reduce((a,x)=>a+x, 0);
 
@@ -760,17 +796,29 @@ function hiNoKeisan(house, date){
   const Vday = hyo ? joosan*(1+leach) : need(c, eMikomi).V;
   const Vchokusen = need(c, eMikomi).V;        // くらべるため（直線のほう）
 
-  // --- すでに出した量（実際の灌水時間を入れた回だけ）---
-  let sumida = 0, kakutei = 0;
+  /* --- 回ごとの立場 ---
+       jikan  実際の灌水時間を打った。その時間が最優先
+       asa    調整した回より前。朝の予定どおり出したものとして確定
+       kubaru これから出す量を決める回。残りが乗る
+       zero   調整した回より後。その日はもう出さない */
+  const tachiba = [];
   for(let i=0;i<nkai;i++){
-    const row = d.rows[i] || {e:"",p:""};
-    if(!has(row.p)) continue;
-    sumida += byoToMizu(num(row.p));
-    kakutei++;
+    if(has((d.rows[i]||{}).p))      tachiba.push("jikan");
+    else if(chosei < 0)             tachiba.push("kubaru");
+    else if(i < chosei)             tachiba.push("asa");
+    else if(i === chosei)           tachiba.push("kubaru");
+    else                            tachiba.push("zero");
   }
 
-  // --- 残りの回に等分で配る（朝の方針をそのまま踏襲する）---
-  const nokoriKai = nkai - kakutei;
+  // --- すでに出した量（jikan は実測、asa は朝の予定）---
+  let sumida = 0, kakutei = 0;
+  for(let i=0;i<nkai;i++){
+    if(tachiba[i] === "jikan"){ sumida += byoToMizu(num(d.rows[i].p)); kakutei++; }
+    else if(tachiba[i] === "asa"){ sumida += perVAsa; kakutei++; }
+  }
+
+  // --- 残りを、配る回で等分する（調整したときは配る回は1つだけ）---
+  const nokoriKai = tachiba.filter(x => x === "kubaru").length;
   const nokori = Math.max(Vday - sumida, 0);
   const perV = nokoriKai>0 ? nokori/nokoriKai : 0;
   const dashisugi = (Vday - sumida) < -1e-9;
@@ -778,16 +826,19 @@ function hiNoKeisan(house, date){
   // --- 1回ごと ---
   const kais = [];
   for(let i=0;i<nkai;i++){
-    const row = d.rows[i] || {e:"",p:""};
-    const kakuteiKai = has(row.p);
-    const sec = kakuteiKai ? num(row.p) : (perV>0 ? mizuToByo(perV) : 0);
-    const V = kakuteiKai ? byoToMizu(sec) : perV;
+    const t = tachiba[i];
+    const V = t==="jikan" ? byoToMizu(num(d.rows[i].p))
+            : t==="asa"   ? perVAsa
+            : t==="zero"  ? 0
+            :               perV;
+    const sec = t==="jikan" ? num(d.rows[i].p) : (V>0 ? mizuToByo(V) : 0);
     const O = sec/60;
     const R = T0>0 ? num(c.flow)*O/T0 : 0;                          // 液肥量 L
     const D = f.n100 && num(c.area) ? R*10*f.n100/num(c.area) : 0;  // N kg/10a
     const sanko = need(c, es[i]);          // 参考：その回の日射に比例させた値
     kais.push({ e:es[i], V, R, D, P:sec, O, S: O ? R/O : 0,
-                kakutei:kakuteiKai, M:sanko.M, sankoV:sanko.V });
+                tachiba:t, kakutei: t==="jikan" || t==="asa",
+                M:sanko.M, sankoV:sanko.V });
   }
 
   const V = kais.reduce((a,k)=>a+k.V, 0);
@@ -796,6 +847,7 @@ function hiNoKeisan(house, date){
   const P = kais.reduce((a,k)=>a+k.P, 0);
 
   return { d, c, f, fg, nkai, T0, yoteiE, es, eMikomi, leach,
+           VdayAsa, perVAsa, asaByo, chosei, tachiba,
            Vday, Vchokusen, hyo, sumida, kakutei, nokoriKai, nokori,
            perV, dashisugi, kais, V, D, R, P };
 }
@@ -1067,15 +1119,18 @@ function render(){
   // そのまま式にしたもの。ほかの入力に紐づかない欄は置かない。
   if(d.master === "nweek" && has(d.nweek)){
     d.nday = num(d.nweek)/7;
-    d.bai  = baiFromN(c, f, num(d.eday), nkai, num(d.nday));
+    d.bai  = baiFromN(c, f, d, num(d.eday), num(d.nday));
   }else if(d.master === "bai" && has(d.bai)){
-    d.nday  = nFromBai(c, f, num(d.eday), nkai, num(d.bai));
+    d.nday  = nFromBai(c, f, d, num(d.eday), num(d.bai));
     d.nweek = num(d.nday)*7;
   }else{
-    d.bai   = baiFromN(c, f, num(d.eday), nkai, num(d.nday));
+    d.bai   = baiFromN(c, f, d, num(d.eday), num(d.nday));
     d.nweek = num(d.nday)*7;
   }
   const T0 = num(d.bai);
+
+  // 1日ぶんの計算。倍率が決まってから呼ぶ（画面のどこもこの結果だけを見る）
+  const r = hiNoKeisan(state.house, state.date);
 
   setVal("#i-eday", d.eday); setVal("#i-nkai", nkai);
   setVal("#i-nweek", fmt(num(d.nweek),3));
@@ -1154,8 +1209,10 @@ function render(){
     + `実質日射 ＝ 外の日射 × フィルム劣化 ${fmt(num(c.film),2)}。潅水量はこちらから決まります。`;
 
   // ---- 朝の予定（均等割り）----
+  // ★表示はすべて hiNoKeisan の結果から出す。別口で計算し直さないこと。
+  //   以前はここだけ昔ながらの直線で計算していたので、下の「1回ごと」と
+  //   数字が食い違っていた（タイル 15:21 に対し1回目 14:00 など）。
   const yoteiE = num(d.eday)/nkai;
-  const yotei  = kaiCalc(c,f,T0,yoteiE,null);
   /* 倍率はそのまま「水に混ざるNの濃さ」。
      濃度 ＝ 10 × n100 ÷ 倍率 で、日射も回数も流量も式から消える。
      日射が少ない日に同じN量を入れると濃くなるので、見えるように並べて出す。 */
@@ -1164,7 +1221,7 @@ function render(){
     ? `${fmt(T0,0)}<small>倍</small>`
       + `<br><small>水の中のN ${fmt(ppm,1)} ppm</small>`
     : "—";
-  $("#v-jikan").innerHTML = yotei.P>0 ? hms(yotei.P) : "—";
+  $("#v-jikan").innerHTML = r.asaByo>0 ? hms(r.asaByo) : "—";
 
   // ---- 1分あたり液肥量の余裕 ----
   const S = num(c.flow) && T0 ? num(c.flow)/T0 : 0;
@@ -1183,10 +1240,7 @@ function render(){
 
   // ---- 日中の立て直し ----
   //
-  // 朝の計画（等分）は変えない。1日の合計だけをモデルの表から出し直し、
-  // すでに出した水を引いて、残りを等分で配る。
-  // 出した水は返せないので、立て直せるのは残りの回だけ。
-  const r = hiNoKeisan(state.house, state.date);
+  // 日射を入れた回がその日の最後の潅水。前の回は朝の予定で確定、後の回は 0。
   const tate = $("#tate");
   tate.classList.toggle("ng", r.dashisugi);
   const hyoMoto = !r.hyo
@@ -1198,22 +1252,31 @@ function render(){
       `<div class="outs">`
     + o("1日の見込み日射", fmt(r.eMikomi,1), "MJ/㎡")
     + o("1日の必要量", fmt(r.Vday,2), "L/㎡", "hi")
-    + o("すでに出した量", fmt(r.sumida,2), "L/㎡")
-    + o("残りに配る量", r.nokoriKai>0 ? fmt(r.nokori,2) : "—", "L/㎡")
-    + o(`残り ${r.nokoriKai} 回・1回あたり`,
+    + o(r.chosei<0 ? "すでに出した量" : `${r.chosei}回目までの確定ぶん`,
+        fmt(r.sumida,2), "L/㎡")
+    + o(r.chosei<0 ? `残り ${r.nokoriKai} 回・1回あたり`
+                   : `<b>${r.chosei+1}回目に出す量</b>`,
         r.nokoriKai>0 ? fmt(r.perV,2) : "—", "L/㎡",
-        r.dashisugi ? "sa" : "")
+        r.dashisugi ? "sa" : "hi")
     + `</div>`
     + `<div class="shiki">${hyoMoto}。`
     + (r.hyo && r.Vchokusen>0
         ? `表なら ${fmt(r.Vday,2)}、直線なら ${fmt(r.Vchokusen,2)} L/㎡`
           + `（直線は ${fmt((r.Vchokusen/r.Vday-1)*100,1)}％ ずれる）。`
         : "")
-    + `<br>「実際の灌水時間」を入れた回だけ“出した”と数えます`
-    + `（いま ${r.kakutei} 回／${nkai} 回）。`
-    + `設定倍率は動かさないので EC は一定、水が減ったぶんだけN量も減ります。`
+    + `<br>`
+    + (r.chosei < 0
+        ? `まだ日射を入れていないので、朝の予定どおり ${nkai} 回に等分しています。`
+          + `<br>どれかの回に実際の日射を入れると、<b>その回がその日の最後の潅水</b>に`
+          + `なります。前の回は朝の予定で確定し、あとの回は 0 になります。`
+        : `<b>${r.chosei+1}回目で打ち切る</b>として計算しています`
+          + `（${r.chosei}回目までは朝の予定 ${fmt(r.perVAsa,2)} L/㎡ ずつで確定、`
+          + `${r.chosei+1}回目に残り全部、`
+          + (r.chosei+1 < nkai ? `${r.chosei+2}回目以降は 0` : `これで最後の回`)
+          + `）。<br>まだ出していないなら、日射の欄を空にすれば朝の予定に戻ります。`)
+    + `<br>設定倍率は動かさないので EC は一定、水が減ったぶんだけN量も減ります。`
     + (r.dashisugi
-        ? `<br><b>もう必要量に足りています。残りの回は出さないでください。</b>`
+        ? `<br><b>もう必要量に足りています。この回は出さないでください。</b>`
         : "")
     + `</div>`;
 
@@ -1226,15 +1289,23 @@ function render(){
     const k = r.kais[i];
     const kaeta = has(row.e) || has(row.p);
     el.classList.toggle("edited", kaeta);
-    $("#kt"+i).textContent = k.kakutei ? "出した" : (kaeta ? "かえた" : "かえる");
-    $("#kv"+i).innerHTML =
-      `${fmt(k.V,2)}<em>L/㎡</em>　${hms(k.P)}　N ${fmt(k.D,4)}<em>kg/10a</em>`;
+    $("#kt"+i).textContent =
+        k.tachiba==="jikan" ? "出した"
+      : k.tachiba==="asa"   ? "朝の予定で確定"
+      : k.tachiba==="zero"  ? "出さない"
+      : (r.chosei===i ? "この回で終わり" : "かえる");
+    $("#kv"+i).innerHTML = k.tachiba==="zero"
+      ? `<em>この日はもう出しません</em>`
+      : `${fmt(k.V,2)}<em>L/㎡</em>　${hms(k.P)}　N ${fmt(k.D,4)}<em>kg/10a</em>`;
     setVal("#ke"+i, row.e ?? "");
     setVal("#kp"+i, row.p ?? "");
-    $("#ke"+i).placeholder = fmt(yoteiE,2);
+    $("#ke"+i).placeholder = fmt(k.e,2);
     $("#kp"+i).placeholder = k.P>0 ? String(Math.round(k.P)) : "";
-    $("#keu"+i).textContent = `MJ/㎡（空欄なら 朝の予定 ${fmt(yoteiE,2)}）`;
-    $("#kpu"+i).textContent = k.kakutei
+    $("#keu"+i).textContent =
+        k.tachiba==="asa"  ? `MJ/㎡（朝の予定 ${fmt(yoteiE,2)} で確定しています）`
+      : k.tachiba==="zero" ? `MJ/㎡（この回より前で打ち切りました）`
+      : `MJ/㎡（入れるとこの回で打ち切り。空欄なら朝の予定 ${fmt(yoteiE,2)}）`;
+    $("#kpu"+i).textContent = k.tachiba==="jikan"
       ? "秒（この回は“出した”として数えています）"
       : (k.P>0 ? `秒（この回に出す時間は ${hms(k.P)}）` : "秒");
     $("#ko"+i).innerHTML =
@@ -1246,12 +1317,13 @@ function render(){
   }
 
   // ---- 予定と実際の差 ----
-  const yV=yotei.V*nkai, yD=yotei.D*nkai;
+  // 朝に決めた1日ぶん（＝倍率を決めた根拠）と、いまの見込みをくらべる。
+  const yV = r.VdayAsa, yD = num(d.nday);
   const sa=(x)=> (x>=0?"+":"") + fmt(x, Math.abs(x)>=1?2:4);
   $("#sabun").innerHTML =
-      o("灌水量　予定→実際", `${fmt(yV,2)} → ${fmt(r.V,2)}`, "L/㎡")
+      o("灌水量　朝の予定→いま", `${fmt(yV,2)} → ${fmt(r.V,2)}`, "L/㎡")
     + o("差", sa(r.V-yV), "L/㎡", Math.abs(r.V-yV)>1e-9?"sa":"")
-    + o("N量　予定→実際", `${fmt(yD,4)} → ${fmt(r.D,4)}`, "kg/10a")
+    + o("N量　朝の予定→いま", `${fmt(yD,4)} → ${fmt(r.D,4)}`, "kg/10a")
     + o("差", sa(r.D-yD), "kg/10a", Math.abs(r.D-yD)>1e-9?"sa":"");
 
   // ---- きょうの記録（転記用）----
