@@ -24,6 +24,7 @@
   --teal:#2A8FA8;
   --forest:#1F5C3D;
   --sky:#3F6FB5;
+  --book:#A35C2A;
 
   --shadow:0 1px 0 rgba(36,41,31,.04), 0 6px 18px -10px rgba(36,41,31,.28);
   --shadow-lift:0 2px 0 rgba(36,41,31,.05), 0 16px 32px -14px rgba(36,41,31,.4);
@@ -36,7 +37,7 @@
     --ground:#191D18; --card:#232821; --card-sub:#1E231D;
     --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
     --tomato:#FF6E5B; --leaf:#6FBB7B; --grape:#B189E8; --sun:#F0BC4E; --teal:#5FBDD4; --forest:#6FBB7B;
-    --sky:#7CA6E8;
+    --sky:#7CA6E8; --book:#D9924F;
     --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
     --shadow-lift:0 2px 0 rgba(0,0,0,.3), 0 16px 32px -14px rgba(0,0,0,.85);
   }
@@ -46,7 +47,7 @@
   --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
   --tomato:#FF6E5B; --leaf:#6FBB7B; --grape:#B189E8; --sun:#F0BC4E;
   /* この2つは上の自動判定にしか無く、手で暗い表示にしたとき暗いままで読みにくかった */
-  --teal:#5FBDD4; --forest:#6FBB7B; --sky:#7CA6E8;
+  --teal:#5FBDD4; --forest:#6FBB7B; --sky:#7CA6E8; --book:#D9924F;
   --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
   --shadow-lift:0 2px 0 rgba(0,0,0,.3), 0 16px 32px -14px rgba(0,0,0,.85);
 }
@@ -117,6 +118,7 @@ a.app.note   {--c:var(--tomato)}
 a.app.byogai {--c:var(--grape)}
 a.app.jisseki{--c:var(--leaf)}
 a.app.saibai {--c:var(--forest)}
+a.app.manual {--c:var(--book)}
 
 /* ===== ホーム画面に置くヒント ===== */
 .hint{
@@ -216,6 +218,21 @@ a.app.saibai {--c:var(--forest)}
       <span class="txt">
         <span class="t">みんなのノート</span>
         <span class="d">作業のやり方や 連絡ごと。だれでも書けます</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="app manual" href="../manual/">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#A35C2A" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21z"/>
+          <path d="M8 7.5h8M8 11h8M8 14.5h5"/>
+        </svg>
+      </span>
+      <span class="txt">
+        <span class="t">マニュアル</span>
+        <span class="d">スタッフハンドブックと 摘果マニュアル</span>
       </span>
       <span class="arrow">›</span>
     </a>

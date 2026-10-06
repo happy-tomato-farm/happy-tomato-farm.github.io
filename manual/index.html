@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#EE5340">
+<title>マニュアル｜ハッピートマトファーム</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23EE5340'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%234E9A5A' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+/* 色や形の決まりは、みんなのページ（minna.html）と同じものを使う。
+   同じ見た目にしておくと、別のページに飛んだ感じがしない */
+:root{
+  --ground:#F2F6F0;
+  --card:#FFFFFF;
+  --card-sub:#F7FAF6;
+  --ink:#24291F;
+  --muted:#6D7768;
+  --line:#DFE7DB;
+  --line-soft:#EDF2EA;
+
+  --tomato:#EE5340;
+  --leaf:#4E9A5A;
+  --grape:#8A5CC4;
+  --sun:#D9960F;
+  --teal:#2A8FA8;
+  --forest:#1F5C3D;
+  --sky:#3F6FB5;
+
+  --shadow:0 1px 0 rgba(36,41,31,.04), 0 6px 18px -10px rgba(36,41,31,.28);
+  --shadow-lift:0 2px 0 rgba(36,41,31,.05), 0 16px 32px -14px rgba(36,41,31,.4);
+
+  --r-card:22px;
+  --r-chip:999px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+    --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+    --tomato:#FF6E5B; --leaf:#6FBB7B; --grape:#B189E8; --sun:#F0BC4E; --teal:#5FBDD4;
+    --forest:#6FBB7B; --sky:#7CA6E8;
+    --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+    --shadow-lift:0 2px 0 rgba(0,0,0,.3), 0 16px 32px -14px rgba(0,0,0,.85);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+  --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+  --tomato:#FF6E5B; --leaf:#6FBB7B; --grape:#B189E8; --sun:#F0BC4E;
+  --teal:#5FBDD4; --forest:#6FBB7B; --sky:#7CA6E8;
+  --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+  --shadow-lift:0 2px 0 rgba(0,0,0,.3), 0 16px 32px -14px rgba(0,0,0,.85);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Zen Maru Gothic",
+              "Quicksand","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",
+              system-ui,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 60px}
+
+/* ===== 見出し ===== */
+header{padding:12px 0 6px;text-align:center}
+.logo{width:56px;height:56px;margin:0 auto 10px;display:block}
+h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
+.farm{display:block;margin-top:5px;font-size:12.5px;color:var(--muted);
+      font-weight:700;letter-spacing:.1em}
+.lead{margin:16px 0 22px;text-align:center;font-size:14.5px;
+      color:var(--muted);font-weight:600}
+
+/* 右上の「みんなのページ」。読んでいる途中でも戻れるように、画面の上に貼りつける。
+   位置をずらして重ねるのではなく、header の上に1行とって右寄せにしている。
+   こうすると、幅のせまい端末でもロゴや題名と重ならない */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; justify-content:flex-end;
+  padding:10px 0 8px;
+  background:var(--ground);     /* 下のスライドが透けないように地の色を敷く */
+}
+a.topback{
+  display:inline-flex; align-items:center; gap:5px;
+  background:var(--card); border:2px solid var(--line);
+  border-radius:var(--r-chip); padding:6px 15px;
+  font-size:13.5px; font-weight:800; color:var(--ink); text-decoration:none;
+  white-space:nowrap; box-shadow:var(--shadow);
+}
+a.topback:hover{border-color:var(--leaf)}
+a.topback:active{transform:scale(.97)}
+a.topback:focus-visible{outline:3px solid var(--leaf);outline-offset:2px}
+
+/* 下の「みんなのページへ もどる」 */
+.back{
+  display:inline-flex;align-items:center;gap:6px;
+  margin:18px 0 0;
+  font-size:14px;font-weight:700;color:var(--muted);text-decoration:none;
+}
+.back:hover{color:var(--ink)}
+
+/* ===== 1. 本をえらぶ画面 ===== */
+.books{display:flex;flex-direction:column;gap:14px}
+
+button.book{
+  display:flex;align-items:center;gap:15px;width:100%;text-align:left;
+  background:var(--card);
+  border:2px solid var(--line);
+  border-radius:var(--r-card);
+  padding:18px;
+  color:var(--ink);font-family:inherit;font-size:16px;
+  box-shadow:var(--shadow);cursor:pointer;
+  transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+button.book:hover{border-color:var(--c);box-shadow:var(--shadow-lift);transform:translateY(-2px)}
+button.book:active{transform:translateY(0) scale(.985)}
+button.book:focus-visible{outline:3px solid var(--c);outline-offset:3px}
+
+.book .icon{
+  flex:none;width:58px;height:58px;border-radius:50%;
+  display:grid;place-items:center;
+  background:color-mix(in srgb, var(--c) 16%, var(--card));
+  border:2px solid color-mix(in srgb, var(--c) 38%, transparent);
+}
+.book .icon svg{width:30px;height:30px;display:block}
+.book .txt{flex:1;min-width:0}
+.book .t{display:block;font-size:20px;font-weight:800}
+.book .d{display:block;font-size:13.5px;color:var(--muted);font-weight:600;
+         margin-top:2px;line-height:1.5}
+.book .arrow{flex:none;font-size:20px;font-weight:800;color:var(--c)}
+
+button.book.handbook{--c:var(--sky)}
+button.book.tekka   {--c:var(--tomato)}
+
+/* ===== 2. スライドを見る画面 ===== */
+.viewer{display:none}
+.viewer.on{display:block}
+.books.off{display:none}
+
+/* 上の帯（本の名前・何枚目か・もくじ） */
+.bar{
+  display:flex;align-items:center;gap:10px;
+  background:var(--card);border:2px solid var(--line);
+  border-radius:var(--r-chip);
+  padding:8px 10px 8px 14px;margin-bottom:12px;
+  box-shadow:var(--shadow);
+}
+.bar .name{flex:1;min-width:0;font-weight:800;font-size:15px;
+           overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .count{flex:none;font-size:13.5px;font-weight:700;color:var(--muted);
+            font-variant-numeric:tabular-nums}
+
+.chip{
+  flex:none;border:2px solid var(--line);background:var(--card-sub);
+  border-radius:var(--r-chip);padding:5px 13px;
+  font-family:inherit;font-size:13.5px;font-weight:800;color:var(--ink);
+  cursor:pointer;
+}
+.chip:hover{border-color:var(--leaf)}
+.chip:focus-visible{outline:3px solid var(--leaf);outline-offset:2px}
+
+/* スライドの画像。枠を白くして紙っぽく見せる */
+.stage{
+  background:var(--card);border:2px solid var(--line);
+  border-radius:16px;padding:8px;box-shadow:var(--shadow);
+  overflow:auto;                 /* 「大きく」にしたとき横に動かせるように */
+  -webkit-overflow-scrolling:touch;
+}
+.stage img{
+  display:block;width:100%;height:auto;border-radius:8px;
+  background:#fff;             /* 読み込み中に暗い穴があかないように */
+}
+/* 「大きく」を押したとき。横幅を広げて、細かい字を読めるようにする */
+.stage.zoom img{width:210%;max-width:none}
+.stage.zoom{cursor:zoom-out}
+.stage:not(.zoom){cursor:zoom-in}
+
+/* めくるボタン */
+.nav{display:flex;align-items:center;gap:10px;margin-top:12px}
+button.turn{
+  flex:1;
+  background:var(--card);border:2px solid var(--line);
+  border-radius:var(--r-card);padding:14px 10px;
+  font-family:inherit;font-size:16px;font-weight:800;color:var(--ink);
+  cursor:pointer;box-shadow:var(--shadow);
+  transition:transform .12s ease, border-color .12s ease;
+}
+button.turn:hover:not(:disabled){border-color:var(--leaf);transform:translateY(-1px)}
+button.turn:active:not(:disabled){transform:translateY(0) scale(.985)}
+button.turn:disabled{opacity:.38;cursor:default;box-shadow:none}
+button.turn:focus-visible{outline:3px solid var(--leaf);outline-offset:2px}
+
+/* いま何枚目かの説明（スライドの見出し） */
+.caption{
+  margin-top:12px;background:var(--card-sub);
+  border:2px dashed var(--line);border-radius:16px;
+  padding:12px 15px;font-size:14px;font-weight:700;color:var(--muted);
+}
+.caption b{color:var(--ink)}
+
+/* ===== 3. もくじ ===== */
+.toc{display:none;margin-top:14px}
+.toc.on{display:block}
+.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.toc button{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:var(--card);border:2px solid var(--line);border-radius:14px;
+  padding:11px 14px;font-family:inherit;font-size:14.5px;font-weight:700;
+  color:var(--ink);cursor:pointer;
+}
+.toc button:hover{border-color:var(--leaf)}
+.toc button.now{border-color:var(--tomato);background:var(--card-sub)}
+.toc button:focus-visible{outline:3px solid var(--leaf);outline-offset:2px}
+.toc .no{
+  flex:none;min-width:30px;text-align:center;
+  font-size:12.5px;font-weight:800;color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+
+.tip{
+  margin-top:22px;background:var(--card-sub);
+  border:2px dashed var(--line);border-radius:var(--r-card);
+  padding:16px 18px;font-size:13.5px;color:var(--muted);font-weight:600;
+}
+.tip b{color:var(--ink);display:block;margin-bottom:4px;font-size:14.5px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="topback" href="../minna/">‹ みんなのページ</a>
+  </div>
+
+  <header>
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="38" r="22" fill="#EE5340"/>
+      <path d="M32 20 L22 10 M32 20 L42 10 M32 20 L32 6"
+            stroke="#4E9A5A" stroke-width="5" stroke-linecap="round" fill="none"/>
+    </svg>
+    <h1>マニュアル</h1>
+    <span class="farm">ハッピートマトファーム</span>
+  </header>
+
+  <p class="lead" id="lead">よみたいものを えらんでください</p>
+
+  <!-- ===== 本をえらぶ ===== -->
+  <nav class="books" id="books">
+
+    <button class="book handbook" type="button" data-book="handbook">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#3F6FB5" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21z"/>
+          <path d="M8 7.5h8M8 11h8M8 14.5h5"/>
+        </svg>
+      </span>
+      <span class="txt">
+        <span class="t">スタッフハンドブック</span>
+        <span class="d">農園のこと・トマトのこと・はたらく上での決まりごと</span>
+      </span>
+      <span class="arrow">›</span>
+    </button>
+
+    <button class="book tekka" type="button" data-book="tekka">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#EE5340" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="9.5" cy="14" r="5"/>
+          <path d="M9.5 9V6.5M9.5 6.5 7 4.5M9.5 6.5 12 4.5"/>
+          <path d="m15.5 7.5 5 5M20.5 7.5l-5 5"/>
+        </svg>
+      </span>
+      <span class="txt">
+        <span class="t">摘果マニュアル</span>
+        <span class="d">どの実をとって どの実を残すか。写真で見わける</span>
+      </span>
+      <span class="arrow">›</span>
+    </button>
+
+  </nav>
+
+  <!-- ===== スライドを見る ===== -->
+  <section class="viewer" id="viewer" aria-live="polite">
+
+    <div class="bar">
+      <span class="name" id="bookName"></span>
+      <span class="count" id="count"></span>
+      <button class="chip" type="button" id="tocBtn">もくじ</button>
+    </div>
+
+    <!-- 画像をおすと「大きく／画面に合わせる」が切り替わる -->
+    <div class="stage" id="stage">
+      <img id="slide" alt="">
+    </div>
+
+    <div class="nav">
+      <button class="turn" type="button" id="prev">‹ まえ</button>
+      <button class="turn" type="button" id="next">つぎ ›</button>
+    </div>
+
+    <p class="caption" id="caption"></p>
+
+    <nav class="toc" id="toc">
+      <ol id="tocList"></ol>
+    </nav>
+
+    <div class="tip">
+      <b>見かた</b>
+      ゆびで 左右に はらうと ページを めくれます。
+      スライドを おすと 文字を 大きく できます（もう一度 おすと もどります）。
+    </div>
+
+  </section>
+
+  <a class="back" href="../minna/">‹ みんなのページへ もどる</a>
+
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   スライドの中身。画像は img/<本の名前>/01.jpg … という並びで置いてある。
+   題名は、スライドの見出しから書き写したもの（もくじに使う）。
+   ========================================================================= */
+const BOOKS = {
+  handbook: {
+    name: "スタッフハンドブック",
+    dir: "img/handbook",
+    titles: [
+      "表紙",
+      "『しあわせのトマト』～おいしく、楽しく、健康に～",
+      "もくじ",
+      "農園概要",
+      "目標と大切にすること／農園概要",
+      "トマトの基礎知識",
+      "トマトって何？？",
+      "栄養豊富なトマト！！",
+      "世界のトマト生産量と日本のトマト生産",
+      "トマト栽培先進国　オランダ",
+      "王様トマトを作ります！！",
+      "仕事・作業の基礎知識",
+      "一年間の作業の流れと、主に従事する作業",
+      "品質の良いトマトはどのように作られる？？",
+      "下葉かき・・・光合成のクオリティと病気への抵抗力",
+      "脇芽かき・・・むだなエネルギーロスをなくす",
+      "摘果（摘花）・・・より丸く、より大きく！",
+      "収穫・・・いつ収穫する？",
+      "勤務上の注意点",
+      "出退勤・遅刻欠勤・シフト・休憩・長期休暇",
+      "安全衛生・労災・マイカー・服装・貴重品",
+      "農園案内図",
+      "敷地内地図"
+    ]
+  },
+  tekka: {
+    name: "摘果マニュアル",
+    dir: "img/tekka",
+    titles: [
+      "摘果（摘花）・・・より丸く、より大きく！",
+      "窓あき果　商品価値なし、必ず摘果",
+      "尻腐れ果　商品価値なし、必ず摘果",
+      "双子果　完全にくっついていたら摘果",
+      "奇形果　商品価値なし、必ず摘果",
+      "傷もの　できれば摘果",
+      "チャック果　3本以上は商品価値なし",
+      "鬼花　必ず摘果（1果房に最低2果は残す）",
+      "先とがり果　できれば摘果"
+    ]
+  }
+};
+
+/* =========================================================================
+   いまの状態。
+   book は BOOKS のキー（"handbook" など）、null なら本をえらぶ画面。
+   page は 1 から数えた枚数。
+   ========================================================================= */
+let book = null;
+let page = 1;
+
+/* 画面の部品をまとめて取っておく（毎回 getElementById を書かないため） */
+const el = {
+  lead:     document.getElementById("lead"),
+  books:    document.getElementById("books"),
+  viewer:   document.getElementById("viewer"),
+  bookName: document.getElementById("bookName"),
+  count:    document.getElementById("count"),
+  stage:    document.getElementById("stage"),
+  slide:    document.getElementById("slide"),
+  prev:     document.getElementById("prev"),
+  next:     document.getElementById("next"),
+  caption:  document.getElementById("caption"),
+  tocBtn:   document.getElementById("tocBtn"),
+  toc:      document.getElementById("toc"),
+  tocList:  document.getElementById("tocList")
+};
+
+/* ---- 小さな道具 ------------------------------------------------------- */
+
+/** 画像のファイル名を作る。01.jpg のように 2 桁の 0 埋めにしている */
+function imgPath(key, n){
+  const b = BOOKS[key];
+  return b.dir + "/" + String(n).padStart(2, "0") + ".jpg";
+}
+
+/** n を 1〜最大枚数 の間に収める */
+function clampPage(key, n){
+  const last = BOOKS[key].titles.length;
+  return Math.min(Math.max(n, 1), last);
+}
+
+/** 前に見ていた場所を控えておく場所の名前 */
+function memoryKey(key){ return "htf_manual_" + key; }
+
+/* ---- 画面を描く ------------------------------------------------------- */
+
+/**
+ * いまの book / page に合わせて画面を描き直す。
+ * 「状態を決める」→「描く」を分けておくと、どこから呼んでも同じ結果になる。
+ */
+function render(){
+  // 本をえらぶ画面
+  if(book === null){
+    el.books.classList.remove("off");
+    el.viewer.classList.remove("on");
+    el.lead.textContent = "よみたいものを えらんでください";
+    document.title = "マニュアル｜ハッピートマトファーム";
+    return;
+  }
+
+  const b = BOOKS[book];
+  const last = b.titles.length;
+
+  el.books.classList.add("off");
+  el.viewer.classList.add("on");
+  el.lead.textContent = "ゆびで はらっても めくれます";
+
+  el.bookName.textContent = b.name;
+  el.count.textContent = page + " / " + last;
+  el.caption.innerHTML = "<b>" + page + "枚目</b>　" + b.titles[page - 1];
+
+  // 画像を入れ替える。拡大したままだと次の絵も拡大のままで見づらいので戻す
+  el.stage.classList.remove("zoom");
+  el.stage.scrollLeft = 0;
+  el.slide.src = imgPath(book, page);
+  el.slide.alt = b.name + " " + page + "枚目：" + b.titles[page - 1];
+
+  // 端ではボタンを押せなくする（押しても何も起きないより、見てわかる方がよい）
+  el.prev.disabled = (page <= 1);
+  el.next.disabled = (page >= last);
+
+  // つぎの1枚を先に読み込んでおく。めくったときに白い間ができない
+  if(page < last){
+    const warm = new Image();
+    warm.src = imgPath(book, page + 1);
+  }
+
+  renderToc();
+
+  document.title = b.name + " " + page + "／" + last + "｜ハッピートマトファーム";
+
+  // 見ていた場所を控える。次に開いたとき続きから見られる
+  try{
+    localStorage.setItem(memoryKey(book), String(page));
+  }catch(e){
+    // 端末の設定で localStorage が使えないことがある。
+    // 続きから見られないだけなので、ここでは止めない
+  }
+}
+
+/** もくじを作り直す。いま見ているところに印を付ける */
+function renderToc(){
+  const b = BOOKS[book];
+  el.tocList.replaceChildren();          // いったん空にする
+
+  b.titles.forEach(function(title, i){
+    const n = i + 1;
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    if(n === page) btn.className = "now";
+
+    const no = document.createElement("span");
+    no.className = "no";
+    no.textContent = n;
+
+    const tx = document.createElement("span");
+    tx.textContent = title;
+
+    btn.append(no, tx);
+    btn.addEventListener("click", function(){
+      goTo(book, n);
+      el.toc.classList.remove("on");     // えらんだら、もくじは閉じる
+      el.stage.scrollIntoView({behavior:"smooth", block:"start"});
+    });
+
+    li.append(btn);
+    el.tocList.append(li);
+  });
+}
+
+/* ---- 移動 ------------------------------------------------------------- */
+
+/**
+ * 指定の本・ページへ移る。
+ * 場所は URL の # に書く（#handbook-5 のように）。
+ * こうしておくと、スマホの「戻る」で1枚前に戻れるし、リンクで送ることもできる。
+ */
+function goTo(key, n){
+  const next = key === null ? "" : key + "-" + clampPage(key, n);
+  if(location.hash.slice(1) === next){
+    applyHash();                          // 同じなら hashchange が起きないので直接描く
+  }else{
+    location.hash = next;
+  }
+}
+
+/** URL の # を読んで、いまの状態に反映する */
+function applyHash(){
+  const h = location.hash.slice(1);
+  const m = /^([a-z]+)-(\d+)$/.exec(h);
+
+  if(m && BOOKS[m[1]]){
+    book = m[1];
+    page = clampPage(book, parseInt(m[2], 10));
+  }else if(BOOKS[h]){
+    // #handbook だけが書かれていたら、前に見ていた続きから
+    book = h;
+    page = readSaved(book);
+  }else{
+    book = null;
+    page = 1;
+  }
+  render();
+}
+
+/** 控えておいた「前に見ていた場所」を読む。無ければ 1枚目 */
+function readSaved(key){
+  try{
+    const v = parseInt(localStorage.getItem(memoryKey(key)), 10);
+    return Number.isFinite(v) ? clampPage(key, v) : 1;
+  }catch(e){
+    return 1;
+  }
+}
+
+/* ---- 操作のうけつけ ---------------------------------------------------- */
+
+// 本をえらぶ
+document.querySelectorAll("button.book").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    const key = btn.dataset.book;
+    goTo(key, readSaved(key));
+    window.scrollTo({top:0, behavior:"smooth"});
+  });
+});
+
+// めくる
+el.prev.addEventListener("click", function(){ goTo(book, page - 1); });
+el.next.addEventListener("click", function(){ goTo(book, page + 1); });
+
+// もくじの開け閉め
+el.tocBtn.addEventListener("click", function(){
+  el.toc.classList.toggle("on");
+});
+
+// スライドを押すと大きくなる
+el.stage.addEventListener("click", function(){
+  el.stage.classList.toggle("zoom");
+});
+
+// パソコンの矢印キーでもめくれるように
+document.addEventListener("keydown", function(ev){
+  if(book === null) return;
+  if(ev.key === "ArrowLeft")  goTo(book, page - 1);
+  if(ev.key === "ArrowRight") goTo(book, page + 1);
+  if(ev.key === "Escape")     goTo(null, 1);
+});
+
+/* ゆびで左右にはらってめくる。
+   「大きく」しているときは横に動かして読みたいので、めくらない */
+let touchX = null, touchY = null;
+
+el.stage.addEventListener("touchstart", function(ev){
+  if(ev.touches.length !== 1) return;     // 2本指（ピンチ）は触らない
+  touchX = ev.touches[0].clientX;
+  touchY = ev.touches[0].clientY;
+}, {passive:true});
+
+el.stage.addEventListener("touchend", function(ev){
+  if(touchX === null) return;
+  if(el.stage.classList.contains("zoom")){ touchX = null; return; }
+
+  const dx = ev.changedTouches[0].clientX - touchX;
+  const dy = ev.changedTouches[0].clientY - touchY;
+  touchX = null;
+
+  // 横に 50px 以上、かつ 縦の動きより横の動きが大きいときだけ「はらった」とみなす
+  // （縦の指の動きは画面のスクロールなので、めくってはいけない）
+  if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)){
+    goTo(book, dx < 0 ? page + 1 : page - 1);
+  }
+}, {passive:true});
+
+/* ---- 起動 ------------------------------------------------------------- */
+window.addEventListener("hashchange", applyHash);
+applyHash();
+</script>
+
+</body>
+</html>
