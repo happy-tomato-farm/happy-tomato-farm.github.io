@@ -155,6 +155,11 @@ a.app.manual {--c:var(--book)}
 
   <p class="lead">つかいたいものを えらんでください</p>
 
+  <!-- 並びは「よく使うものほど上」。
+       1 シフト確認 / 2 シフト希望提出 … 毎週かならず触る
+       3 みんなのノート / 4 病害虫の記録 … その日の作業で書く・読む
+       5 今週のめやす / 6 栽培記録 / 7 収穫量実績 … ときどき見る
+       8 マニュアル … いちばん使う回数が少ないので最後 -->
   <nav class="menu">
 
     <a class="app shift" href="../shift/">
@@ -167,7 +172,7 @@ a.app.manual {--c:var(--book)}
         </svg>
       </span>
       <span class="txt">
-        <span class="t">シフト</span>
+        <span class="t">シフト確認</span>
         <span class="d">じぶんの きんむ時間を たしかめる</span>
       </span>
       <span class="arrow">›</span>
@@ -185,8 +190,38 @@ a.app.manual {--c:var(--book)}
         </svg>
       </span>
       <span class="txt">
-        <span class="t">シフトきぼう</span>
+        <span class="t">シフト希望提出</span>
         <span class="d">つぎの シフトの きぼうを 出す</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="app note" href="../note/">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#EE5340" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v18H5.5A1.5 1.5 0 0 1 4 19.5z"/>
+          <path d="M8 8h7M8 12h7M8 16h4"/>
+        </svg>
+      </span>
+      <span class="txt">
+        <span class="t">みんなのノート</span>
+        <span class="d">作業のやり方や 連絡ごと。だれでも書けます</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="app byogai" href="../byogai/">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#8A5CC4" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 4c3 0 5 2.4 5 5.5v4C17 17.5 14.8 20 12 20s-5-2.5-5-6.5v-4C7 6.4 9 4 12 4z"/>
+          <path d="M12 8v12M7 10.5H3M7 15H3.5M17 10.5h4M17 15h3.5M9.5 5 8 2.8M14.5 5 16 2.8"/>
+        </svg>
+      </span>
+      <span class="txt">
+        <span class="t">病害虫の記録</span>
+        <span class="d">見つけた病気や虫を 写真つきで残せます</span>
       </span>
       <span class="arrow">›</span>
     </a>
@@ -207,17 +242,34 @@ a.app.manual {--c:var(--book)}
       <span class="arrow">›</span>
     </a>
 
-    <a class="app note" href="../note/">
+    <a class="app saibai" href="../saibai/">
       <span class="icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#EE5340" stroke-width="2.2"
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1F5C3D" stroke-width="2.2"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v18H5.5A1.5 1.5 0 0 1 4 19.5z"/>
-          <path d="M8 8h7M8 12h7M8 16h4"/>
+          <path d="M12 21V9"/>
+          <path d="M12 12C12 8.5 9.5 6 6 6c0 3.5 2.5 6 6 6z"/>
+          <path d="M12 15c0-3.5 2.5-6 6-6 0 3.5-2.5 6-6 6z"/>
+          <path d="M7 21h10"/>
         </svg>
       </span>
       <span class="txt">
-        <span class="t">みんなのノート</span>
-        <span class="d">作業のやり方や 連絡ごと。だれでも書けます</span>
+        <span class="t">栽培記録（成育調査）</span>
+        <span class="d">ハウスの ようすと 週ごとの おぼえがき</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="app jisseki" href="../v-k7m2x9pq/">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4E9A5A" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3.5 20.5h17"/>
+          <path d="M6.5 20.5v-7M12 20.5V5M17.5 20.5v-10"/>
+        </svg>
+      </span>
+      <span class="txt">
+        <span class="t">収穫量実績</span>
+        <span class="d">とれた量の グラフと表</span>
       </span>
       <span class="arrow">›</span>
     </a>
@@ -233,53 +285,6 @@ a.app.manual {--c:var(--book)}
       <span class="txt">
         <span class="t">マニュアル</span>
         <span class="d">スタッフハンドブックと 摘果マニュアル</span>
-      </span>
-      <span class="arrow">›</span>
-    </a>
-
-    <a class="app byogai" href="../byogai/">
-      <span class="icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#8A5CC4" stroke-width="2.2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 4c3 0 5 2.4 5 5.5v4C17 17.5 14.8 20 12 20s-5-2.5-5-6.5v-4C7 6.4 9 4 12 4z"/>
-          <path d="M12 8v12M7 10.5H3M7 15H3.5M17 10.5h4M17 15h3.5M9.5 5 8 2.8M14.5 5 16 2.8"/>
-        </svg>
-      </span>
-      <span class="txt">
-        <span class="t">病害虫の記録</span>
-        <span class="d">見つけた病気や虫を 写真つきで残せます</span>
-      </span>
-      <span class="arrow">›</span>
-    </a>
-
-    <a class="app saibai" href="../saibai/">
-      <span class="icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#1F5C3D" stroke-width="2.2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 21V9"/>
-          <path d="M12 12C12 8.5 9.5 6 6 6c0 3.5 2.5 6 6 6z"/>
-          <path d="M12 15c0-3.5 2.5-6 6-6 0 3.5-2.5 6-6 6z"/>
-          <path d="M7 21h10"/>
-        </svg>
-      </span>
-      <span class="txt">
-        <span class="t">栽培記録</span>
-        <span class="d">ハウスの ようすと 週ごとの おぼえがき</span>
-      </span>
-      <span class="arrow">›</span>
-    </a>
-
-    <a class="app jisseki" href="../v-k7m2x9pq/">
-      <span class="icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#4E9A5A" stroke-width="2.2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M3.5 20.5h17"/>
-          <path d="M6.5 20.5v-7M12 20.5V5M17.5 20.5v-10"/>
-        </svg>
-      </span>
-      <span class="txt">
-        <span class="t">実績（共有用）</span>
-        <span class="d">とれた量の グラフと表</span>
       </span>
       <span class="arrow">›</span>
     </a>
