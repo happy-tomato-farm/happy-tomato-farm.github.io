@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -456,6 +456,9 @@ const KITEI_SET = {
 };
 const KITEI_FERT = { fert:"トケル養液配合1号", bags:1, made:350 };
 const KITEI_DAY  = { eday:15, nkai:3, nday:0.126, bai:null, nweek:null,
+                     /* 週N量が「外から決まった目標」かどうか。
+                        true なら 1日N量×7 で上書きしない（render を見ること）。 */
+                     nweekFixed:false,
                      master:"n",
                      /* めやすアプリから受け取るもの（無ければ null） */
                      curve:null,        // 日射ごとの蒸散量 [L/㎡] の表
@@ -588,7 +591,7 @@ function dayOf(house, date, tsukuru){
          週N量は「その作型で決めた目標」なので、毎日打ち直す必要はない。
          快晴の潅水量は季節でゆっくり動くので、引き継いだうえで直せる形にする。 */
       moto = { eday:mae.eday, nkai:mae.nkai, nday:mae.nday, bai:mae.bai,
-               nweek:mae.nweek, master:mae.master,
+               nweek:mae.nweek, nweekFixed:mae.nweekFixed, master:mae.master,
                leach:mae.leach };
       /* 表だけは古くなりすぎたら引き継がない（CURVE_MAX_AGE_DAYS 参照）。
          捨てた日は昔ながらの直線計算に戻るので、壊れはしない。
@@ -931,7 +934,7 @@ function matome(house, date){
     Vday: r.Vday,                               // モデルが言う1日の必要量 L/㎡
     hyo: r.hyo,                                 // 表を使って出したか
     "in": { eday:dd.eday, nkai:nkai, nday:dd.nday, bai:dd.bai, master:dd.master,
-            nweek:dd.nweek, leach:dd.leach,
+            nweek:dd.nweek, nweekFixed:dd.nweekFixed, leach:dd.leach,
             curve:dd.curve, curveDate:dd.curveDate, needLink:dd.needLink,
             rows: dd.rows.slice(0,nkai) },
     conf: Object.assign({}, c, { fert:{ fert:fg.fert, bags:fg.bags, made:fg.made } }),
@@ -1035,6 +1038,8 @@ async function pull(){
         master: inn.master || "n",
         // 週N量とめやすアプリから来た値。古い記録には入っていないので ?? で受ける。
         nweek:  inn.nweek ?? null,
+        // 古い記録には目印が無い。false で受けると今までどおり 1日N量×7 になる。
+        nweekFixed: inn.nweekFixed ?? false,
         leach:  inn.leach ?? null,
         curve:  Array.isArray(inn.curve) ? inn.curve : null,
         curveDate: inn.curveDate ?? null,
@@ -1146,15 +1151,28 @@ function render(){
   //
   // 「1週間快晴がつづいたらこの量を入れる、を1日に直す」という考え方を
   // そのまま式にしたもの。ほかの入力に紐づかない欄は置かない。
+  //
+  // ★2026-10-06 に変えたところ。
+  //   週N量が「めやすアプリから来た」または「手で打った」ものなら、
+  //   1日N量×7 で**上書きしない**（d.nweekFixed が目印）。
+  //
+  //   理由: 上書きしてしまうと、週N量の欄が1日N量の7倍を映すだけになり、
+  //   独立した情報を持てない。そうなると下の「1週間のN量の着地」で
+  //   比べる相手が毎日動いてしまい、物差しの意味をなさない。
+  //   曇って潅水を絞った日の1日N量を7倍しても「曇りが7日続いたら」に
+  //   しかならず、目標として使えない。
+  //
+  //   週N量は「1週間快晴がつづいたらこの量を入れる」という**作型の目標**。
+  //   めやすアプリが日付から計算して渡す（12月 0.87 〜 6月 2.63 kg/10a）。
   if(d.master === "nweek" && has(d.nweek)){
     d.nday = num(d.nweek)/7;
     d.bai  = baiFromN(c, f, d, num(d.eday), num(d.nday));
   }else if(d.master === "bai" && has(d.bai)){
     d.nday  = nFromBai(c, f, d, num(d.eday), num(d.bai));
-    d.nweek = num(d.nday)*7;
+    if(!d.nweekFixed) d.nweek = num(d.nday)*7;
   }else{
     d.bai   = baiFromN(c, f, d, num(d.eday), num(d.nday));
-    d.nweek = num(d.nday)*7;
+    if(!d.nweekFixed) d.nweek = num(d.nday)*7;
   }
   const T0 = num(d.bai);
 
@@ -1497,6 +1515,10 @@ function paramsWoYomu(){
     need:  toNum("need"),  eday: toNum("eday"), leach: toNum("leach"),
     coef:  toNum("coef"),  film: toNum("film"),
     curve: curve,
+    /* N量（めやすアプリの段7から。古いリンクには入っていないので null になる） */
+    nday:  toNum("nday"),  nweek: toNum("nweek"),
+    /* どの欄を主にするか。知らない値が来たら無視する（既定の "n" に落とす）。 */
+    master: ["n","nweek","bai"].includes(q.get("master")) ? q.get("master") : null,
   };
 }
 
@@ -1517,6 +1539,15 @@ function atehameru(p){
     if(p.eday  !== null) d.eday  = p.eday;
     if(p.leach !== null) d.leach = p.leach;
     if(p.curve){ d.curve = p.curve; d.curveDate = date; }
+    /* N量（2026-10-06 追加）。
+       ★nday を主にする。週N量は「1週間のN量の着地」の比べにだけ使う。
+         master="nweek" にすると下の render() で nweek÷7 と割られ、
+         天気に関係なく毎日同じN量になってしまう。めやすアプリ側は
+         N需要を受光量に比例させているので、日ごとの nday を使うのが正しい。
+       ★古いリンク（nday が無い）では何も触らないので、
+         前日からの引き継ぎ値がそのまま残る。 */
+    if(p.nweek !== null){ d.nweek = p.nweek; d.nweekFixed = true; }
+    if(p.nday  !== null){ d.nday = p.nday; d.master = p.master || "n"; }
   }
 
   document.querySelectorAll(".tab").forEach(x=>
@@ -1531,6 +1562,9 @@ function atehameru(p){
     + `10MJあたり潅水量 <b>${fmt(num(p.need),2)}</b> L/㎡　／　`
     + `日射予測 <b>${fmt(num(p.eday),1)}</b> MJ/㎡`
     + (p.leach !== null ? `　／　上乗せ <b>${fmt(p.leach,0)}</b>％` : "")
+    + (p.nday  !== null ? `<br>1日のN量 <b>${fmt(p.nday,3)}</b> kg/10a` : "")
+    + (p.nweek !== null ? `　／　1週間のN量 <b>${fmt(p.nweek,3)}</b> kg/10a`
+                        + `（快晴が7日つづいた場合）` : "")
     + (p.curve ? `　／　立て直し用の表 <b>${p.curve.length}</b> 点` : "");
 
   /* 設定のずれを知らせる。
