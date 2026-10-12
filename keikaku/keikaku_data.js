@@ -1,7 +1,7 @@
 var PLAN_DATA = {
  "source": "2027作業記録.xlsx",
  "sheet": "作業計画,進捗 (週管理)中央",
- "built_at": "2026-09-10 10:26",
+ "built_at": "2026-10-12 21:31",
  "weeks": [
   {
    "week_no": 32,
@@ -225,7 +225,7 @@ var PLAN_DATA = {
    "leaf_m2": 18,
    "leaf_plant": 8.1,
    "density": 2.22,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 46,
@@ -449,7 +449,7 @@ var PLAN_DATA = {
    "leaf_m2": 26,
    "leaf_plant": 9.6,
    "density": 2.71,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 7,
@@ -465,7 +465,7 @@ var PLAN_DATA = {
    "leaf_m2": 28,
    "leaf_plant": 10.3,
    "density": 2.71,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 8,
@@ -481,7 +481,7 @@ var PLAN_DATA = {
    "leaf_m2": 28,
    "leaf_plant": 10.3,
    "density": 2.71,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 9,
@@ -497,7 +497,7 @@ var PLAN_DATA = {
    "leaf_m2": 33,
    "leaf_plant": 10.1,
    "density": 3.26,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 10,
@@ -513,7 +513,7 @@ var PLAN_DATA = {
    "leaf_m2": 33,
    "leaf_plant": 10.1,
    "density": 3.26,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 11,
@@ -529,7 +529,7 @@ var PLAN_DATA = {
    "leaf_m2": 33,
    "leaf_plant": 10.1,
    "density": 3.26,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 12,
@@ -545,7 +545,7 @@ var PLAN_DATA = {
    "leaf_m2": 36,
    "leaf_plant": 11,
    "density": 3.26,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 13,
@@ -561,7 +561,7 @@ var PLAN_DATA = {
    "leaf_m2": 36,
    "leaf_plant": 11,
    "density": 3.26,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 14,
@@ -577,7 +577,7 @@ var PLAN_DATA = {
    "leaf_m2": 40,
    "leaf_plant": 12.3,
    "density": 3.26,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 15,
@@ -593,7 +593,7 @@ var PLAN_DATA = {
    "leaf_m2": 40,
    "leaf_plant": 12.3,
    "density": 3.26,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 16,
@@ -609,7 +609,7 @@ var PLAN_DATA = {
    "leaf_m2": 40,
    "leaf_plant": 12.3,
    "density": 3.26,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 17,
@@ -625,7 +625,7 @@ var PLAN_DATA = {
    "leaf_m2": 40,
    "leaf_plant": 12.3,
    "density": 3.26,
-   "tekika": 3
+   "tekika": 4
   },
   {
    "week_no": 18,
