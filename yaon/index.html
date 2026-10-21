@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2A4A6B">
+<title>夜温設定｜ハッピートマトファーム</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23EE5340'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%234E9A5A' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   色の設定。今週のめやす（keikaku.html）と同じ考え方でそろえている。
+   :root にふつうの色、暗い画面のときの色を下の2か所で上書きする。
+   ============================================================ */
+:root{
+  --ground:#F2F6F0;
+  --card:#FFFFFF;
+  --card-sub:#F7FAF6;
+  --ink:#24291F;
+  --muted:#6D7768;
+  --line:#DFE7DB;
+  --line-soft:#EDF2EA;
+  --tomato:#EE5340;
+  --leaf:#4E9A5A;
+  --night:#2A4A6B;
+  --night-soft:#E6EDF5;
+  --warn:#B8461F;
+  --warn-soft:#FBEAE2;
+  --shadow:0 1px 0 rgba(36,41,31,.04), 0 6px 18px -10px rgba(36,41,31,.28);
+  --r-card:22px;
+  --r-chip:999px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+    --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+    --tomato:#FF6E5B; --leaf:#6FBB7B; --night:#8FB4DE; --night-soft:#25303B;
+    --warn:#FF9A73; --warn-soft:#3A2820;
+    --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+  --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+  --tomato:#FF6E5B; --leaf:#6FBB7B; --night:#8FB4DE; --night-soft:#25303B;
+  --warn:#FF9A73; --warn-soft:#3A2820;
+  --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Zen Maru Gothic",
+              "Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px 70px}
+.num{font-variant-numeric:tabular-nums}
+
+header{padding:24px 0 6px;text-align:center}
+h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
+.farm{display:block;margin-top:4px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.1em}
+
+.card{
+  background:var(--card); border:2px solid var(--line); border-radius:var(--r-card);
+  padding:16px; margin-top:16px; box-shadow:var(--shadow);
+}
+.card h2{font-size:14px;font-weight:800;color:var(--muted);margin:0 0 10px;letter-spacing:.08em}
+
+/* ===== ハウスの切りかえ ===== */
+.seg{display:flex;gap:8px}
+.seg button{
+  flex:1; min-height:50px; border-radius:16px; cursor:pointer;
+  border:2px solid var(--line); background:var(--card-sub); color:var(--muted);
+  font:inherit; font-size:18px; font-weight:800;
+}
+.seg button[aria-pressed="true"]{background:var(--night);border-color:var(--night);color:#fff}
+
+/* ===== 入力欄 ===== */
+.field{margin-top:16px}
+.field:first-of-type{margin-top:0}
+.field label{display:block;font-size:15px;font-weight:800;margin-bottom:6px}
+.row{display:flex;gap:8px;align-items:stretch}
+.field input{
+  flex:1; min-width:0; min-height:52px;
+  font:inherit; font-size:22px; font-weight:800; padding:6px 14px;
+  border:2px solid var(--line); border-radius:14px;
+  background:var(--card-sub); color:var(--ink);
+}
+.field input::placeholder{color:var(--muted);opacity:.75}
+.field input:focus{outline:3px solid var(--night);outline-offset:1px;border-color:var(--night)}
+.field .unit{align-self:center;font-size:18px;font-weight:800;color:var(--muted)}
+.btn{
+  flex:none; min-width:76px; min-height:52px; border-radius:14px; cursor:pointer;
+  border:2px solid var(--line); background:var(--card); color:var(--ink);
+  font:inherit; font-size:15px; font-weight:800;
+}
+.btn:active{transform:scale(.96)}
+.hint{font-size:13.5px;color:var(--muted);margin:6px 2px 0;line-height:1.6}
+.hint b{color:var(--ink)}
+.err{font-size:14px;color:var(--warn);font-weight:800;margin:6px 2px 0}
+
+/* ===== 結果：4段の設定 ===== */
+.stages{list-style:none;margin:0;padding:0}
+.stage{
+  display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:4px 14px;
+  padding:12px 4px; border-bottom:2px dashed var(--line-soft);
+}
+.stage:last-child{border-bottom:0}
+.stage .no{
+  width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  background:var(--night-soft);color:var(--night);font-weight:800;font-size:17px;
+}
+.stage .when{font-size:22px;font-weight:800;line-height:1.25}
+.stage .why{display:block;font-size:12.5px;color:var(--muted);font-weight:700;line-height:1.4}
+.stage .temp{font-size:34px;font-weight:800;color:var(--night);line-height:1}
+.stage .temp small{font-size:17px}
+
+.summary{margin-top:12px;display:grid;gap:8px}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    background:var(--card-sub);border-radius:14px;padding:9px 14px}
+.kv .k{font-size:14px;color:var(--muted);font-weight:700}
+.kv .v{font-size:19px;font-weight:800}
+.short{
+  margin-top:12px;background:var(--warn-soft);color:var(--warn);
+  border-radius:14px;padding:12px 14px;font-weight:800;line-height:1.6
+}
+.short small{display:block;font-weight:700;font-size:13px}
+.ok{margin-top:12px;color:var(--leaf);font-weight:800;font-size:14.5px}
+.tag{display:inline-block;font-size:12px;font-weight:800;border-radius:var(--r-chip);
+     padding:1px 9px;margin-left:6px;vertical-align:2px;background:var(--night-soft);color:var(--night)}
+
+/* ===== 日の出・日の入 ===== */
+.sun{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sun .kv{flex-direction:column;align-items:flex-start;gap:0}
+
+details{margin-top:16px}
+summary{
+  cursor:pointer;list-style:none;font-weight:800;font-size:15px;
+  background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 16px;
+}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"＋ ";color:var(--muted)}
+details[open] summary::before{content:"− "}
+.doc{font-size:14px;line-height:1.8;padding:4px 6px}
+.doc h3{font-size:15px;margin:16px 0 4px}
+.doc p{margin:6px 0}
+.doc ul{margin:6px 0;padding-left:1.3em}
+.doc .eq{background:var(--card-sub);border-radius:12px;padding:10px 12px;font-weight:800;margin:8px 0}
+.yrs{list-style:none;padding:0;margin:6px 0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+footer{margin-top:26px;text-align:center;font-size:12px;color:var(--muted)}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>夜温設定</h1>
+  <span class="farm">ハッピートマトファーム</span>
+</header>
+
+<!-- ============ 入力 ============ -->
+<section class="card" aria-label="条件">
+  <div class="seg" role="group" aria-label="ハウス">
+    <button type="button" data-house="中央" aria-pressed="true">中央</button>
+    <button type="button" data-house="東" aria-pressed="false">東</button>
+  </div>
+
+  <div class="field">
+    <label for="date">① 日付</label>
+    <div class="row">
+      <input id="date" type="date">
+      <button type="button" class="btn" id="today">今日</button>
+    </div>
+    <p class="hint">この日の日の入りから、翌朝の日の出までの設定を出します。</p>
+  </div>
+
+  <div class="field">
+    <label for="target">② 日平均気温の目標</label>
+    <div class="row">
+      <!-- 数字の欄でも type="number" は使わない（上下の矢印で値が変わる・小数点が打てなくなるため） -->
+      <input id="target" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
+      <span class="unit">℃</span>
+    </div>
+    <p class="hint" id="targetHint"></p>
+    <p class="err" id="targetErr" hidden></p>
+  </div>
+
+  <div class="field">
+    <label for="dayavg">③ 日中の平均気温（日の出〜日の入）</label>
+    <div class="row">
+      <input id="dayavg" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done">
+      <span class="unit">℃</span>
+    </div>
+    <p class="hint" id="dayHint"></p>
+    <p class="err" id="dayErr" hidden></p>
+  </div>
+</section>
+
+<!-- ============ 結果 ============ -->
+<section class="card" aria-live="polite">
+  <h2 id="resTitle">④ 暖房機に入れる設定</h2>
+  <div id="result"></div>
+</section>
+
+<section class="card">
+  <h2>この夜の日の出・日の入</h2>
+  <div class="sun" id="sun"></div>
+</section>
+
+<details id="yearsBox">
+  <summary>日中平均の過去の値（年ごと）</summary>
+  <div class="doc" id="years"></div>
+</details>
+
+<details>
+  <summary>計算の考え方と決まりごと</summary>
+  <div class="doc">
+    <h3>夜に必要な平均温度</h3>
+    <p>1日（今日の日の出〜明日の日の出）の平均が目標になるように、夜の分を逆算します。</p>
+    <div class="eq">夜の必要平均 ＝（目標 × 1日の長さ − 日中平均 × 昼の長さ）÷ 夜の長さ</div>
+    <ul>
+      <li>目標 × 1日の長さ … 1日で確保したい「温度 × 時間」の合計</li>
+      <li>日中平均 × 昼の長さ … 日中にもう確保できた分</li>
+      <li>残りを夜の長さで割ると、夜に必要な平均になります</li>
+    </ul>
+    <p>夜の平均は<b>設定温度</b>で数えています。暖房が止まっている時間（日没直後など）はハウスが設定より暖かいので、実際の平均はこれより少し高くなります。</p>
+
+    <h3>4段の時刻</h3>
+    <ul>
+      <li>1段目：日の入り（30分単位に丸める）から4時間。転流がいちばん盛んな時間です</li>
+      <li>2段目：日の入りから約8時間後まで（夜の転流の8割が終わるころ）</li>
+      <li>3段目：日の出の2時間前まで（呼吸による消耗を抑える）</li>
+      <li>4段目：日の出の2時間前〜日の出（朝の結露を防ぐ）</li>
+      <li>各段は1時間半以上あけます</li>
+    </ul>
+
+    <h3>温度の決まりごと</h3>
+    <ul>
+      <li>11〜16℃、0.5℃きざみ</li>
+      <li>4段目は13℃以上（3〜5月は14℃以上）</li>
+      <li>となりの段との差は2℃まで（1時間半で2℃以内、1時間で3℃を超えない）</li>
+      <li>1〜3段目は下げる一方。上げ直すのは4段目だけ</li>
+      <li>目標を満たす組み合わせの中から、<b>前半ができるだけ高い</b>ものを選びます</li>
+      <li>16℃にしても届かない日は、全段16℃にして不足分を表示します（曇天日は無理に上げない）</li>
+    </ul>
+
+    <h3>前半を高くする理由</h3>
+    <p>夜の転流（葉の糖を果実へ送る流れ）は消灯後の最初の4時間に集中し、0〜4時間で10%、4〜8時間で6%、8〜16時間で4%という測定があります（宍戸 2013、トマト苗）。夜温が高いほど果実への転流は多くなります（全ら 1988）。後半は低くして呼吸による消耗を抑えます。県の指針も「夕方から3時間（愛知）」「4〜5時間（千葉）」を高めにする形です。</p>
+
+    <h3>日の出・日の入</h3>
+    <p>日射量予測と同じ式（北緯36.523°・東経139.762°、太陽の中心が地平線に来る時刻）で計算しています。暦の時刻より日の出は約4分遅く、日の入は約4分早くなります。</p>
+
+    <h3>過去の日中平均（平年値）</h3>
+    <p id="heinenSrc"></p>
+  </div>
+</details>
+
+<footer>
+  <a href="../">アプリ一覧へもどる</a>
+</footer>
+</div>
+
+<!-- 目標は「今週のめやす」と同じデータを読む。読めなくても画面は動く（手で入力する） -->
+<script src="../keikaku/keikaku_data.js"></script>
+<script src="yaon_heinen.js"></script>
+<script>
+"use strict";
+
+/* =========================================================================
+   1. 決まりごと（数値はすべてここに集める）
+   ========================================================================= */
+const RULE = {
+  latDeg: 36.52327, lonDeg: 139.762022,   // 日射量予測アプリの既定値（圃場）
+  stdMeridianDeg: 135,                     // 日本標準時の子午線
+  minC: 11, maxC: 16, stepC: 0.5,          // 設定温度の範囲ときざみ
+  floorC: 13, floorSpringC: 14,            // 4段目（日の出2時間前〜）の下限
+  springMonths: [3, 4, 5],
+  maxJumpC: 2,                             // となりの段との差の上限
+  slotH: 0.5,                              // 暖房機の時刻きざみ（30分）
+  stage1H: 4,                              // 1段目の長さ（日の入りから）
+  stage2EndAfterSunsetH: 8,                // 2段目の終わり（日の入りから）
+  preDawnH: 2,                             // 4段目は日の出の何時間前から
+  minStageH: 1.5,                          // 1段の最短の長さ
+  pickToleranceC: 0.25,                    // 目標をこえる幅の許し（0.5℃きざみの丸め分）
+  heinenWindowDays: 3,                     // 平年値は前後3日（計7日）の平均
+  heinenMinDays: 4,                        // 7日のうち4日以上ある年だけ使う
+};
+const D2R = Math.PI / 180;
+
+/* =========================================================================
+   2. 計算（入力を受け取って値を返すだけ。画面には触らない）
+   ========================================================================= */
+
+/* 文字の数字を読む。全角の「１８．５」も受け付ける。読めなければ NaN */
+function parseNum(text) {
+  const s = String(text || "").trim()
+    .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[．。､，]/g, ".").replace(/[－ー−]/g, "-");
+  if (s === "") return null;
+  return /^-?\d+(\.\d*)?$|^-?\.\d+$/.test(s) ? Number(s) : NaN;
+}
+
+const ymd = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const dayOfYear = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(d.getFullYear(), 0, 0)) / 86400000);
+
+/* 日の出・日の入 [時]（日射量予測.html と同じ式。太陽の中心が地平線に来る時刻） */
+function sunTimes(date) {
+  const J = dayOfYear(date);
+  const LC = (RULE.lonDeg - RULE.stdMeridianDeg) / 15;                 // 経度補正 [h]
+  const f = (279.575 + 0.9856 * J) * D2R;
+  const ET = (-104.7 * Math.sin(f) + 596.2 * Math.sin(2 * f) + 4.3 * Math.sin(3 * f)
+             - 12.7 * Math.sin(4 * f) - 429.3 * Math.cos(f) - 2 * Math.cos(2 * f)
+             + 19.3 * Math.cos(3 * f)) / 3600;                          // 均時差 [h]
+  const t0 = 12 - LC - ET;                                              // 南中時刻 [h]
+  const sinDec = 0.39785 * Math.sin((278.97 + 0.9856 * J + 1.9165 * Math.sin((356.6 + 0.9856 * J) * D2R)) * D2R);
+  const dec = Math.asin(sinDec);                                        // 赤緯
+  const arg = -Math.tan(RULE.latDeg * D2R) * Math.tan(dec);
+  const half = Math.acos(Math.max(-1, Math.min(1, arg))) / D2R / 15;    // 昼の長さの半分 [h]
+  return { rise: t0 - half, set: t0 + half };
+}
+
+/* 年度（8月〜翌7月）の始まりの年と、8月1日からの日数 */
+const seasonStartYear = d => d.getMonth() + 1 >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+const seasonDay = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(seasonStartYear(d), 7, 1)) / 86400000);
+
+/* 作業計画の週（「10/17」はその週の初日）を探す */
+function planWeekOf(date, plan) {
+  if (!plan || !Array.isArray(plan.weeks)) return null;
+  const y0 = seasonStartYear(date);
+  for (const w of plan.weeks) {
+    const m = /^(\d{1,2})\/(\d{1,2})$/.exec(String(w.date || ""));
+    if (!m) continue;
+    const mon = Number(m[1]);
+    const start = new Date(mon >= 8 ? y0 : y0 + 1, mon - 1, Number(m[2]));
+    const diff = Math.round((date - start) / 86400000);
+    if (diff >= 0 && diff < 7) return { week: w, start };
+  }
+  return null;
+}
+
+/* 過去の同じ時期（前後3日）の日中平均。年ごとの平均と、その平均・最小・最大 */
+function heinenOf(date, house, data) {
+  const seasons = data && data.houses && data.houses[house];
+  if (!seasons) return null;
+  const sd = seasonDay(date);
+  const own = seasonStartYear(date) + 1;          // この日の年度（自分の年は平年に入れない）
+  const perYear = [];
+  for (const [season, rec] of Object.entries(seasons)) {
+    if (Number(season) === own) continue;
+    const base = new Date(Number(season) - 1, 7, 1);           // その年度の8月1日
+    const s0 = new Date(rec.start + "T00:00:00");
+    const vals = [];
+    for (let k = -RULE.heinenWindowDays; k <= RULE.heinenWindowDays; k++) {
+      const idx = Math.round((addDays(base, sd + k) - s0) / 86400000);
+      const v = rec.v[idx];
+      if (typeof v === "number") vals.push(v);
+    }
+    if (vals.length >= RULE.heinenMinDays) {
+      perYear.push({ season: Number(season), mean: vals.reduce((a, b) => a + b, 0) / vals.length, days: vals.length });
+    }
+  }
+  if (!perYear.length) return { perYear, mean: null };
+  const ms = perYear.map(p => p.mean);
+  return { perYear: perYear.sort((a, b) => a.season - b.season),
+           mean: ms.reduce((a, b) => a + b, 0) / ms.length, min: Math.min(...ms), max: Math.max(...ms) };
+}
+
+const roundSlot = h => Math.round(h / RULE.slotH) * RULE.slotH;
+const floorSlot = h => Math.floor(h / RULE.slotH + 1e-9) * RULE.slotH;
+
+/* 4段の開始時刻 [時、0時起点。24をこえたら翌日] */
+function stageTimes(sunset, nextRise) {
+  const s1 = roundSlot(sunset);
+  const s2 = s1 + RULE.stage1H;
+  const s4 = floorSlot(nextRise - RULE.preDawnH);
+  const s3 = Math.min(Math.max(s1 + RULE.stage2EndAfterSunsetH, s2 + RULE.minStageH), s4 - RULE.minStageH);
+  if (s3 - s2 < RULE.minStageH - 1e-9 || s4 - s3 < RULE.minStageH - 1e-9) {
+    throw new Error("夜が短すぎて、4段をそれぞれ1時間半以上とれません（日の入り " + hhmm(sunset) + "・日の出 " + hhmm(nextRise) + "）");
+  }
+  return [s1, s2, s3, s4];
+}
+
+/* 4段の温度を決める。
+   夜の時間（日の入り〜日の出）のうち各段が受け持つ長さで重み付けした平均が、必要な平均 need 以上になる組み合わせから、
+   ・目標をこえる幅が小さいもの（最小＋0.25℃以内）にしぼり
+   ・その中で 1段目 → 2段目 → 3段目 の順に高いもの（前半を高く）を選ぶ */
+function chooseTemps(need, weights, floorC) {
+  const temps = [];
+  for (let t = RULE.minC; t <= RULE.maxC + 1e-9; t += RULE.stepC) temps.push(Math.round(t * 10) / 10);
+  const W = weights.reduce((a, b) => a + b, 0);
+  const avgOf = T => T.reduce((s, t, i) => s + t * weights[i], 0) / W;
+  const cands = [];
+  for (const a of temps) for (const b of temps) for (const c of temps) for (const d of temps) {
+    if (b > a || c > b) continue;                                // 1〜3段目は下げる一方
+    if (a - b > RULE.maxJumpC || b - c > RULE.maxJumpC) continue;
+    if (Math.abs(d - c) > RULE.maxJumpC) continue;               // 4段目への上げ下げも2℃まで
+    if (d < floorC) continue;                                    // 結露防止の下限
+    cands.push({ T: [a, b, c, d], avg: avgOf([a, b, c, d]) });
+  }
+  const top = { T: [RULE.maxC, RULE.maxC, RULE.maxC, RULE.maxC], avg: RULE.maxC };
+  if (need > top.avg + 1e-9) return { ...top, reached: false };  // 16℃でも届かない
+  const ok = cands.filter(c => c.avg >= need - 1e-9);
+  const best = Math.min(...ok.map(c => c.avg));
+  const near = ok.filter(c => c.avg <= best + RULE.pickToleranceC + 1e-9);
+  near.sort((x, y) => (y.T[0] - x.T[0]) || (y.T[1] - x.T[1]) || (y.T[2] - x.T[2]) || (x.avg - y.avg));
+  return { ...near[0], reached: true };
+}
+
+/* 全体の計算。入力（数値）→ 結果（数値）。画面に出す文はここでは作らない */
+function compute({ date, targetC, dayAvgC }) {
+  const today = sunTimes(date);
+  const tomorrow = sunTimes(addDays(date, 1));
+  const sunset = today.set, nextRise = tomorrow.rise + 24;
+  const dayH = today.set - today.rise;
+  const nightH = nextRise - sunset;
+  const totalH = dayH + nightH;                       // 今日の日の出〜明日の日の出（ほぼ24時間）
+  const needC = (targetC * totalH - dayAvgC * dayH) / nightH;
+  const starts = stageTimes(sunset, nextRise);
+  // 各段が夜の中で受け持つ長さ（1段目は日の入りから、4段目は日の出まで）
+  const edges = [sunset, starts[1], starts[2], starts[3], nextRise];
+  const weights = [0, 1, 2, 3].map(i => edges[i + 1] - edges[i]);
+  const floorC = RULE.springMonths.includes(date.getMonth() + 1) ? RULE.floorSpringC : RULE.floorC;
+  const pick = chooseTemps(needC, weights, floorC);
+  const predictC = (dayAvgC * dayH + pick.avg * nightH) / totalH;
+  return { rise: today.rise, sunset, nextRise, dayH, nightH, needC, starts, weights, floorC,
+           temps: pick.T, nightAvgC: pick.avg, reached: pick.reached, predictC,
+           shortC: targetC - predictC };
+}
+
+/* =========================================================================
+   3. 画面（ここから下だけが画面を書きかえる）
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+function hhmm(h) {
+  let m = Math.round(h * 60); m = ((m % 1440) + 1440) % 1440;
+  return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+}
+const c1 = v => (Math.round(v * 10) / 10).toFixed(1);
+const hm = h => { const m = Math.round(h * 60); return Math.floor(m / 60) + "時間" + (m % 60 ? (m % 60) + "分" : ""); };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const PLAN = typeof PLAN_DATA === "object" ? PLAN_DATA : null;
+const HEINEN = typeof YAON_HEINEN === "object" ? YAON_HEINEN : null;
+const LS_KEY = "htf_yaon_house";
+
+let house = "中央";
+try { const h = localStorage.getItem(LS_KEY); if (h === "中央" || h === "東") house = h; } catch (e) { /* 覚えられない端末では毎回 中央 から */ }
+const qs = new URLSearchParams(location.search);
+if (qs.get("house") === "中央" || qs.get("house") === "東") house = qs.get("house");
+$("date").value = /^\d{4}-\d{2}-\d{2}$/.test(qs.get("d") || "") ? qs.get("d") : ymd(new Date());
+if (qs.get("t")) $("target").value = qs.get("t");
+if (qs.get("day")) $("dayavg").value = qs.get("day");
+
+function readDate() {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec($("date").value);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
+
+/* 入力欄の値を読んで、計算に使う値と、その出どころを決める */
+function gather() {
+  const date = readDate();
+  const out = { date, errors: {} };
+  if (!date) return out;
+
+  const pw = planWeekOf(date, PLAN);
+  const planT = pw && typeof pw.week.temp_avg === "number" ? pw.week.temp_avg : null;
+  const tIn = parseNum($("target").value);
+  out.plan = pw; out.planT = planT;
+  if (Number.isNaN(tIn) || (tIn !== null && (tIn < 10 || tIn > 25))) out.errors.target = "10〜25 の数字で入れてください";
+  else if (tIn !== null) { out.targetC = tIn; out.targetFrom = "入力"; }
+  else if (planT !== null) { out.targetC = planT; out.targetFrom = "作業計画"; }
+
+  const hn = heinenOf(date, house, HEINEN);
+  const dIn = parseNum($("dayavg").value);
+  out.heinen = hn;
+  if (Number.isNaN(dIn) || (dIn !== null && (dIn < 5 || dIn > 40))) out.errors.day = "5〜40 の数字で入れてください";
+  else if (dIn !== null) { out.dayAvgC = dIn; out.dayFrom = "入力"; }
+  else if (hn && hn.mean !== null) { out.dayAvgC = hn.mean; out.dayFrom = "平年"; }
+  return out;
+}
+
+function renderHints(g) {
+  // ② 目標
+  if (!g.date) { $("targetHint").textContent = ""; }
+  else if (!PLAN) {
+    $("targetHint").textContent = "作業計画のデータを読めませんでした。目標を入れてください。";
+  } else if (g.planT !== null) {
+    $("targetHint").innerHTML = "作業計画 第" + esc(g.plan.week.week_no) + "週（" + esc(g.plan.week.date) + "〜）は <b>" + c1(g.planT) + "℃</b>。空欄ならこの値で計算します。";
+  } else {
+    $("targetHint").textContent = "この週は作業計画に目標がありません。入れてください。";
+  }
+  $("target").placeholder = g.planT !== null && g.planT !== undefined ? c1(g.planT) : "";
+
+  // ③ 日中平均
+  const hn = g.heinen;
+  if (!HEINEN) {
+    $("dayHint").textContent = "過去のデータを読めませんでした。アグリネットの値を入れてください。";
+  } else if (hn && hn.mean !== null) {
+    $("dayHint").innerHTML = "アグリネットの日の出〜日の入平均を入れてください。<br>" + esc(house) +
+      "の平年 <b>" + c1(hn.mean) + "℃</b>（過去" + hn.perYear.length + "年の幅 " + c1(hn.min) + "〜" + c1(hn.max) + "℃）。空欄なら平年で計算します。";
+  } else {
+    $("dayHint").textContent = "この時期の過去データがありません。アグリネットの値を入れてください。";
+  }
+  $("dayavg").placeholder = hn && hn.mean !== null ? c1(hn.mean) : "";
+
+  $("targetErr").hidden = !g.errors.target; $("targetErr").textContent = g.errors.target || "";
+  $("dayErr").hidden = !g.errors.day; $("dayErr").textContent = g.errors.day || "";
+}
+
+const STAGE_WHY = ["転流を進める（日の入りから4時間）", "転流の残りを送る", "呼吸の消耗を抑える", "朝の結露を防ぐ"];
+
+function renderResult(g) {
+  const box = $("result");
+  if (!g.date) { box.innerHTML = '<p class="err">日付を入れてください</p>'; return null; }
+  if (g.targetC === undefined || g.dayAvgC === undefined) {
+    box.innerHTML = '<p class="hint">②と③がそろうと、ここに設定が出ます。</p>'; return null;
+  }
+  let r;
+  try { r = compute(g); }
+  catch (e) { box.innerHTML = '<p class="err">' + esc(e.message) + "</p>"; return null; }
+
+  const ends = [r.starts[1], r.starts[2], r.starts[3], r.nextRise];
+  const rows = r.temps.map((t, i) =>
+    '<li class="stage"><span class="no">' + (i + 1) + "</span>" +
+    '<span><span class="when num">' + hhmm(r.starts[i]) + " から</span>" +
+    '<span class="why">' + STAGE_WHY[i] + '・<span style="white-space:nowrap">' + hm(ends[i] - r.starts[i]) + "</span></span></span>" +
+    '<span class="temp num">' + t.toFixed(1) + "<small>℃</small></span></li>").join("");
+
+  const dayTag = g.dayFrom === "平年" ? '<span class="tag">平年値で試算</span>' : "";
+  const tTag = g.targetFrom === "作業計画" ? '<span class="tag">作業計画</span>' : "";
+  let tail;
+  // 0.1℃に丸めて0になる差（0.05℃未満）は「届いた」とみなす
+  if (r.shortC >= 0.05) {
+    tail = '<div class="short">目標まで ' + c1(r.shortC) + "℃ 足りません" +
+      "<small>夜を16℃にしても、日平均は " + c1(r.predictC) + "℃ どまりです。曇天日は無理に上げず、このまま様子を見ます。</small></div>";
+  } else {
+    tail = '<p class="ok">目標の日平均 ' + c1(g.targetC) + "℃ に届く設定です" + (r.reached ? "。" : "（全段16℃の上限で、ほぼ目標どおり）。") + "</p>";
+    // 日中が暖かく、夜の必要平均が設定の下限より低い日
+    if (r.nightAvgC - r.needC > 0.5) {
+      tail += '<p class="hint">日中が暖かかったので、夜の必要平均は ' + c1(r.needC) + "℃ です。設定は下限（11℃、4段目は" + r.floorC + "℃）までしか下げないため、日平均は目標を " + c1(r.predictC - g.targetC) + "℃ 上回ります。</p>";
+    }
+  }
+  box.innerHTML =
+    '<ul class="stages">' + rows + "</ul>" +
+    '<div class="summary">' +
+      '<div class="kv"><span class="k">夜に必要な平均</span><span class="v num">' + c1(r.needC) + "℃</span></div>" +
+      '<div class="kv"><span class="k">この設定での夜の平均</span><span class="v num">' + c1(r.nightAvgC) + "℃</span></div>" +
+      '<div class="kv"><span class="k">日平均の見込み（目標 ' + c1(g.targetC) + "℃）" + tTag + '</span><span class="v num">' + c1(r.predictC) + "℃</span></div>" +
+      '<div class="kv"><span class="k">計算に使った日中平均' + dayTag + '</span><span class="v num">' + c1(g.dayAvgC) + "℃</span></div>" +
+    "</div>" + tail;
+  $("resTitle").innerHTML = "④ 暖房機に入れる設定（" + esc(house) + "）";
+  return r;
+}
+
+function renderSun(g) {
+  if (!g.date) { $("sun").innerHTML = ""; return; }
+  const a = sunTimes(g.date), b = sunTimes(addDays(g.date, 1));
+  const kv = (k, v) => '<div class="kv"><span class="k">' + k + '</span><span class="v num">' + v + "</span></div>";
+  $("sun").innerHTML = kv("日の出", hhmm(a.rise)) + kv("日の入り", hhmm(a.set)) +
+    kv("翌日の日の出", hhmm(b.rise)) + kv("夜の長さ", hm(b.rise + 24 - a.set));
+}
+
+function renderYears(g) {
+  const hn = g.heinen;
+  if (!hn || !hn.perYear.length) { $("years").innerHTML = '<p class="hint">この時期の過去データはありません。</p>'; return; }
+  $("years").innerHTML = "<p>" + esc(house) + "・この日の前後3日の日中平均（年度は8月〜翌7月、終わりの年で表示）</p>" +
+    '<ul class="yrs num">' + hn.perYear.map(p => "<li>" + p.season + "年度　<b>" + c1(p.mean) + "℃</b></li>").join("") + "</ul>";
+}
+
+function render() {
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.house === house)));
+  const g = gather();
+  renderHints(g);
+  renderResult(g);
+  renderSun(g);
+  renderYears(g);
+}
+
+/* ---- 操作 ---- */
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  house = b.dataset.house;
+  try { localStorage.setItem(LS_KEY, house); } catch (e) { /* 覚えられなくても計算はできる */ }
+  render();
+}));
+$("today").addEventListener("click", () => { $("date").value = ymd(new Date()); render(); });
+["date", "target", "dayavg"].forEach(id => $(id).addEventListener("input", render));
+$("date").addEventListener("change", render);
+
+/* 上下キーで欄を移動する（値は変えない） */
+const order = ["date", "target", "dayavg"];
+order.forEach((id, i) => $(id).addEventListener("keydown", e => {
+  if (id === "date") return;                       // 日付の欄は上下キーで日を送るのが標準なので触らない
+  if (e.key === "ArrowDown" && i < order.length - 1) { e.preventDefault(); $(order[i + 1]).focus(); }
+  if (e.key === "ArrowUp" && i > 0) { e.preventDefault(); $(order[i - 1]).focus(); }
+  if (e.key === "Enter" && i < order.length - 1) { e.preventDefault(); $(order[i + 1]).focus(); }
+}));
+
+$("heinenSrc").textContent = HEINEN
+  ? "4週記録表（" + HEINEN.source + "）から、その日の前後3日の平均を年ごとに出し、さらに年の間で平均しています。24時間ぶんの記録がそろった日だけを使います。日の出・日の入を「時」で切り捨てて数えているため、アグリネットの値とは少しずれることがあります。（データ作成 " + HEINEN.built_at + "）"
+  : "過去データを読めませんでした。";
+
+render();
+</script>
+</body>
+</html>
