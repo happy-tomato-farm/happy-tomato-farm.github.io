@@ -63,13 +63,21 @@ main{padding:16px 12px}
 
 .big{display:flex;gap:10px;padding:14px 12px}
 .big > div{
-  flex:1;text-align:center;padding:12px 4px;background:var(--tint);
+  flex:1;min-width:0;text-align:center;padding:12px 4px;background:var(--tint);
   border:1px solid var(--rule);
 }
 .big .lab{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.05em}
 .big .val{font-size:23px;font-weight:800;font-family:ui-monospace,monospace;line-height:1.25;margin-top:3px}
 .big .un{font-size:12px;font-weight:600;color:var(--muted);margin-left:2px}
-.big .cmp{font-size:12px;font-weight:700;margin-top:2px}
+.big .cmp{font-size:12px;font-weight:700;margin-top:2px;white-space:nowrap}
+.big .cmp + .cmp{margin-top:0}
+.bignote{font-size:11.5px;color:var(--muted);margin:0;padding:0 14px 12px;line-height:1.6}
+/* 小さいスマホ（幅360px以下）では、3つの枠が横に並びきるよう文字を少し詰める */
+@media (max-width:360px){
+  .big{gap:6px;padding:12px 8px}
+  .big .val{font-size:19px}
+  .big .cmp{font-size:11px}
+}
 .up{color:var(--leaf)} .down{color:var(--tomato)} .flat{color:var(--muted)}
 
 canvas{width:100%;height:auto;display:block}
@@ -110,6 +118,21 @@ table.pct td.hi{background:var(--tint);font-weight:800}
   border:2px solid var(--rule);background:var(--paper);color:var(--muted);cursor:pointer;
 }
 .pick button.sel{border-color:var(--ink);color:var(--ink);background:var(--tint)}
+/* 構成比の年度えらび。年度が多いので、横に並べて指でスライドして選ぶ */
+.yearhint{font-size:13.5px;font-weight:700;color:var(--ink);margin:0;padding:12px 14px 4px}
+.yearhint small{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin-top:2px}
+.yearpick{
+  display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding:6px 14px 12px;scrollbar-width:thin;
+}
+.yearpick::-webkit-scrollbar{height:6px}
+.yearpick::-webkit-scrollbar-thumb{background:var(--rule);border-radius:3px}
+.yearpick button{
+  flex:none;min-height:42px;padding:8px 15px;font-size:14px;font-weight:700;font-family:inherit;
+  border:2px solid var(--leaf);border-radius:999px;background:var(--paper);color:var(--leaf);
+  cursor:pointer;white-space:nowrap;
+}
+.yearpick button.sel{background:var(--leaf);color:#FFFFFF}
 .note{font-size:12.5px;color:var(--muted);padding:0 4px;margin:10px 0 0}
 .only-narrow{display:none}
 @media (max-width:520px){ .only-narrow{display:block} }
@@ -242,12 +265,41 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     return last;
   }
 
-  function ratioTag(now, before){
-    if(!before) return '<div class="cmp flat">前年 —</div>';
+  /** 前年との比を1行で返す。lab は「年間」「同期」のどちらか */
+  function cmpLine(lab, now, before){
+    if(!before) return '<div class="cmp flat">'+lab+' —</div>';
     var r = now / before * 100;
     var cls = r >= 102 ? "up" : (r <= 98 ? "down" : "flat");
     var sign = r >= 100 ? "+" : "";
-    return '<div class="cmp '+cls+'">前年比 '+sign+fmt(r-100,1)+'%</div>';
+    return '<div class="cmp '+cls+'">'+lab+' '+sign+fmt(r-100,1)+'%</div>';
+  }
+
+  /** 前年の「同じ時点」がどこかを返す。{ idx:月の並び, frac:その月の何割まで, label:表示 }
+      今季がシートから読めていれば、最後に収量が入った日（asOf）まで。
+      その月だけは日数で割って足す（例：10/17 なら前年10月の 17/31）。
+      前年は月ごとの合計しか持っていないので、日ごとの正確な累計は出せない。
+      シートから読めていない年度は、記録のある最後の月の末まで。 */
+  function asOfPoint(season, h){
+    if(season.asOf){
+      var mo = liveMonthOf(season.asOf);
+      if(mo){
+        var y = +season.asOf.slice(0,4), m = +season.asOf.slice(5,7), d = +season.asOf.slice(8,10);
+        var spilled = LIVE_MONTHS[mo.idx] !== m;     /* 12/1 などで前月に入れた日 */
+        var days = new Date(y, m, 0).getDate();       /* その月の日数 */
+        return { idx: mo.idx, frac: spilled ? 1 : d / days, label: m + "/" + d };
+      }
+    }
+    for(var i = h.kg.length - 1; i >= 0; i--){
+      if(h.kg[i] > 0) return { idx: i, frac: 1, label: D.months[i] + "末" };
+    }
+    return null;
+  }
+
+  /** 月ごとの値を、同じ時点（pt）まで足し上げる */
+  function upTo(arr, pt){
+    var t = 0;
+    for(var i = 0; i < pt.idx; i++) t += arr[i] || 0;
+    return t + (arr[pt.idx] || 0) * pt.frac;
   }
 
   /* ---------- 棒グラフ ---------- */
@@ -454,14 +506,18 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     var byMonth = h[key];
     var any = keys.some(function(k){ return sum(byMonth[k]||[]) > 0; });
 
-    var picker = seasons.map(function(s){
+    /* 年度のボタンは新しい順。選んでいる年度は塗りつぶして ✓ を付ける */
+    var picker = seasons.slice().reverse().map(function(s){
       var on = s.label === yr;
-      return '<button data-year="'+s.label+'"'+(on?' class="sel"':'')+'>'+s.label+'</button>';
+      return '<button data-year="'+s.label+'" aria-pressed="'+on+'"'+(on?' class="sel"':'')+'>' +
+             (on ? '✓ ' : '') + s.label + '</button>';
     }).join("");
+    var pickHtml = '<p class="yearhint">' + title.replace("の推移", "") + 'を見る年度を選んでください' +
+                   '<small>ボタンは左右にスライドできます。等級とサイズの両方が切り替わります</small></p>' +
+                   '<div class="yearpick">' + picker + '</div>';
 
     if(!any){
-      return '<div class="card"><h2>'+title+'</h2>' +
-             '<div class="pick">'+picker+'</div>' +
+      return '<div class="card"><h2>'+title+'</h2>' + pickHtml +
              '<div class="body" style="padding-top:0"><p style="margin:0;font-size:14px">' +
              yr+'は記録がありません。</p></div></div>';
     }
@@ -503,8 +559,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
              palette[ki%palette.length]+'"></span>'+labelFn(k)+'</td>'+cells+'</tr>';
     }).join("");
 
-    return '<div class="card"><h2>'+title+'</h2>' +
-           '<div class="pick">'+picker+'</div>' +
+    return '<div class="card"><h2>'+title+'</h2>' + pickHtml +
            '<div class="body" style="padding-top:0">' +
            '<canvas id="'+id+'" width="660" height="300"></canvas>' +
            '<div class="legend">'+legend+'</div>' +
@@ -672,14 +727,25 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     if(!kg) return '<div class="card"><div class="empty">' +
       last.label + 'はまだ記録がありません</div></div>';
 
+    /* 前年の同じ時点までの値（同期）。平均果重は月の平均なので、その月まるごとで比べる */
+    var pt = asOfPoint(last, h);
+    var skg  = ph && pt ? upTo(ph.kg, pt) : 0;
+    var sper = ph && pt ? upTo(ph.kg10a, pt) : 0;
+    var spg  = ph && pt ? ph.gpf.slice(0, pt.idx + 1).filter(function(v){ return v; }) : [];
+    var spavg = spg.length ? sum(spg)/spg.length : 0;
+
     return '<div class="card"><div class="big">' +
       '<div><div class="lab">収量</div><div class="val">'+fmt(kg/1000,1)+
-        '<span class="un">t</span></div>'+ratioTag(kg,pkg)+'</div>' +
-      '<div><div class="lab">10aあたり</div><div class="val">'+fmt(per)+
-        '<span class="un">kg</span></div>'+ratioTag(per,pper)+'</div>' +
+        '<span class="un">t</span></div>'+cmpLine("年間",kg,pkg)+cmpLine("同期",kg,skg)+'</div>' +
+      '<div><div class="lab">10aあたり</div><div class="val">'+fmt(per/1000,1)+
+        '<span class="un">t</span></div>'+cmpLine("年間",per,pper)+cmpLine("同期",per,sper)+'</div>' +
       '<div><div class="lab">平均果重</div><div class="val">'+fmt(avg,1)+
-        '<span class="un">g</span></div>'+ratioTag(avg,pavg)+'</div>' +
-      '</div></div>';
+        '<span class="un">g</span></div>'+cmpLine("年間",avg,pavg)+cmpLine("同期",avg,spavg)+'</div>' +
+      '</div>' +
+      '<p class="bignote">年間＝前年の1年分との比　同期＝前年の' +
+        (pt ? pt.label : "同じ時点") + 'までとの比' +
+        (pt && pt.frac < 1 ? '（その月は日割り）' : '') + '</p>' +
+      '</div>';
   }
 
   function render(){
@@ -718,9 +784,18 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     Array.prototype.forEach.call(picks, function(b){
       b.addEventListener("click", function(){
         stackYear = b.getAttribute("data-year");
+        /* 描き直すと押したボタンは消えるので、押す前の縦の位置を覚えて戻す */
+        var y = window.pageYOffset;
         render();
-        window.scrollTo(0, b.getBoundingClientRect().top + window.pageYOffset - 120);
+        window.scrollTo(0, y);
       });
+    });
+
+    /* 年度の列を、選んでいる年度が見える位置まで横に送っておく */
+    var rows = document.querySelectorAll ? document.querySelectorAll(".yearpick") : [];
+    Array.prototype.forEach.call(rows, function(row){
+      var s = row.querySelector(".sel");
+      if(s) row.scrollLeft = Math.max(0, s.offsetLeft - row.offsetLeft - 14);
     });
   }
 
@@ -844,9 +919,15 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
       return S[h];
     }
 
+    /* 年度ごとの「最後に収量（内訳）が入った日」。前年同期比の区切りに使う。
+       東西南はコンテナ数だけで重さを持たないので、中央・宇賀神の日だけで決める */
+    var asOfBy = {};
     for(var d in dates){
       var m = dates[d];
       var chu = live[d + "|中央"];
+      if(chu || live[d + "|宇賀神"]){
+        if(!asOfBy[m.start] || d > asOfBy[m.start]) asOfBy[m.start] = d;
+      }
       if(chu){
         var cc = cell(m.start, "中央", m.idx);
         cc[m.idx] = liveAdd(D, cc[m.idx], liveDay(D, labelToKey, chu), 1);
@@ -880,7 +961,8 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
       S["全体"] = [];
       for(i = 0; i < LIVE_MONTHS.length; i++) S["全体"].push(liveAdd(D, S["中央"][i], S["宇賀神"][i], 1));
 
-      var season = { label: (st + 1) + "年度", start: st, live: true, houses: {} };
+      var season = { label: (st + 1) + "年度", start: st, live: true,
+                     asOf: asOfBy[st] || null, houses: {} };
       for(var hi = 0; hi < LIVE_HOUSES.length; hi++){
         var h = LIVE_HOUSES[hi], acc = S[h], area = areaOf(D, h);
         var o = { area: area, kg: [], kg10a: [], count: [], containers: [], gpf: [],
