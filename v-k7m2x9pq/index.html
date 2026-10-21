@@ -136,6 +136,8 @@ table.pct td.hi{background:var(--tint);font-weight:800}
   cursor:pointer;white-space:nowrap;
 }
 .yearpick button.sel{background:var(--leaf);color:#FFFFFF}
+/* まとめ欄で、いま見ている年度と比べている前年 */
+.viewlabel{font-size:14px;font-weight:800;margin:0;padding:6px 14px 0;border-top:1px solid var(--rule)}
 .note{font-size:12.5px;color:var(--muted);padding:0 4px;margin:10px 0 0}
 .only-narrow{display:none}
 @media (max-width:520px){ .only-narrow{display:block} }
@@ -680,18 +682,48 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
            '</div></div>';
   }
 
+  /* ---------- まとめ欄と月別表の年度 ----------
+     viewYear が null のあいだは最新の年度（今季）。ボタンで選ぶと、その年度になる。
+     前年比は「選んだ年度の1つ前の年度」と比べる。 */
+  var viewYear = null;
+
+  function viewSeason(){
+    if(viewYear){
+      for(var i = 0; i < seasons.length; i++) if(seasons[i].label === viewYear) return seasons[i];
+    }
+    return last;
+  }
+  function prevOf(season){
+    var k = seasons.indexOf(season);
+    return k > 0 ? seasons[k-1] : null;
+  }
+
+  /** まとめ欄の上に置く年度ボタン（新しい順・横スライド） */
+  function viewPicker(season){
+    var btns = seasons.slice().reverse().map(function(s){
+      var on = s === season;
+      return '<button data-view="'+s.label+'" aria-pressed="'+on+'"'+(on?' class="sel"':'')+'>' +
+             (on ? '✓ ' : '') + s.label + '</button>';
+    }).join("");
+    return '<p class="yearhint">収量を見る年度を選んでください' +
+           '<small>ボタンは左右にスライドできます。このまとめと「月別の収量」の表が切り替わります</small></p>' +
+           '<div class="yearpick">' + btns + '</div>';
+  }
+
   /* ---------- 月別表 ---------- */
   function monthTable(){
-    var h = last.houses[cur];
-    var ph = prev ? prev.houses[cur] : null;
-    var season = last;
-    if(!h || !sum(h.kg)){
+    var season = viewSeason();
+    var h = season.houses[cur];
+    var ps = prevOf(season);
+    var ph = ps ? ps.houses[cur] : null;
+    /* 年度を選んでいないときだけ、今季が空なら記録のある最新の年度を出す */
+    if(!viewYear && (!h || !sum(h.kg))){
       season = latestWithData();
       var k = seasons.indexOf(season);
       h = season.houses[cur];
       ph = k > 0 ? seasons[k-1].houses[cur] : null;
-      if(!h || !sum(h.kg)) return "";
     }
+    if(!h || !sum(h.kg)) return "";
 
     var rows = D.months.map(function(m,i){
       var v = h.kg[i], pv = ph ? ph.kg[i] : 0;
@@ -725,9 +757,12 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
 
   /* ---------- 見出しの数字 ---------- */
   function summary(){
-    var h = last.houses[cur];
-    var ph = prev ? prev.houses[cur] : null;
-    if(!h) return "";
+    var season = viewSeason();
+    var ps = prevOf(season);
+    var h = season.houses[cur];
+    var ph = ps ? ps.houses[cur] : null;
+    var pick = viewPicker(season);
+    if(!h) return '<div class="card">' + pick + '</div>';
     var kg = sum(h.kg), pkg = ph ? sum(ph.kg) : 0;
     var per = sum(h.kg10a), pper = ph ? sum(ph.kg10a) : 0;
     var g = h.gpf.filter(function(v){ return v; });
@@ -735,17 +770,20 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     var avg = g.length ? sum(g)/g.length : 0;
     var pavg = pg.length ? sum(pg)/pg.length : 0;
 
-    if(!kg) return '<div class="card"><div class="empty">' +
-      last.label + 'はまだ記録がありません</div></div>';
+    if(!kg) return '<div class="card">' + pick + '<div class="empty">' +
+      season.label + 'はまだ記録がありません</div></div>';
 
-    /* 前年の同じ時点までの値（同期）。平均果重は月の平均なので、その月まるごとで比べる */
-    var pt = asOfPoint(last, h);
+    /* 前年の同じ時点までの値（同期）。平均果重は月の平均なので、その月まるごとで比べる。
+       終わった年度を選んだときは、最後の月の末まで＝ほぼ年間と同じになる */
+    var pt = asOfPoint(season, h);
     var skg  = ph && pt ? upTo(ph.kg, pt) : 0;
     var sper = ph && pt ? upTo(ph.kg10a, pt) : 0;
     var spg  = ph && pt ? ph.gpf.slice(0, pt.idx + 1).filter(function(v){ return v; }) : [];
     var spavg = spg.length ? sum(spg)/spg.length : 0;
 
-    return '<div class="card"><div class="big">' +
+    return '<div class="card">' + pick +
+      '<p class="viewlabel">' + season.label + (ps ? '（前年＝' + ps.label + '）' : '') + '</p>' +
+      '<div class="big">' +
       '<div><div class="lab">収量</div><div class="val">'+fmt(kg/1000,1)+
         '<span class="un">t</span></div>'+cmpLine("年間",kg,pkg)+cmpLine("同期",kg,skg)+'</div>' +
       '<div><div class="lab">10aあたり</div><div class="val">'+fmt(per/1000,1)+
@@ -787,6 +825,17 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
         showAllYears = b.getAttribute("data-span") === "all";
         render();
         window.scrollTo(0, 0);
+      });
+    });
+
+    /* まとめ欄・月別表の年度切り替え */
+    var views = document.querySelectorAll ? document.querySelectorAll("[data-view]") : [];
+    Array.prototype.forEach.call(views, function(b){
+      b.addEventListener("click", function(){
+        viewYear = b.getAttribute("data-view");
+        var y = window.pageYOffset;
+        render();
+        window.scrollTo(0, y);
       });
     });
 
