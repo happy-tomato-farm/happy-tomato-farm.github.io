@@ -97,6 +97,24 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
   font:inherit; font-size:15px; font-weight:800;
 }
 .btn:active{transform:scale(.96)}
+/* ===== 天気別の平年値（押すとその値で計算する） ===== */
+.wx{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.wx button{
+  min-height:78px; border-radius:14px; cursor:pointer; padding:6px 4px;
+  border:2px solid var(--line); background:var(--card-sub); color:var(--ink); font:inherit;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.wx button:active:not(:disabled){transform:scale(.96)}
+.wx .l{font-size:13px;font-weight:800;color:var(--muted);line-height:1.3}
+.wx .t{font-size:21px;font-weight:800;line-height:1.25}
+.wx .n{font-size:11.5px;font-weight:700;color:var(--muted);line-height:1.3}
+.wx button[aria-pressed="true"]{border-color:var(--night);background:var(--night-soft)}
+.wx button[aria-pressed="true"] .l,.wx button[aria-pressed="true"] .t{color:var(--night)}
+.wx button:disabled{opacity:.45;cursor:default}
+.ytbl{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+.ytbl th,.ytbl td{padding:5px 4px;text-align:right;border-bottom:1px solid var(--line-soft)}
+.ytbl th:first-child,.ytbl td:first-child{text-align:left}
+.ytbl th{font-size:12.5px;color:var(--muted)}
 .hint{font-size:13.5px;color:var(--muted);margin:6px 2px 0;line-height:1.6}
 .hint b{color:var(--ink)}
 .err{font-size:14px;color:var(--warn);font-weight:800;margin:6px 2px 0}
@@ -148,7 +166,6 @@ details[open] summary::before{content:"− "}
 .doc p{margin:6px 0}
 .doc ul{margin:6px 0;padding-left:1.3em}
 .doc .eq{background:var(--card-sub);border-radius:12px;padding:10px 12px;font-weight:800;margin:8px 0}
-.yrs{list-style:none;padding:0;margin:6px 0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
 footer{margin-top:26px;text-align:center;font-size:12px;color:var(--muted)}
 footer a{color:var(--muted)}
 </style>
@@ -194,6 +211,7 @@ footer a{color:var(--muted)}
       <input id="dayavg" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done">
       <span class="unit">℃</span>
     </div>
+    <div class="wx" id="wxBtns" role="group" aria-label="天気別の平年値"></div>
     <p class="hint" id="dayHint"></p>
     <p class="err" id="dayErr" hidden></p>
   </div>
@@ -211,7 +229,7 @@ footer a{color:var(--muted)}
 </section>
 
 <details id="yearsBox">
-  <summary>日中平均の過去の値（年ごと）</summary>
+  <summary>日中平均の過去の値（年ごと・天気別）</summary>
   <div class="doc" id="years"></div>
 </details>
 
@@ -253,7 +271,16 @@ footer a{color:var(--muted)}
     <h3>日の出・日の入</h3>
     <p>日射量予測と同じ式（北緯36.523°・東経139.762°、太陽の中心が地平線に来る時刻）で計算しています。暦の時刻より日の出は約4分遅く、日の入は約4分早くなります。</p>
 
-    <h3>過去の日中平均（平年値）</h3>
+    <h3>過去の日中平均（平年値）と天気の分け方</h3>
+    <p>4週記録表の<b>ハウス内センサー</b>の日中平均を使います。外の気温は使いません。</p>
+    <p>晴れか曇りかは、宇都宮気象台の日射量で見分けます。</p>
+    <div class="eq">晴天指数 ＝ その日の日射量 ÷ 快晴なら来るはずの日射量</div>
+    <ul>
+      <li>分母は日射量予測と同じ式で、日付ごとに計算します（1.0 前後なら快晴）</li>
+      <li>快晴：0.9 以上／曇りがち：0.4〜0.9／曇雨天：0.4 未満</li>
+      <li>その日の前後7日について、天気ごと・年ごとに平均し、さらに年の間で平均します（どの年も同じ重みにするため）</li>
+      <li>曇雨天は日数が少ない時期があります。ボタンの「○年・○日」で、どれくらい当てになるかを見てください</li>
+    </ul>
     <p id="heinenSrc"></p>
   </div>
 </details>
@@ -285,9 +312,17 @@ const RULE = {
   preDawnH: 2,                             // 4段目は日の出の何時間前から
   minStageH: 1.5,                          // 1段の最短の長さ
   pickToleranceC: 0.25,                    // 目標をこえる幅の許し（0.5℃きざみの丸め分）
-  heinenWindowDays: 3,                     // 平年値は前後3日（計7日）の平均
-  heinenMinDays: 4,                        // 7日のうち4日以上ある年だけ使う
+  heinenWindowDays: 7,                     // 平年値は前後7日（計15日）から
+  heinenMinDays: 1,                        // その天気の日が1日でもある年は使う（曇雨天は1年に1日だけのことが多い）
 };
+
+/* 天気の分け方（晴天指数 ＝ 宇都宮の日射量 ÷ 快晴時の計算値） */
+const WX = [
+  { key: "clear",  label: "快晴",     test: k => k >= 0.9 },
+  { key: "partly", label: "曇りがち", test: k => k >= 0.4 && k < 0.9 },
+  { key: "cloudy", label: "曇雨天",   test: k => k < 0.4 },
+];
+const wxLabel = key => WX.find(w => w.key === key).label;
 const D2R = Math.PI / 180;
 
 /* =========================================================================
@@ -342,31 +377,43 @@ function planWeekOf(date, plan) {
   return null;
 }
 
-/* 過去の同じ時期（前後3日）の日中平均。年ごとの平均と、その平均・最小・最大 */
+/* 過去の同じ時期（前後7日）の日中平均を、天気ごとに出す。
+   戻り値：{ clear: {mean, min, max, years, days, perYear}, partly: {...}, cloudy: {...} }
+   その天気の記録が無いときは mean が null */
+const meanOf = a => a.reduce((s, x) => s + x, 0) / a.length;
 function heinenOf(date, house, data) {
   const seasons = data && data.houses && data.houses[house];
   if (!seasons) return null;
   const sd = seasonDay(date);
   const own = seasonStartYear(date) + 1;          // この日の年度（自分の年は平年に入れない）
-  const perYear = [];
+  const acc = Object.fromEntries(WX.map(w => [w.key, []]));
   for (const [season, rec] of Object.entries(seasons)) {
     if (Number(season) === own) continue;
     const base = new Date(Number(season) - 1, 7, 1);           // その年度の8月1日
     const s0 = new Date(rec.start + "T00:00:00");
-    const vals = [];
+    const bucket = Object.fromEntries(WX.map(w => [w.key, []]));
     for (let k = -RULE.heinenWindowDays; k <= RULE.heinenWindowDays; k++) {
       const idx = Math.round((addDays(base, sd + k) - s0) / 86400000);
-      const v = rec.v[idx];
-      if (typeof v === "number") vals.push(v);
+      const v = rec.v[idx], kk = rec.k ? rec.k[idx] : null;
+      if (typeof v !== "number" || typeof kk !== "number") continue;
+      bucket[WX.find(w => w.test(kk)).key].push(v);
     }
-    if (vals.length >= RULE.heinenMinDays) {
-      perYear.push({ season: Number(season), mean: vals.reduce((a, b) => a + b, 0) / vals.length, days: vals.length });
+    for (const w of WX) {
+      if (bucket[w.key].length >= RULE.heinenMinDays) {
+        acc[w.key].push({ season: Number(season), mean: meanOf(bucket[w.key]), days: bucket[w.key].length });
+      }
     }
   }
-  if (!perYear.length) return { perYear, mean: null };
-  const ms = perYear.map(p => p.mean);
-  return { perYear: perYear.sort((a, b) => a.season - b.season),
-           mean: ms.reduce((a, b) => a + b, 0) / ms.length, min: Math.min(...ms), max: Math.max(...ms) };
+  const out = {};
+  for (const w of WX) {
+    const list = acc[w.key].sort((a, b) => a.season - b.season);
+    const ms = list.map(p => p.mean);
+    out[w.key] = list.length
+      ? { perYear: list, mean: meanOf(ms), min: Math.min(...ms), max: Math.max(...ms),
+          years: list.length, days: list.reduce((s, p) => s + p.days, 0) }
+      : { perYear: [], mean: null };
+  }
+  return out;
 }
 
 const roundSlot = h => Math.round(h / RULE.slotH) * RULE.slotH;
@@ -448,12 +495,14 @@ const HEINEN = typeof YAON_HEINEN === "object" ? YAON_HEINEN : null;
 const LS_KEY = "htf_yaon_house";
 
 let house = "中央";
+let wx = "clear";        // 空欄のときに使う天気。開くたびに快晴から始める
 try { const h = localStorage.getItem(LS_KEY); if (h === "中央" || h === "東") house = h; } catch (e) { /* 覚えられない端末では毎回 中央 から */ }
 const qs = new URLSearchParams(location.search);
 if (qs.get("house") === "中央" || qs.get("house") === "東") house = qs.get("house");
 $("date").value = /^\d{4}-\d{2}-\d{2}$/.test(qs.get("d") || "") ? qs.get("d") : ymd(new Date());
 if (qs.get("t")) $("target").value = qs.get("t");
 if (qs.get("day")) $("dayavg").value = qs.get("day");
+if (WX.some(w => w.key === qs.get("wx"))) wx = qs.get("wx");
 
 function readDate() {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec($("date").value);
@@ -479,7 +528,8 @@ function gather() {
   out.heinen = hn;
   if (Number.isNaN(dIn) || (dIn !== null && (dIn < 5 || dIn > 40))) out.errors.day = "5〜40 の数字で入れてください";
   else if (dIn !== null) { out.dayAvgC = dIn; out.dayFrom = "入力"; }
-  else if (hn && hn.mean !== null) { out.dayAvgC = hn.mean; out.dayFrom = "平年"; }
+  else if (hn && hn[wx].mean !== null) { out.dayAvgC = hn[wx].mean; out.dayFrom = wxLabel(wx); }
+  out.typed = dIn !== null;
   return out;
 }
 
@@ -495,17 +545,29 @@ function renderHints(g) {
   }
   $("target").placeholder = g.planT !== null && g.planT !== undefined ? c1(g.planT) : "";
 
-  // ③ 日中平均
+  // ③ 日中平均：天気別の平年値ボタンと説明
   const hn = g.heinen;
+  $("wxBtns").innerHTML = !hn ? "" : WX.map(w => {
+    const c = hn[w.key], ok = c.mean !== null;
+    const on = !g.typed && w.key === wx;
+    return '<button type="button" data-wx="' + w.key + '" aria-pressed="' + on + '"' + (ok ? "" : " disabled") + ">" +
+      '<span class="l">' + w.label + "</span>" +
+      '<span class="t num">' + (ok ? c1(c.mean) + "℃" : "―") + "</span>" +
+      '<span class="n">' + (ok ? c.years + "年・" + c.days + "日" : "記録なし") + "</span></button>";
+  }).join("");
   if (!HEINEN) {
     $("dayHint").textContent = "過去のデータを読めませんでした。アグリネットの値を入れてください。";
-  } else if (hn && hn.mean !== null) {
-    $("dayHint").innerHTML = "アグリネットの日の出〜日の入平均を入れてください。<br>" + esc(house) +
-      "の平年 <b>" + c1(hn.mean) + "℃</b>（過去" + hn.perYear.length + "年の幅 " + c1(hn.min) + "〜" + c1(hn.max) + "℃）。空欄なら平年で計算します。";
+  } else if (!hn) {
+    $("dayHint").textContent = "このハウスの過去データがありません。アグリネットの値を入れてください。";
+  } else if (g.typed) {
+    $("dayHint").textContent = "入れた値で計算しています。上の平年値を押すと、その値で計算し直します。";
+  } else if (hn[wx].mean === null) {
+    $("dayHint").textContent = "この時期の「" + wxLabel(wx) + "」の記録がありません。ほかの天気を押すか、値を入れてください。";
   } else {
-    $("dayHint").textContent = "この時期の過去データがありません。アグリネットの値を入れてください。";
+    $("dayHint").innerHTML = "アグリネットの日の出〜日の入平均を入れてください。空欄の間は<b>" + wxLabel(wx) +
+      "の平年値</b>で計算します。上の値は" + esc(house) + "のハウス内、過去の同じ時期（前後7日）の天気別の平均です。";
   }
-  $("dayavg").placeholder = hn && hn.mean !== null ? c1(hn.mean) : "";
+  $("dayavg").placeholder = hn && hn[wx].mean !== null ? c1(hn[wx].mean) : "";
 
   $("targetErr").hidden = !g.errors.target; $("targetErr").textContent = g.errors.target || "";
   $("dayErr").hidden = !g.errors.day; $("dayErr").textContent = g.errors.day || "";
@@ -530,7 +592,7 @@ function renderResult(g) {
     '<span class="why">' + STAGE_WHY[i] + '・<span style="white-space:nowrap">' + hm(ends[i] - r.starts[i]) + "</span></span></span>" +
     '<span class="temp num">' + t.toFixed(1) + "<small>℃</small></span></li>").join("");
 
-  const dayTag = g.dayFrom === "平年" ? '<span class="tag">平年値で試算</span>' : "";
+  const dayTag = g.dayFrom !== "入力" ? '<span class="tag">' + esc(g.dayFrom) + "の平年値で試算</span>" : "";
   const tTag = g.targetFrom === "作業計画" ? '<span class="tag">作業計画</span>' : "";
   let tail;
   // 0.1℃に丸めて0になる差（0.05℃未満）は「届いた」とみなす
@@ -566,9 +628,13 @@ function renderSun(g) {
 
 function renderYears(g) {
   const hn = g.heinen;
-  if (!hn || !hn.perYear.length) { $("years").innerHTML = '<p class="hint">この時期の過去データはありません。</p>'; return; }
-  $("years").innerHTML = "<p>" + esc(house) + "・この日の前後3日の日中平均（年度は8月〜翌7月、終わりの年で表示）</p>" +
-    '<ul class="yrs num">' + hn.perYear.map(p => "<li>" + p.season + "年度　<b>" + c1(p.mean) + "℃</b></li>").join("") + "</ul>";
+  const seasons = hn ? [...new Set(WX.flatMap(w => hn[w.key].perYear.map(p => p.season)))].sort() : [];
+  if (!seasons.length) { $("years").innerHTML = '<p class="hint">この時期の過去データはありません。</p>'; return; }
+  const cell = (key, s) => { const p = hn[key].perYear.find(x => x.season === s); return p ? c1(p.mean) + '<small>（' + p.days + "日）</small>" : "―"; };
+  $("years").innerHTML = "<p>" + esc(house) + "・ハウス内・この日の前後7日の日中平均（℃）。年度は8月〜翌7月で、終わりの年で表示しています。</p>" +
+    '<table class="ytbl num"><tr><th>年度</th>' + WX.map(w => "<th>" + w.label + "</th>").join("") + "</tr>" +
+    seasons.map(s => "<tr><td>" + s + "</td>" + WX.map(w => "<td>" + cell(w.key, s) + "</td>").join("") + "</tr>").join("") +
+    "</table>";
 }
 
 function render() {
@@ -587,6 +653,14 @@ document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click"
   render();
 }));
 $("today").addEventListener("click", () => { $("date").value = ymd(new Date()); render(); });
+/* 天気別の平年値を押したら、入力欄を空にしてその値で計算する（書き換えるのは押したときだけ） */
+$("wxBtns").addEventListener("click", e => {
+  const b = e.target.closest("button[data-wx]");
+  if (!b || b.disabled) return;
+  wx = b.dataset.wx;
+  $("dayavg").value = "";
+  render();
+});
 ["date", "target", "dayavg"].forEach(id => $(id).addEventListener("input", render));
 $("date").addEventListener("change", render);
 
@@ -600,7 +674,7 @@ order.forEach((id, i) => $(id).addEventListener("keydown", e => {
 }));
 
 $("heinenSrc").textContent = HEINEN
-  ? "4週記録表（" + HEINEN.source + "）から、その日の前後3日の平均を年ごとに出し、さらに年の間で平均しています。24時間ぶんの記録がそろった日だけを使います。日の出・日の入を「時」で切り捨てて数えているため、アグリネットの値とは少しずれることがあります。（データ作成 " + HEINEN.built_at + "）"
+  ? "出どころ：" + HEINEN.source + "／晴天指数：" + HEINEN.source_k + "。24時間ぶんの記録がそろった日だけを使います。日の出・日の入を「時」で切り捨てて数えているため、アグリネットの値とは少しずれることがあります。（データ作成 " + HEINEN.built_at + "）"
   : "過去データを読めませんでした。";
 
 render();
