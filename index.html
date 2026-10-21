@@ -51,21 +51,22 @@
 
      並べ方は「右の列の上から下へ、次に中央、最後に左」。
        左    中央   右
-        9     5     1
-       10     6     2
-       11     7     3
-       12     8     4
+       11     6     1
+       12     7     2
+       13     8     3
+              9     4
+             10     5
 
      grid-auto-flow:column … 横ではなく縦に詰めていく
      direction:rtl        … 最初の列を右端に置く（ここだけ右書きにする）
      子要素は direction:ltr に戻すので、文字の並びは普通のまま。
 
-     この指定のおかげで、HTML側は使う順（1→12）のまま書いておける。
+     この指定のおかげで、HTML側は使う順（1→13）のまま書いておける。
      順番を変えたくなったら、下のリストを入れ替えるだけでよい。 */
   .grid{
     display:grid;
     grid-template-columns:repeat(3,1fr);
-    grid-template-rows:repeat(4,auto);
+    grid-template-rows:repeat(5,auto);
     grid-auto-flow:column;
     direction:rtl;
     gap:20px 10px;
@@ -175,6 +176,11 @@
   <a class="app" href="ekihi/">
     <span class="ic c-keisan" aria-hidden="true">🧪</span>
     <span class="t">液肥レシピ</span>
+  </a>
+
+  <a class="app" href="yaon/">
+    <span class="ic c-keisan" aria-hidden="true">🌙</span>
+    <span class="t">夜温設定</span>
   </a>
 
   <a class="app" href="minna/">
