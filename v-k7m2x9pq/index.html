@@ -45,13 +45,16 @@ header .back{
 }
 header .back:hover{color:var(--ink);border-bottom-color:var(--ink)}
 header .sub{font-size:12.5px;color:var(--muted);margin:3px 0 12px}
-nav{display:flex;gap:5px;overflow-x:auto;padding-bottom:0;-webkit-overflow-scrolling:touch}
+/* ハウスの切り替え。押せると一目で分かるよう、枠で囲んだボタンにする。
+   選んでいるハウスはトマト色で塗りつぶす。5つが同じ幅で1列に並ぶ */
+nav{display:flex;gap:6px;padding:0 0 12px}
 nav button{
-  flex:none;padding:9px 15px;font-size:14.5px;font-weight:700;font-family:inherit;
-  background:none;border:none;border-bottom:3px solid transparent;
-  color:var(--muted);cursor:pointer;white-space:nowrap;margin-bottom:-1px;
+  flex:1 1 0;min-width:0;min-height:42px;padding:8px 4px;
+  font-size:15px;font-weight:700;font-family:inherit;
+  background:var(--paper);border:2px solid var(--tomato);border-radius:10px;
+  color:var(--tomato);cursor:pointer;white-space:nowrap;
 }
-nav button.sel{color:var(--tomato);border-bottom-color:var(--tomato)}
+nav button.sel{background:var(--tomato);color:#FFFFFF}
 
 main{padding:16px 12px}
 .card{background:var(--paper);border:1px solid var(--rule);margin-bottom:14px;overflow:hidden}
@@ -265,13 +268,21 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     return last;
   }
 
-  /** 前年との比を1行で返す。lab は「年間」「同期」のどちらか */
+  /** 前年に対する割合を1行で返す。前年と同じなら 100%。lab は「年間」「同期」 */
   function cmpLine(lab, now, before){
     if(!before) return '<div class="cmp flat">'+lab+' —</div>';
     var r = now / before * 100;
     var cls = r >= 102 ? "up" : (r <= 98 ? "down" : "flat");
-    var sign = r >= 100 ? "+" : "";
-    return '<div class="cmp '+cls+'">'+lab+' '+sign+fmt(r-100,1)+'%</div>';
+    return '<div class="cmp '+cls+'">'+lab+' '+fmt(r,1)+'%</div>';
+  }
+
+  /** 前年との差を g で1行に返す（平均果重用）。色の付け方は割合と同じ基準（±2%） */
+  function gramLine(lab, now, before){
+    if(!before) return '<div class="cmp flat">'+lab+' —</div>';
+    var diff = now - before, r = now / before * 100;
+    var cls = r >= 102 ? "up" : (r <= 98 ? "down" : "flat");
+    var sign = diff > 0 ? "+" : (diff < 0 ? "−" : "±");
+    return '<div class="cmp '+cls+'">'+lab+' '+sign+fmt(Math.abs(diff),1)+'g</div>';
   }
 
   /** 前年の「同じ時点」がどこかを返す。{ idx:月の並び, frac:その月の何割まで, label:表示 }
@@ -740,10 +751,10 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
       '<div><div class="lab">10aあたり</div><div class="val">'+fmt(per/1000,1)+
         '<span class="un">t</span></div>'+cmpLine("年間",per,pper)+cmpLine("同期",per,sper)+'</div>' +
       '<div><div class="lab">平均果重</div><div class="val">'+fmt(avg,1)+
-        '<span class="un">g</span></div>'+cmpLine("年間",avg,pavg)+cmpLine("同期",avg,spavg)+'</div>' +
+        '<span class="un">g</span></div>'+gramLine("年間",avg,pavg)+gramLine("同期",avg,spavg)+'</div>' +
       '</div>' +
-      '<p class="bignote">年間＝前年の1年分との比　同期＝前年の' +
-        (pt ? pt.label : "同じ時点") + 'までとの比' +
+      '<p class="bignote">前年を100%とした割合です（平均果重は前年との差）。<br>' +
+        '年間＝前年の1年分　同期＝前年の' + (pt ? pt.label : "同じ時点") + 'まで' +
         (pt && pt.frac < 1 ? '（その月は日割り）' : '') + '</p>' +
       '</div>';
   }
