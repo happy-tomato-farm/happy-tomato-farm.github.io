@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2F6B4F">
+<title>CO₂施用の収支｜ハッピートマトファーム</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23EE5340'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%234E9A5A' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   色の設定。夜温設定（yaon.html）と同じ考え方でそろえている。
+   :root にふつうの色、暗い画面のときの色を下の2か所で上書きする。
+   ============================================================ */
+:root{
+  --ground:#F2F6F0;
+  --card:#FFFFFF;
+  --card-sub:#F7FAF6;
+  --ink:#24291F;
+  --muted:#6D7768;
+  --line:#DFE7DB;
+  --line-soft:#EDF2EA;
+  --tomato:#EE5340;
+  --leaf:#3F8A4B;
+  --leaf-soft:#E5F2E6;
+  --accent:#2F6B4F;
+  --warn:#B8461F;
+  --warn-soft:#FBEAE2;
+  --shadow:0 1px 0 rgba(36,41,31,.04), 0 6px 18px -10px rgba(36,41,31,.28);
+  --r-card:22px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+    --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+    --tomato:#FF6E5B; --leaf:#6FBB7B; --leaf-soft:#22331F; --accent:#7CC39A;
+    --warn:#FF9A73; --warn-soft:#3A2820;
+    --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+  --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+  --tomato:#FF6E5B; --leaf:#6FBB7B; --leaf-soft:#22331F; --accent:#7CC39A;
+  --warn:#FF9A73; --warn-soft:#3A2820;
+  --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Zen Maru Gothic",
+              "Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px 70px}
+.num{font-variant-numeric:tabular-nums}
+
+header{padding:24px 0 6px;text-align:center}
+h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
+.farm{display:block;margin-top:4px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.1em}
+
+.card{
+  background:var(--card); border:2px solid var(--line); border-radius:var(--r-card);
+  padding:16px; margin-top:16px; box-shadow:var(--shadow);
+}
+.card h2{font-size:14px;font-weight:800;color:var(--muted);margin:0 0 10px;letter-spacing:.08em}
+
+/* ===== 入力欄（2列。狭い画面でも1欄の幅は140px以上ある） ===== */
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px 10px}
+.field.wide{grid-column:1 / -1}
+.field label{display:block;font-size:14.5px;font-weight:800;margin-bottom:5px;line-height:1.4}
+.row{display:flex;gap:6px;align-items:stretch}
+.field input{
+  flex:1; min-width:0; width:100%; min-height:52px;
+  font:inherit; font-size:22px; font-weight:800; padding:6px 12px;
+  border:2px solid var(--line); border-radius:14px;
+  background:var(--card-sub); color:var(--ink);
+}
+.field input::placeholder{color:var(--muted);opacity:.75;font-weight:700;font-size:16px}
+.field input:focus{outline:3px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.field .unit{align-self:center;font-size:13px;font-weight:800;color:var(--muted);line-height:1.2;white-space:nowrap}
+.hint{font-size:13.5px;color:var(--muted);margin:6px 2px 0;line-height:1.6}
+.hint b{color:var(--ink)}
+.err{font-size:13.5px;color:var(--warn);font-weight:800;margin:5px 2px 0;line-height:1.5}
+.sep{grid-column:1 / -1;border-top:2px dashed var(--line-soft);margin:2px 0 0;padding-top:10px;
+     font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.06em}
+
+/* ===== 結果 ===== */
+.verdict{border-radius:16px;padding:14px 16px;background:var(--card-sub)}
+.verdict .lbl{font-size:14px;font-weight:800;color:var(--muted)}
+.verdict .big{font-size:30px;font-weight:800;line-height:1.25;margin-top:2px}
+.verdict .big small{font-size:16px}
+.verdict .sub{font-size:13.5px;font-weight:700;color:var(--muted);margin-top:4px;line-height:1.5}
+.verdict.plus{background:var(--leaf-soft)}
+.verdict.plus .big{color:var(--leaf)}
+.verdict.minus{background:var(--warn-soft)}
+.verdict.minus .big{color:var(--warn)}
+.summary{margin-top:10px;display:grid;gap:8px}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    background:var(--card-sub);border-radius:14px;padding:9px 14px}
+.kv .k{font-size:14px;color:var(--muted);font-weight:700;line-height:1.4}
+.kv .k small{display:block;font-size:12px}
+.kv .v{font-size:19px;font-weight:800;text-align:right;white-space:nowrap}
+.kv .v small{font-size:13px;font-weight:700;color:var(--muted)}
+.ref .kv .v{font-size:17px}
+
+/* ===== たたむ欄 ===== */
+details{margin-top:16px}
+summary{
+  cursor:pointer;list-style:none;font-weight:800;font-size:15px;
+  background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 16px;
+}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"＋ ";color:var(--muted)}
+details[open] summary::before{content:"− "}
+.doc{font-size:14px;line-height:1.8;padding:4px 6px}
+.doc h3{font-size:15px;margin:16px 0 4px}
+.doc p{margin:6px 0}
+.doc ul{margin:6px 0;padding-left:1.3em}
+.doc .eq{background:var(--card-sub);border-radius:12px;padding:10px 12px;font-weight:800;margin:8px 0}
+.steps{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+.steps td{padding:7px 4px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.steps td:last-child{text-align:right;font-weight:800;white-space:nowrap}
+.steps .h td{text-align:left;padding-top:14px;font-size:12.5px;font-weight:800;color:var(--muted);border-bottom:0}
+.steps small{display:block;font-size:12px;color:var(--muted);font-weight:700}
+footer{margin-top:26px;text-align:center;font-size:12px;color:var(--muted)}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>CO₂施用の収支</h1>
+  <span class="farm">ハッピートマトファーム</span>
+</header>
+
+<!-- ============ 入力 ============ -->
+<!-- 数字の欄でも type="number" は使わない（上下の矢印で値が変わる・小数点が打てなくなるため） -->
+<section class="card" aria-label="条件">
+  <div class="fields">
+    <div class="field">
+      <label for="tomato">トマト単価</label>
+      <div class="row">
+        <input id="tomato" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="入力">
+        <span class="unit">円<br>/kg</span>
+      </div>
+      <p class="err" id="tomatoErr" hidden></p>
+    </div>
+    <div class="field">
+      <label for="kerosene">灯油単価</label>
+      <div class="row">
+        <input id="kerosene" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="入力">
+        <span class="unit">円<br>/L</span>
+      </div>
+      <p class="err" id="keroseneErr" hidden></p>
+    </div>
+
+    <div class="sep">施用中のハウス</div>
+    <div class="field">
+      <label for="cin">CO₂濃度（目標）</label>
+      <div class="row">
+        <input id="cin" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next">
+        <span class="unit">ppm</span>
+      </div>
+      <p class="err" id="cinErr" hidden></p>
+    </div>
+    <div class="field">
+      <label for="lai">LAI（葉面積指数）</label>
+      <div class="row">
+        <input id="lai" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
+      </div>
+      <p class="err" id="laiErr" hidden></p>
+    </div>
+    <div class="field wide">
+      <label for="pn">純光合成速度（葉1m²あたり）</label>
+      <div class="row">
+        <input id="pn" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done">
+        <span class="unit">mg CO₂<br>/m²/s</span>
+      </div>
+      <p class="hint" id="pnHint"></p>
+      <p class="err" id="pnErr" hidden></p>
+    </div>
+  </div>
+  <p class="hint">入れた値はこのスマホが覚えます（ページには書き込まれません）。</p>
+</section>
+
+<!-- ============ 結果 ============ -->
+<section class="card" aria-live="polite">
+  <h2>1時間あたりの収支（ハウス1棟）</h2>
+  <div id="result"></div>
+</section>
+
+<section class="card ref" id="refCard">
+  <h2>参考：Excelの数え方</h2>
+  <div id="ref"></div>
+</section>
+
+<details>
+  <summary>途中の計算</summary>
+  <div class="doc" id="steps"></div>
+</details>
+
+<details>
+  <summary>計算の考え方と前提</summary>
+  <div class="doc">
+    <h3>何と何を比べているか</h3>
+    <p>「施用した日」と「施用しなかった日」の差を比べます。</p>
+    <ul>
+      <li><b>コスト</b>：目標濃度を保つために燃やす灯油の代金</li>
+      <li><b>得</b>：施用で<b>増えた分</b>の光合成から見積もった、果実の増収 × トマト単価</li>
+    </ul>
+    <p>施用しなくても光合成は止まりません。換気で入ってくる外気のCO₂で続き、ハウス内は外気（400 ppm）より少し低いところで落ち着きます。そのぶんは施用しなくても得られるので、得には数えません。</p>
+
+    <h3>施用に要るCO₂</h3>
+    <div class="eq">施用量 ＝ 換気で逃げる分 ＋ 植物が吸う分</div>
+    <ul>
+      <li>換気で逃げる分 ＝ 容積 × 換気回数 ×（ハウス内 − 外気の濃度）。濃度差の分だけ、入れ替わった空気が外へ持ち出します</li>
+      <li>植物が吸う分 ＝ 純光合成速度 × LAI × 床面積。葉1m²あたりの吸収を、床1m²の上にある葉の枚数（LAI）でかけて床面積に広げます</li>
+      <li>灯油の量 ＝ 施用量 ÷ 灯油1Lで出るCO₂（2,490 g。環境省の排出係数 2.49 kg-CO₂/L）</li>
+    </ul>
+
+    <h3>施用しなかった日の光合成</h3>
+    <p>「植物が吸う量 ＝ 換気で入ってくる量」になる濃度を探します。濃度が下がると光合成も下がるので、その下がり方を2通りで見て、答えを幅で出します。</p>
+    <ul>
+      <li><b>光が強い日（CO₂律速）</b>：光合成が（濃度 − 50 ppm）に比例するとみる。50 ppm は CO₂補償点（光合成と呼吸がつり合う濃度）。CO₂が効きやすいので、増収は大きめ＝幅の上側</li>
+      <li><b>光が弱い日（光律速）</b>：光の量で頭打ちになり、CO₂の効きが小さい。Farquhar モデルの電子伝達律速の式（葉の中の濃度＝外の0.7倍、Γ*＝42 ppm）で計算。増収は小さめ＝幅の下側</li>
+    </ul>
+    <p>実際の日は、この間のどこかにあります。曇りの日や朝夕は下側、晴れた日中は上側に寄ります。</p>
+
+    <h3>CO₂から果実へ</h3>
+    <div class="eq">増収（生体重）＝ 増えたCO₂ ÷ 44 × 30 × 果実への分配 0.5 ÷ 乾物率 0.05</div>
+    <ul>
+      <li>CO₂ 1 mol（44 g）から糖（CH₂O）が 30 g できる</li>
+      <li>その半分が果実へ行き、果実は水分95%（乾物5%）として生体重に戻す</li>
+    </ul>
+
+    <h3>前提がくずれるとき</h3>
+    <ul>
+      <li><b>窓を開けている間は使えません。</b>換気回数 1.62 回/h は窓を閉めたときのすき間換気です。窓を開けると換気は何十倍にもなり、施用したCO₂はほとんど外へ逃げます</li>
+      <li>換気回数は 2023/10/22 朝（7:54〜）の濃度の下がり方から求めた値です。日の出後で光合成による吸収も混ざっているので、本当の換気回数はもう少し小さいかもしれません（そのときは灯油代が少し減ります）</li>
+      <li>気体の体積は 0℃ の 22.4 L/mol で数えています。25℃ なら 24.5 L/mol で、換気で逃げる分は約9%少なくなります</li>
+      <li>糖が果実の体になるときの呼吸（成長呼吸）は数えていません。その分、増収は少し多めに出ます</li>
+      <li>純光合成速度は「目標濃度のときの値」として入れてください。入れた値がそのまま施用中の光合成になります</li>
+    </ul>
+    <p>出どころ：生物環境物理学.xlsx の「Co2施用シュミレーター」「自圃場換気回数」シート。ハウスの寸法・換気回数は Excel の値です。</p>
+  </div>
+</details>
+
+<footer>
+  <a href="../">アプリ一覧へもどる</a>
+</footer>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   1. 決まった値（Excel の値と、計算の前提。数値はすべてここに集める）
+   ========================================================================= */
+const FIX = {
+  floorM2: 1884.8,            // 温室床面積 [m²]（Excel B6 の値）
+  eaveM: 4.5,                 // 軒高 [m]
+  ridgeM: 5.5,                // 棟高 [m]
+  outsidePpm: 400,            // 外気のCO₂濃度 [ppm]
+  achPerH: 1.62,              // 換気回数 [回/h]（自圃場で 2023/10/22 に測定）
+  molarVolL: 22.4,            // 気体1molの体積 [L]（0℃。Excel どおり）
+  co2MolG: 44,                // CO₂ 1mol の重さ [g]
+  ch2oPerCo2G: 30,            // CO₂ 1mol からできる糖（CH₂O）[g]（Excel の 180/6）
+  fruitShare: 0.5,            // 糖のうち果実へ行く割合
+  fruitDryFrac: 0.05,         // 果実の乾物率（水分95%）
+  keroseneCo2GPerL: 2490,     // 灯油1Lを燃やして出るCO₂ [g]（環境省 2.49 kg-CO₂/L）
+  gammaPpm: 50,               // CO₂補償点 [ppm]（CO₂律速のモデルで使う）
+  ciRatio: 0.7,               // 葉の中のCO₂濃度 ÷ 外の濃度（光律速のモデルで使う）
+  gammaStarPpm: 42,           // Γ*：光呼吸だけを考えた補償点 [ppm]（25℃）
+};
+
+/* 入力欄の既定値と、受け付ける範囲 */
+const INPUTS = {
+  tomato:   { def: "",    min: 1,    max: 5000, label: "1〜5000" },   // 円/kg（金額はページに書かない）
+  kerosene: { def: "",    min: 1,    max: 1000, label: "1〜1000" },   // 円/L（同上）
+  cin:      { def: "500", min: 401,  max: 2000, label: "401〜2000（外気の400より高く）" }, // ppm
+  lai:      { def: "1.5", min: 0.1,  max: 10,   label: "0.1〜10" },
+  pn:       { def: "0.2", min: 0.01, max: 3,    label: "0.01〜3" },   // mg CO₂/m²/s
+};
+const ORDER = ["tomato", "kerosene", "cin", "lai", "pn"];
+const LS_KEY = "htf_co2_inputs";
+
+/* =========================================================================
+   2. 計算（入力を受け取って値を返すだけ。画面には触らない）
+   ========================================================================= */
+
+/* 文字の数字を読む。全角の「２５０」も受け付ける。空欄は null、読めなければ NaN */
+function parseNum(text) {
+  const s = String(text || "").trim()
+    .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[．。､，]/g, ".").replace(/,/g, "");
+  if (s === "") return null;
+  return /^\d+(\.\d*)?$|^\.\d+$/.test(s) ? Number(s) : NaN;
+}
+
+/* 1ppm の濃度差が、空気1m³あたり何gのCO₂にあたるか [g/m³/ppm] */
+const gPerM3PerPpm = () => FIX.co2MolG / FIX.molarVolL / 1000;
+
+/* 温室容積 [m³] ＝ 軒までの直方体 ＋ 屋根の三角の部分（Excel B7 と同じ式） */
+const volumeM3 = () => FIX.floorM2 * FIX.eaveM + FIX.floorM2 * (FIX.ridgeM - FIX.eaveM) / 2;
+
+/* 吸ったCO₂ [g] → 果実の生体重 [kg] */
+const fruitKgFromCo2G = co2G =>
+  co2G / FIX.co2MolG * FIX.ch2oPerCo2G * FIX.fruitShare / FIX.fruitDryFrac / 1000;
+
+/* 光合成のCO₂への反応（濃度 c [ppm] のときの相対的な強さ）。2通り */
+const RESPONSES = {
+  // 光が強い日：CO₂律速。補償点からの差に比例する（CO₂の効きが大きい＝増収の上側）
+  high: c => c - FIX.gammaPpm,
+  // 光が弱い日：Farquhar モデルの電子伝達律速 J(ci−Γ*)/(4ci+8Γ*) の形（J は打ち消すので省く）
+  low: c => { const ci = FIX.ciRatio * c; return (ci - FIX.gammaStarPpm) / (4 * ci + 8 * FIX.gammaStarPpm); },
+};
+
+/* 施用しなかった日に落ち着く濃度 [ppm] と、そのときの吸収 [g/h] を求める。
+   「植物が吸う量 ＝ 換気で外気から入ってくる量」になる濃度を二分法で探す。
+   f(c) は c が上がると増える（吸収は増え、流入は減る）ので、0 と外気濃度の間に答えが1つある */
+function noEnrichment(uptakeGph, cinPpm, ventM3h, resp) {
+  const g = gPerM3PerPpm();
+  const f = c => uptakeGph * resp(c) / resp(cinPpm) - ventM3h * (FIX.outsidePpm - c) * g;
+  let lo = 0, hi = FIX.outsidePpm;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (f(mid) > 0) hi = mid; else lo = mid;
+  }
+  const c0 = (lo + hi) / 2;
+  return { ppm: c0, uptakeGph: uptakeGph * resp(c0) / resp(cinPpm) };
+}
+
+/* 全体の計算。v は数値にした入力（単価は null のことがある） */
+function compute(v) {
+  const vol = volumeM3();                                          // m³
+  const ventM3h = vol * FIX.achPerH;                               // 換気量 m³/h
+  const ventLossGph = ventM3h * (v.cin - FIX.outsidePpm) * gPerM3PerPpm();   // 換気で逃げる g/h
+  const uptakeGph = v.pn / 1000 * v.lai * FIX.floorM2 * 3600;      // 植物が吸う g/h（mg→g、s→h）
+  const supplyGph = ventLossGph + uptakeGph;                       // 施用量 g/h
+  const keroseneLph = supplyGph / FIX.keroseneCo2GPerL;            // 灯油 L/h
+  const costYph = v.kerosene === null ? null : keroseneLph * v.kerosene;
+
+  // 施用しなかった日（2通り）と、施用で増えた分
+  const scen = {};
+  for (const [key, resp] of Object.entries(RESPONSES)) {
+    const base = noEnrichment(uptakeGph, v.cin, ventM3h, resp);
+    const gainGph = uptakeGph - base.uptakeGph;
+    const gainKg = fruitKgFromCo2G(gainGph);
+    const gainYph = v.tomato === null ? null : gainKg * v.tomato;
+    scen[key] = {
+      basePpm: base.ppm, baseUptakeGph: base.uptakeGph,
+      gainGph, gainRatio: gainGph / uptakeGph, gainKg, gainYph,
+      netYph: gainYph === null || costYph === null ? null : gainYph - costYph,
+      breakEvenYpkg: costYph === null || gainKg <= 0 ? null : costYph / gainKg,
+    };
+  }
+
+  // Excel の数え方：吸った分を全部「施用の成果」とする
+  const allKg = fruitKgFromCo2G(uptakeGph);
+  const allYph = v.tomato === null ? null : allKg * v.tomato;
+  const excel = {
+    gainKg: allKg, gainYph: allYph,
+    netYph: allYph === null || costYph === null ? null : allYph - costYph,
+    breakEvenYpkg: costYph === null || allKg <= 0 ? null : costYph / allKg,
+  };
+
+  return { vol, ventM3h, ventLossGph, uptakeGph, supplyGph, keroseneLph, costYph,
+           plantShare: uptakeGph / supplyGph, scen, excel };
+}
+
+/* =========================================================================
+   3. 画面（入力を読む・結果を描く）
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const yen = x => Math.round(x).toLocaleString("ja-JP");
+const signedYen = x => (Math.round(x) > 0 ? "+" : Math.round(x) < 0 ? "−" : "±") + yen(Math.abs(x));
+const fx = (x, d) => x.toLocaleString("ja-JP", { minimumFractionDigits: d, maximumFractionDigits: d });
+/* 幅のある値を「小〜大」で書く。丸めて同じなら1つだけ */
+const range = (a, b, fmt) => { const [x, y] = a <= b ? [a, b] : [b, a]; return fmt(x) === fmt(y) ? fmt(x) : fmt(x) + "〜" + fmt(y); };
+
+/* URL の値（?tomato=… など）→ 覚えている値 → 既定値 の順で欄に入れる。
+   ここで入れるのは開いたときの1回だけ。打っている最中に書き戻すことはしない */
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch (e) { saved = {}; /* 覚えられない端末では毎回既定値から */ }
+const qs = new URLSearchParams(location.search);
+for (const id of ORDER) {
+  $(id).value = qs.has(id) ? qs.get(id) : typeof saved[id] === "string" ? saved[id] : INPUTS[id].def;
+}
+
+/* 入力欄を読んで、数値と、欄ごとの誤りを返す */
+function gather() {
+  const v = {}, errors = {};
+  for (const id of ORDER) {
+    const n = parseNum($(id).value), r = INPUTS[id];
+    if (Number.isNaN(n) || (n !== null && (n < r.min || n > r.max))) errors[id] = r.label + " の数字で入れてください";
+    else if (n === null && r.def !== "") errors[id] = "値を入れてください（既定は " + r.def + "）";
+    v[id] = Number.isNaN(n) ? null : n;
+  }
+  return { v, errors };
+}
+
+function renderErrors(errors) {
+  for (const id of ORDER) {
+    $(id + "Err").hidden = !errors[id];
+    $(id + "Err").textContent = errors[id] || "";
+  }
+}
+
+function renderResult(g) {
+  const box = $("result");
+  if (g.errors.cin || g.errors.lai || g.errors.pn) {
+    box.innerHTML = '<p class="err">施用中のハウスの欄を直すと、ここに結果が出ます。</p>';
+    $("ref").innerHTML = ""; $("steps").innerHTML = ""; return;
+  }
+  const v = { ...g.v, tomato: g.errors.tomato ? null : g.v.tomato, kerosene: g.errors.kerosene ? null : g.v.kerosene };
+  const r = compute(v);
+  const lo = r.scen.low, hi = r.scen.high;
+  const kv = (k, val) => '<div class="kv"><span class="k">' + k + '</span><span class="v num">' + val + "</span></div>";
+
+  // いちばん上の答え：収支（幅つき）
+  let verdict;
+  if (r.costYph === null) {
+    verdict = '<div class="verdict"><div class="lbl">収支</div><div class="big">―</div>' +
+      '<div class="sub">灯油単価' + (v.tomato === null ? "とトマト単価" : "") + "を入れると出ます。</div></div>";
+  } else if (v.tomato === null) {
+    verdict = '<div class="verdict"><div class="lbl">損益分岐のトマト単価</div>' +
+      '<div class="big num">' + range(hi.breakEvenYpkg, lo.breakEvenYpkg, yen) + "<small> 円/kg</small></div>" +
+      '<div class="sub">トマト単価がこれより高ければ、施用は元がとれます。単価を入れると収支が出ます。</div></div>';
+  } else {
+    const a = lo.netYph, b = hi.netYph;
+    const cls = a > 0 ? "plus" : b < 0 ? "minus" : "";
+    const word = a > 0 ? "黒字" : b < 0 ? "赤字" : "天気しだい";
+    verdict = '<div class="verdict ' + cls + '"><div class="lbl">施用の収支・' + word + "</div>" +
+      '<div class="big num">' + range(a, b, signedYen) + "<small> 円/時</small></div>" +
+      '<div class="sub">左が光の弱い日（曇り・朝夕）、右が光の強い日の見込みです。</div></div>';
+  }
+
+  box.innerHTML = verdict + '<div class="summary">' +
+    (v.tomato === null ? "" : kv("増える果実の金額", range(lo.gainYph, hi.gainYph, yen) + "<small> 円/時</small>")) +
+    (r.costYph === null ? "" : kv("灯油代<small>" + fx(r.keroseneLph, 2) + " L/時</small>", yen(r.costYph) + "<small> 円/時</small>")) +
+    kv("増える果実<small>光合成が " + range(lo.gainRatio * 100, hi.gainRatio * 100, x => fx(x, 0)) + "% 増える</small>",
+       range(lo.gainKg, hi.gainKg, x => fx(x, 1)) + "<small> kg/時</small>") +
+    (r.costYph === null || v.tomato === null ? "" :
+      kv("損益分岐のトマト単価<small>これより高ければ元がとれる</small>", range(hi.breakEvenYpkg, lo.breakEvenYpkg, yen) + "<small> 円/kg</small>")) +
+    "</div>";
+
+  // 参考：Excel の数え方
+  const ex = r.excel;
+  $("ref").innerHTML =
+    '<p class="hint" style="margin-top:0">光合成で吸ったCO₂を<b>全部</b>施用の成果として数えた場合。施用しなくても得られた分まで入るので、得が多めに出ます。</p>' +
+    '<div class="summary">' +
+    kv("増える果実", fx(ex.gainKg, 1) + "<small> kg/時</small>") +
+    (ex.gainYph === null ? "" : kv("増える果実の金額", yen(ex.gainYph) + "<small> 円/時</small>")) +
+    (ex.netYph === null ? "" : kv("収支", signedYen(ex.netYph) + "<small> 円/時</small>")) +
+    (ex.breakEvenYpkg === null ? "" : kv("損益分岐のトマト単価", yen(ex.breakEvenYpkg) + "<small> 円/kg</small>")) +
+    "</div>";
+
+  // 途中の計算
+  const row = (k, val, note) => "<tr><td>" + k + (note ? "<small>" + note + "</small>" : "") + '</td><td class="num">' + val + "</td></tr>";
+  const head = t => '<tr class="h"><td colspan="2">' + t + "</td></tr>";
+  $("steps").innerHTML = '<table class="steps">' +
+    head("ハウス（Excel の値）") +
+    row("床面積", fx(FIX.floorM2, 1) + " m²") +
+    row("容積", yen(r.vol) + " m³", "軒高 " + FIX.eaveM + " m・棟高 " + FIX.ridgeM + " m") +
+    row("換気量", yen(r.ventM3h) + " m³/時", "換気回数 " + FIX.achPerH + " 回/時") +
+    head("施用中（" + yen(v.cin) + " ppm に保つ）") +
+    row("換気で逃げるCO₂", yen(r.ventLossGph) + " g/時", "外気 " + FIX.outsidePpm + " ppm との差 " + yen(v.cin - FIX.outsidePpm) + " ppm") +
+    row("植物が吸うCO₂", yen(r.uptakeGph) + " g/時") +
+    row("必要な施用量", yen(r.supplyGph) + " g/時", "うち植物が吸う割合 " + fx(r.plantShare * 100, 0) + "%") +
+    row("灯油", fx(r.keroseneLph, 2) + " L/時", "1 L で " + yen(FIX.keroseneCo2GPerL) + " g") +
+    head("施用しなかった日（光の弱い日／強い日）") +
+    row("落ち着く濃度", fx(lo.basePpm, 0) + "／" + fx(hi.basePpm, 0) + " ppm") +
+    row("植物が吸うCO₂", yen(lo.baseUptakeGph) + "／" + yen(hi.baseUptakeGph) + " g/時") +
+    row("施用で増えた吸収", yen(lo.gainGph) + "／" + yen(hi.gainGph) + " g/時",
+        "施用中の " + fx(lo.gainRatio * 100, 0) + "%／" + fx(hi.gainRatio * 100, 0) + "%") +
+    row("増える果実", fx(lo.gainKg, 2) + "／" + fx(hi.gainKg, 2) + " kg/時") +
+    "</table>";
+}
+
+function renderPnHint(g) {
+  // mg CO₂/m²/s を、光合成の測定器でよく出る µmol/m²/s に直して添える
+  $("pnHint").textContent = g.errors.pn || g.v.pn === null ? "" :
+    "目標濃度のときの値。＝ " + fx(g.v.pn / FIX.co2MolG * 1000, 1) + " µmol/m²/s（Excel の既定は 0.2）";
+}
+
+function render() {
+  const g = gather();
+  renderErrors(g.errors);
+  renderPnHint(g);
+  renderResult(g);
+}
+
+/* ---- 操作 ---- */
+/* 打つたびに計算し直し、打った文字のまま覚える（欄には書き戻さない） */
+ORDER.forEach(id => $(id).addEventListener("input", () => {
+  const raw = Object.fromEntries(ORDER.map(k => [k, $(k).value]));
+  try { localStorage.setItem(LS_KEY, JSON.stringify(raw)); } catch (e) { /* 覚えられなくても計算はできる */ }
+  render();
+}));
+
+/* 上下キー・Enter で欄を移動する（値は変えない） */
+ORDER.forEach((id, i) => $(id).addEventListener("keydown", e => {
+  if ((e.key === "ArrowDown" || e.key === "Enter") && i < ORDER.length - 1) { e.preventDefault(); $(ORDER[i + 1]).focus(); }
+  if (e.key === "ArrowUp" && i > 0) { e.preventDefault(); $(ORDER[i - 1]).focus(); }
+}));
+
+render();
+</script>
+</body>
+</html>
