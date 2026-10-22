@@ -69,7 +69,13 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 
 /* ===== 入力欄（2列。狭い画面でも1欄の幅は140px以上ある） ===== */
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:14px 10px}
-.field.wide{grid-column:1 / -1}
+.field.wide,.hint.wide{grid-column:1 / -1}
+.hint.wide{margin-top:-6px}
+/* 計算したLAIの表示（入力欄ではない） */
+.lai-out{display:flex;flex-direction:column;justify-content:flex-end;
+         background:var(--card-sub);border-radius:14px;padding:6px 14px}
+.lai-out .k{font-size:14.5px;font-weight:800;color:var(--muted);line-height:1.4}
+.lai-out .v{font-size:26px;font-weight:800;color:var(--accent);line-height:1.3}
 .field label{display:block;font-size:14.5px;font-weight:800;margin-bottom:5px;line-height:1.4}
 .row{display:flex;gap:6px;align-items:stretch}
 .field input{
@@ -168,21 +174,45 @@ footer a{color:var(--muted)}
       <p class="err" id="cinErr" hidden></p>
     </div>
     <div class="field">
-      <label for="lai">LAI（葉面積指数）</label>
+      <label for="pn">純光合成速度</label>
       <div class="row">
-        <input id="lai" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
+        <input id="pn" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
+        <span class="unit">mg<br>/m²/s</span>
       </div>
-      <p class="err" id="laiErr" hidden></p>
-    </div>
-    <div class="field wide">
-      <label for="pn">純光合成速度（葉1m²あたり）</label>
-      <div class="row">
-        <input id="pn" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done">
-        <span class="unit">mg CO₂<br>/m²/s</span>
-      </div>
-      <p class="hint" id="pnHint"></p>
       <p class="err" id="pnErr" hidden></p>
     </div>
+    <p class="hint wide" id="pnHint"></p>
+
+    <div class="sep">LAI（葉面積指数）</div>
+    <div class="field">
+      <label for="density">栽植密度</label>
+      <div class="row">
+        <input id="density" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
+        <span class="unit">本<br>/m²</span>
+      </div>
+      <p class="err" id="densityErr" hidden></p>
+    </div>
+    <div class="field">
+      <label for="leaves">葉枚数</label>
+      <div class="row">
+        <input id="leaves" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
+        <span class="unit">枚<br>/本</span>
+      </div>
+      <p class="err" id="leavesErr" hidden></p>
+    </div>
+    <div class="field">
+      <label for="width">葉幅</label>
+      <div class="row">
+        <input id="width" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="入力">
+        <span class="unit">cm</span>
+      </div>
+      <p class="err" id="widthErr" hidden></p>
+    </div>
+    <div class="field lai-out">
+      <span class="k">LAI</span>
+      <span class="v num" id="laiOut">―</span>
+    </div>
+    <p class="hint wide" id="laiHint"></p>
   </div>
   <p class="hint">入れた値はこのスマホが覚えます（ページには書き込まれません）。</p>
 </section>
@@ -222,6 +252,17 @@ footer a{color:var(--muted)}
       <li>灯油の量 ＝ 施用量 ÷ 灯油1Lで出るCO₂（2,490 g。環境省の排出係数 2.49 kg-CO₂/L）</li>
     </ul>
 
+    <h3>LAI（葉面積指数）</h3>
+    <p>床1m²の上に、葉が何m²重なっているかを表す値です。植物が吸うCO₂の量はこれに比例します。</p>
+    <div class="eq">LAI ＝ 栽植密度（本/m²）× 葉枚数（枚/本）× 葉1枚の面積</div>
+    <div class="eq">葉1枚の面積（cm²）＝ e<sup>−2.644</sup> × 葉幅（cm）<sup>2.396</sup></div>
+    <ul>
+      <li>葉幅から複葉1枚の面積を出す式です。愛知県農業総合試験場（樋江井ら）が大玉トマト5品種で作った式（モデルG）の係数を平均しました。「レオン」の係数はありません。品種による違いは同じ葉幅で±15%ほどです</li>
+      <li>葉幅の2.4乗に比例するので、葉幅が1割ちがうと面積は約2.5割ちがいます</li>
+      <li>全部の葉が同じ大きさとして数えています。上の若い葉は小さいので、平均的な葉を測ってください</li>
+      <li>栽植密度・葉枚数の空欄は「今週のめやす」と同じ作業計画の値で埋めます</li>
+    </ul>
+
     <h3>施用しなかった日の光合成</h3>
     <p>「植物が吸う量 ＝ 換気で入ってくる量」になる濃度を探します。濃度が下がると光合成も下がるので、その下がり方を2通りで見て、答えを幅で出します。</p>
     <ul>
@@ -245,7 +286,7 @@ footer a{color:var(--muted)}
       <li>糖が果実の体になるときの呼吸（成長呼吸）は数えていません。その分、増収は少し多めに出ます</li>
       <li>純光合成速度は「目標濃度のときの値」として入れてください。入れた値がそのまま施用中の光合成になります</li>
     </ul>
-    <p>出どころ：生物環境物理学.xlsx の「Co2施用シュミレーター」「自圃場換気回数」シート。ハウスの寸法・換気回数は Excel の値です。</p>
+    <p>出どころ：生物環境物理学.xlsx の「Co2施用シュミレーター」「自圃場換気回数」シート。床面積・高さ・換気回数は Excel の値です。葉の面積の式は 樋江井ら「非破壊によりトマトの個葉面積を推定する回帰モデルの構築及び検証」（愛知県農業総合試験場研究報告）。</p>
   </div>
 </details>
 
@@ -254,6 +295,8 @@ footer a{color:var(--muted)}
 </footer>
 </div>
 
+<!-- 栽植密度・葉枚数は「今週のめやす」と同じデータを読む。読めなくても画面は動く（手で入力する） -->
+<script src="../keikaku/keikaku_data.js"></script>
 <script>
 "use strict";
 
@@ -275,17 +318,25 @@ const FIX = {
   gammaPpm: 50,               // CO₂補償点 [ppm]（CO₂律速のモデルで使う）
   ciRatio: 0.7,               // 葉の中のCO₂濃度 ÷ 外の濃度（光律速のモデルで使う）
   gammaStarPpm: 42,           // Γ*：光呼吸だけを考えた補償点 [ppm]（25℃）
+  excelLai: 1.5,              // 葉幅が空欄のときに使う LAI（Excel B15 の値）
+  // 葉1枚（複葉）の面積 [cm²] ＝ e^b × 葉幅[cm]^a（樋江井ら 愛知農総試研報、モデルG）。
+  // 大玉5品種（りんか409・桃太郎ヨーク・みそら64・ルネッサンス・スーパーファースト）の係数の平均
+  leafA: 2.396,
+  leafB: -2.644,
 };
 
-/* 入力欄の既定値と、受け付ける範囲 */
+/* 入力欄の既定値と、受け付ける範囲。
+   plan:true の欄は、空欄なら今週の作業計画の値を使う */
 const INPUTS = {
   tomato:   { def: "",    min: 1,    max: 5000, label: "1〜5000" },   // 円/kg（金額はページに書かない）
   kerosene: { def: "",    min: 1,    max: 1000, label: "1〜1000" },   // 円/L（同上）
   cin:      { def: "500", min: 401,  max: 2000, label: "401〜2000（外気の400より高く）" }, // ppm
-  lai:      { def: "1.5", min: 0.1,  max: 10,   label: "0.1〜10" },
   pn:       { def: "0.2", min: 0.01, max: 3,    label: "0.01〜3" },   // mg CO₂/m²/s
+  density:  { def: "",    min: 0.5,  max: 10,   label: "0.5〜10", plan: true },  // 本/m²
+  leaves:   { def: "",    min: 1,    max: 40,   label: "1〜40", plan: true },    // 枚/本
+  width:    { def: "",    min: 5,    max: 80,   label: "5〜80" },     // cm（空欄なら Excel の LAI）
 };
-const ORDER = ["tomato", "kerosene", "cin", "lai", "pn"];
+const ORDER = ["tomato", "kerosene", "cin", "pn", "density", "leaves", "width"];
 const LS_KEY = "htf_co2_inputs";
 
 /* =========================================================================
@@ -310,6 +361,31 @@ const volumeM3 = () => FIX.floorM2 * FIX.eaveM + FIX.floorM2 * (FIX.ridgeM - FIX
 /* 吸ったCO₂ [g] → 果実の生体重 [kg] */
 const fruitKgFromCo2G = co2G =>
   co2G / FIX.co2MolG * FIX.ch2oPerCo2G * FIX.fruitShare / FIX.fruitDryFrac / 1000;
+
+/* 葉幅 [cm] → 葉1枚の面積 [cm²] */
+const leafAreaCm2 = widthCm => Math.exp(FIX.leafB) * Math.pow(widthCm, FIX.leafA);
+
+/* LAI ＝ 栽植密度 [本/m²] × 葉枚数 [枚/本] × 葉1枚の面積 [m²] */
+const laiOf = (densityPerM2, leavesPerStem, widthCm) =>
+  densityPerM2 * leavesPerStem * leafAreaCm2(widthCm) / 10000;
+
+/* 年度（8月〜翌7月）の始まりの年（夜温設定と同じ） */
+const seasonStartYear = d => d.getMonth() + 1 >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+
+/* 作業計画の週（「10/17」はその週の初日）を探す（夜温設定と同じ） */
+function planWeekOf(date, plan) {
+  if (!plan || !Array.isArray(plan.weeks)) return null;
+  const y0 = seasonStartYear(date);
+  for (const w of plan.weeks) {
+    const m = /^(\d{1,2})\/(\d{1,2})$/.exec(String(w.date || ""));
+    if (!m) continue;
+    const mon = Number(m[1]);
+    const start = new Date(mon >= 8 ? y0 : y0 + 1, mon - 1, Number(m[2]));
+    const diff = Math.round((date - start) / 86400000);
+    if (diff >= 0 && diff < 7) return { week: w, start };
+  }
+  return null;
+}
 
 /* 光合成のCO₂への反応（濃度 c [ppm] のときの相対的な強さ）。2通り */
 const RESPONSES = {
@@ -392,16 +468,36 @@ for (const id of ORDER) {
   $(id).value = qs.has(id) ? qs.get(id) : typeof saved[id] === "string" ? saved[id] : INPUTS[id].def;
 }
 
-/* 入力欄を読んで、数値と、欄ごとの誤りを返す */
+/* 今週の作業計画（読めなければ null。そのときは手で入れてもらう） */
+const PLAN = typeof PLAN_DATA === "object" ? PLAN_DATA : null;
+const PW = planWeekOf(new Date(), PLAN);
+const planNum = key => PW && typeof PW.week[key] === "number" ? PW.week[key] : null;
+const PLAN_VAL = { density: planNum("density"), leaves: planNum("leaf_plant") };
+
+/* 入力欄を読んで、数値と、欄ごとの誤りと、LAI の出どころを返す */
 function gather() {
-  const v = {}, errors = {};
+  const v = {}, errors = {}, from = {};
   for (const id of ORDER) {
     const n = parseNum($(id).value), r = INPUTS[id];
     if (Number.isNaN(n) || (n !== null && (n < r.min || n > r.max))) errors[id] = r.label + " の数字で入れてください";
     else if (n === null && r.def !== "") errors[id] = "値を入れてください（既定は " + r.def + "）";
     v[id] = Number.isNaN(n) ? null : n;
+    from[id] = "入力";
+    // 空欄で、作業計画に値があればそれを使う
+    if (r.plan && n === null && PLAN_VAL[id] !== null) { v[id] = PLAN_VAL[id]; from[id] = "作業計画"; }
   }
-  return { v, errors };
+  // LAI：葉幅があれば計算する。空欄なら Excel の値
+  let lai = { value: FIX.excelLai, from: "Excel" };
+  if (v.width !== null && !errors.width) {
+    for (const id of ["density", "leaves"]) {
+      if (v[id] === null && !errors[id]) errors[id] = "値を入れてください";
+    }
+    if (!errors.density && !errors.leaves) {
+      lai = { value: laiOf(v.density, v.leaves, v.width), from: "葉幅", leafCm2: leafAreaCm2(v.width) };
+    }
+  }
+  v.lai = lai.value;
+  return { v, errors, from, lai };
 }
 
 function renderErrors(errors) {
@@ -413,8 +509,8 @@ function renderErrors(errors) {
 
 function renderResult(g) {
   const box = $("result");
-  if (g.errors.cin || g.errors.lai || g.errors.pn) {
-    box.innerHTML = '<p class="err">施用中のハウスの欄を直すと、ここに結果が出ます。</p>';
+  if (g.errors.cin || g.errors.pn || g.errors.density || g.errors.leaves || g.errors.width) {
+    box.innerHTML = '<p class="err">赤字の欄を直すと、ここに結果が出ます。</p>';
     $("ref").innerHTML = ""; $("steps").innerHTML = ""; return;
   }
   const v = { ...g.v, tomato: g.errors.tomato ? null : g.v.tomato, kerosene: g.errors.kerosene ? null : g.v.kerosene };
@@ -468,6 +564,12 @@ function renderResult(g) {
     row("床面積", fx(FIX.floorM2, 1) + " m²") +
     row("容積", yen(r.vol) + " m³", "軒高 " + FIX.eaveM + " m・棟高 " + FIX.ridgeM + " m") +
     row("換気量", yen(r.ventM3h) + " m³/時", "換気回数 " + FIX.achPerH + " 回/時") +
+    head("葉") +
+    (g.lai.from === "葉幅"
+      ? row("葉1枚の面積", yen(g.lai.leafCm2) + " cm²", "葉幅 " + fx(v.width, 1) + " cm から") +
+        row("LAI", fx(v.lai, 2), fx(v.density, 2) + " 本/m² × " + fx(v.leaves, 1) + " 枚/本 × 葉1枚")
+      : row("LAI", fx(v.lai, 2), "葉幅が空欄なので Excel の値")) +
+    row("葉の総面積", yen(v.lai * FIX.floorM2) + " m²", "LAI × 床面積") +
     head("施用中（" + yen(v.cin) + " ppm に保つ）") +
     row("換気で逃げるCO₂", yen(r.ventLossGph) + " g/時", "外気 " + FIX.outsidePpm + " ppm との差 " + yen(v.cin - FIX.outsidePpm) + " ppm") +
     row("植物が吸うCO₂", yen(r.uptakeGph) + " g/時") +
@@ -485,13 +587,30 @@ function renderResult(g) {
 function renderPnHint(g) {
   // mg CO₂/m²/s を、光合成の測定器でよく出る µmol/m²/s に直して添える
   $("pnHint").textContent = g.errors.pn || g.v.pn === null ? "" :
-    "目標濃度のときの値。＝ " + fx(g.v.pn / FIX.co2MolG * 1000, 1) + " µmol/m²/s（Excel の既定は 0.2）";
+    "純光合成速度は葉1m²あたり・目標濃度のときの mg CO₂/m²/s。＝ " + fx(g.v.pn / FIX.co2MolG * 1000, 1) + " µmol/m²/s（Excel の既定は 0.2）";
+}
+
+function renderLai(g) {
+  // 空欄のとき使う作業計画の値を、うすい字で欄に見せる
+  $("density").placeholder = PLAN_VAL.density !== null ? fx(PLAN_VAL.density, 2) : "入力";
+  $("leaves").placeholder = PLAN_VAL.leaves !== null ? fx(PLAN_VAL.leaves, 1) : "入力";
+  $("laiOut").textContent = g.errors.density || g.errors.leaves || g.errors.width ? "―" : fx(g.lai.value, 2);
+
+  const planNote = PW
+    ? "栽植密度・葉枚数が空欄なら、今週の作業計画（第" + esc(PW.week.week_no) + "週 " + esc(PW.week.date) + "〜）の値を使います。"
+    : PLAN ? "今週の作業計画に値がありません。栽植密度・葉枚数を入れてください。"
+           : "作業計画を読めませんでした。栽植密度・葉枚数を入れてください。";
+  $("laiHint").innerHTML = (g.lai.from === "葉幅"
+    ? "葉1枚 " + yen(g.lai.leafCm2) + " cm² で計算しています。"
+    : "<b>葉幅が空欄の間は Excel の LAI 1.5 で計算します。</b>") +
+    "葉幅は複葉全体の、葉軸に直角な最大幅です。株の中ほどの平均的な葉を測ってください。" + planNote;
 }
 
 function render() {
   const g = gather();
   renderErrors(g.errors);
   renderPnHint(g);
+  renderLai(g);
   renderResult(g);
 }
 
