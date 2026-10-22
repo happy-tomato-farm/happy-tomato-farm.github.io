@@ -54,14 +54,14 @@
        11     6     1
        12     7     2
        13     8     3
-              9     4
+       14     9     4
              10     5
 
      grid-auto-flow:column … 横ではなく縦に詰めていく
      direction:rtl        … 最初の列を右端に置く（ここだけ右書きにする）
      子要素は direction:ltr に戻すので、文字の並びは普通のまま。
 
-     この指定のおかげで、HTML側は使う順（1→13）のまま書いておける。
+     この指定のおかげで、HTML側は使う順（1→14）のまま書いておける。
      順番を変えたくなったら、下のリストを入れ替えるだけでよい。 */
   .grid{
     display:grid;
@@ -213,6 +213,11 @@
   <a class="app" href="shitsudo/">
     <span class="ic c-keisan" aria-hidden="true">🌫️</span>
     <span class="t">湿度計算</span>
+  </a>
+
+  <a class="app" href="co2/">
+    <span class="ic c-keisan" aria-hidden="true">💨</span>
+    <span class="t">CO₂収支</span>
   </a>
 
   <a class="app" href="ondo/">
