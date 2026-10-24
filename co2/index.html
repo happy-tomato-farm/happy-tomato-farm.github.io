@@ -320,7 +320,7 @@ footer a{color:var(--muted)}
       </div>
       <p class="err" id="capErr" hidden></p>
     </div>
-    <p class="hint wide">施用で増える収量は、施用しなかった日のこの割合までで頭打ちにします。日本の冬の促成トマトの試験は +25〜30% でした（千葉 総収量+30%、岩手+25%）。</p>
+    <p class="hint wide">施用で増える収量は、1時間ごとに、施用しなかったときのこの割合までで頭打ちにします。日本の冬の促成トマトの試験は +25〜30% でした（千葉 総収量+30%、岩手+25%）。</p>
   </div>
   <p class="hint">入れた値はこのスマホが覚えます（ページには書き込まれません）。</p>
 </section>
@@ -421,8 +421,9 @@ footer a{color:var(--muted)}
     <ul>
       <li>日本の冬の促成トマトの試験：千葉 総収量 +30%（施用と温度管理の組み合わせ）、岩手 +25%</li>
       <li>海外：野菜107報のメタ解析で重さ +11%、長期栽培の試験で +37〜43%、換気しないハウスで1,000 ppm にして +48%</li>
-      <li>そこで、施用で増える光合成のうち収量に数えるのは「施用しなかった日の光合成 × 上限」までとしています</li>
-      <li>上限に届いたあとは CO₂ を増やしても得が増えないので、「上限に届くいちばん安い動かし方」が答えになります</li>
+      <li>そこで、施用で増える光合成のうち収量に数えるのは、1時間ごとに「その時間の、施用しなかったときの光合成 × 上限」までとしています</li>
+      <li>その時間の上限に届いたあとは CO₂ を増やしても得が増えないので、濃度を上げすぎず、光のある時間に広く施用する答えになりやすくなります</li>
+      <li>1日の合計でかけないのは、そうすると午前だけで上限を使い切り、光の強い午後は施用しない、という偏った答えになるためです</li>
     </ul>
 
     <h3>換気回数が大きい日</h3>
@@ -698,7 +699,7 @@ const uptakeAt = (grid, ppm) => {
 function simulate(day, dawnPpm, sched) {
   const hg = houseGPerPpm(), dt = FIX.stepH;
   let C = dawnPpm, uptake = 0, fuelL = 0, maxC = C;
-  const trace = [];
+  const trace = [], hourG = {};                                   // hourG: 時（0〜23）ごとの光合成 [g CO₂]
   for (const s of day.steps) {
     const p = sched(s.t + 1e-6);                                 // その5分の始まりで判定（表の時刻と合わせる）
     const duty = p && p.d ? p.d : 0;
@@ -709,10 +710,12 @@ function simulate(day, dawnPpm, sched) {
     trace.push({ t: s.t, C, end: next, duty, on });
     C = next;
     uptake += P * dt;
+    const h = Math.floor(s.t + 1e-6);
+    hourG[h] = (hourG[h] || 0) + P * dt;
     fuelL += (on ? FIX.glowFuelLPerH : 0) * dt;
     if (C > maxC) maxC = C;
   }
-  return { uptakeG: uptake, fuelL, maxC, trace, endC: C };
+  return { uptakeG: uptake, hourG, fuelL, maxC, trace, endC: C };
 }
 
 /* いちばん得な動かし方を、タイマーと目標ppmの2つの方式それぞれで探す。
@@ -731,14 +734,19 @@ function optimize(day, c) {
   for (let b = slot(switchAt) + FIX.slotH; b <= set + 1e-9; b += FIX.slotH) ends.push(b);
   if (!ends.length || ends[ends.length - 1] < set - 0.25) ends.push(q(set));
 
-  // 増えた光合成のうち、収量に数えるのは「施用しなかった日の光合成 × 上限」まで。
-  // 葉の光合成の伸びがそのまま収量の伸びにはならない（順化・シンク・茎葉への分配・成長呼吸）ため
-  const capG = Math.max(0, base.uptakeG) * c.cap / 100;
+  // 増えた光合成のうち、収量に数えるのは1時間ごとに「その時間の、施用しなかったときの光合成 × 上限」まで。
+  // 葉の光合成の伸びがそのまま収量の伸びにはならない（順化・シンク・茎葉への分配・成長呼吸）ため。
+  // 1日の合計でかけると、午前に上限まで使い切って午後は施用しない、という偏った答えになるので時間ごとにかける
+  const capG = Math.max(0, base.uptakeG) * c.cap / 100;          // 1日に数えられる最大（時間ごとの上限の合計）
   const value = sim => {
     const rawG = sim.uptakeG - base.uptakeG;
-    const gainG = Math.min(rawG, capG);
+    let gainG = 0;
+    for (const h of Object.keys(sim.hourG)) {
+      const b = base.hourG[h] || 0;
+      gainG += Math.min(sim.hourG[h] - b, Math.max(0, b) * c.cap / 100);
+    }
     const gainKg = fruitKgFromCo2G(gainG);
-    return { rawG, gainG, capped: rawG > capG, gainKg, yen: gainKg * c.tomato - sim.fuelL * c.kerosene };
+    return { rawG, gainG, capped: rawG > gainG + 0.5, gainKg, yen: gainKg * c.tomato - sim.fuelL * c.kerosene };
   };
   // 候補を全部試して、得がいちばん大きいものを返す。得が同じ（1円未満の差）なら灯油の少ないほう
   let tried = 0;
@@ -975,7 +983,7 @@ function renderDetail(g, r, m) {
   const v = m.v, cost = m.sim.fuelL * g.v.kerosene;
   box.innerHTML = '<div class="summary">' +
     kv("増える果実の金額<small>" + fx(v.gainKg, 1) + " kg 増える（増収率 " + fx(r.base.uptakeG > 0 ? v.gainG / r.base.uptakeG * 100 : 0, 0) + "%" +
-       (v.capped ? "・上限 " + fx(g.v.cap, 0) + "% で頭打ち" : "") + "）</small>", yen(v.gainKg * g.v.tomato) + "<small> 円</small>") +
+       (v.capped ? "・上限 " + fx(g.v.cap, 0) + "% で頭打ちの時間あり" : "") + "）</small>", yen(v.gainKg * g.v.tomato) + "<small> 円</small>") +
     kv("灯油代<small>" + fx(m.sim.fuelL, 1) + " L</small>", yen(cost) + "<small> 円</small>") +
     kv("損益分岐のトマト単価<small>これより高ければ元がとれる</small>", (v.gainKg > 0 ? yen(cost / v.gainKg) : "―") + "<small> 円/kg</small>") +
     kv("参考：Excel の数え方<small>吸ったCO₂を全部、施用の成果とした場合</small>", signedYen(m.excelYen) + "<small> 円</small>") +
@@ -1095,7 +1103,7 @@ function renderSteps(g, day, r, m) {
     head("植物") +
     row("LAI", fx(g.lai.value, 2), g.lai.from === "葉幅" ? fx(g.v.density, 2) + " 本/m² × " + fx(g.v.leaves, 1) + " 枚/本 × " + yen(g.lai.leafCm2) + " cm²" : "葉幅が空欄なので Excel の値") +
     (r ? row("光合成（施用なし・1日）", yen(r.base.uptakeG) + " g CO₂") : "") +
-    (r ? row("光合成（施用あり・1日）", yen(m.sim.uptakeG) + " g CO₂", (m.kind === "timer" ? "タイマー" : "目標ppm") + "・増えた分 " + yen(m.v.rawG) + " g（収量に数えるのは上限 " + yen(r.capG) + " g まで）") : "") +
+    (r ? row("光合成（施用あり・1日）", yen(m.sim.uptakeG) + " g CO₂", (m.kind === "timer" ? "タイマー" : "目標ppm") + "・増えた分 " + yen(m.v.rawG) + " g（収量に数えるのは1時間ごとに上限まで、計 " + yen(m.v.gainG) + " g）") : "") +
     row("増収率の上限", fx(g.v.cap === null ? FIX.capPct : g.v.cap, 0) + " %", g.from.cap) +
     head("ハウスとグロウ") +
     row("容積", yen(volumeM3()) + " m³", "床面積 " + fx(FIX.floorM2, 1) + " m²") +
