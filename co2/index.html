@@ -625,7 +625,7 @@ function simulate(day, dawnPpm, sched) {
   let C = dawnPpm, uptake = 0, fuelL = 0, maxC = C;
   const trace = [];
   for (const s of day.steps) {
-    const duty = sched(s.t + dt / 2);
+    const duty = sched(s.t + 1e-6);                              // その5分の始まりで判定（表の時刻と合わせる）
     const supply = duty / 60 * FIX.glowCo2GPerH;                 // g/h
     const P = uptakeAt(s.grid, C);                                // g/h
     trace.push({ t: s.t, C, duty });
@@ -843,7 +843,7 @@ const C_WITH = "#2F6B4F", C_BASE = "#9AA394", C_OPEN = "#2A4A6B", C_AXIS = "#6D7
 function drawChart(day, base, with_, openAt, nightNow) {
   const cv = $("chart"), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
   ctx.clearRect(0, 0, W, H);
-  const L = 74, R = 16, T = 16, B = 50;
+  const L = 74, R = 16, T = 40, B = 50;                          // 上は「ppm」の文字のぶん空ける
   const all = base.concat(with_ || []).map(p => p.C);
   const yMax = Math.max(600, Math.ceil(Math.max(...all) / 200) * 200);
   const x0 = Math.floor(day.g.rise), x1 = Math.ceil(day.g.set);
@@ -855,7 +855,10 @@ function drawChart(day, base, with_, openAt, nightNow) {
     ctx.fillText(String(p), L - 8, Y(p));
   }
   ctx.textAlign = "center"; ctx.textBaseline = "top";
-  for (let h = x0; h <= x1; h += 2) ctx.fillText(h + "時", X(h), H - B + 10);
+  for (let h = x0; h <= x1; h += 2) {
+    ctx.textAlign = X(h) > W - R - 30 ? "right" : "center";     // 右端の文字が切れないように
+    ctx.fillText(h + "時", Math.min(X(h), W - 2), H - B + 10);
+  }
   // 外気 400ppm
   ctx.setLineDash([4, 6]); ctx.strokeStyle = C_AXIS;
   ctx.beginPath(); ctx.moveTo(L, Y(FIX.outsidePpm)); ctx.lineTo(W - R, Y(FIX.outsidePpm)); ctx.stroke();
@@ -873,7 +876,7 @@ function drawChart(day, base, with_, openAt, nightNow) {
   line(base, C_BASE, 4);
   if (with_) line(with_, C_WITH, 5);
   ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillStyle = C_AXIS;
-  ctx.fillText("ppm", 6, 0);
+  ctx.fillText("ppm", 6, 2);
 }
 
 /* グラフの下の表：1時間ごとの天窓・グロウ・平均濃度 */
