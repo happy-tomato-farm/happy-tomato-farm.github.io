@@ -603,7 +603,9 @@ function prepareDay(c) {
   const tau = coverTau(g.J);
   const steps = [];
   const t0 = Math.round(g.rise * 12) / 12, t1 = g.set;
-  for (let t = t0; t < t1; t += FIX.stepH) {
+  // 足し算を重ねると 7:00 が 6:59.999… になり時刻の区切りがずれるので、毎回「始まり＋番号×5分」で作る
+  for (let i = 0; t0 + i * FIX.stepH < t1; i++) {
+    const t = Math.round((t0 + i * FIX.stepH) * 1e6) / 1e6;
     const tm = t + FIX.stepH / 2;                                 // その5分の真ん中
     const St = clearSkyW(g, tm) * c.k * tau;                      // ハウス内の日射
     const T = tempAt(tm, c.hours, c.temps);
