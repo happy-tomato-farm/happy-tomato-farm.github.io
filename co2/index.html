@@ -155,6 +155,10 @@ canvas{display:block;width:100%;height:auto;margin-top:4px}
 .tbl th:first-child,.tbl td:first-child{text-align:left}
 .tbl th{font-size:12.5px;color:var(--muted)}
 .tbl .on{color:var(--accent);font-weight:800}
+.tbl small{font-size:11.5px;font-weight:700;color:var(--muted)}
+.check{margin-top:12px;background:var(--night-soft);border-radius:14px;padding:10px 14px;font-size:13.5px;line-height:1.6}
+.check b{color:var(--night)}
+.check ul{margin:6px 0 0;padding-left:1.2em}
 
 /* ===== たたむ欄 ===== */
 details{margin-top:16px}
@@ -666,19 +670,25 @@ const uptakeAt = (grid, ppm) => {
   return grid[i] + (grid[i + 1] - grid[i]) * f;
 };
 
-/* 1日の濃度を5分ごとに追いかける。sched(t) はその時刻にグロウを動かす分/時 */
+/* 1日の濃度を5分ごとに追いかける。
+   sched(t) はその時刻の動かし方 {d: 1時間に動かす分, from: その区間の始まりの時刻} か、止めるなら null。
+   タイマーと同じく、区間の始まりから1時間ごとに「最初の d 分だけ動かし、残りは止める」としている。
+   こうすると、動かしている間は濃度が上がり、止めている間は下がる、実際のセンサーに近い動きになる */
 function simulate(day, dawnPpm, sched) {
   const hg = houseGPerPpm(), dt = FIX.stepH;
   let C = dawnPpm, uptake = 0, fuelL = 0, maxC = C;
   const trace = [];
   for (const s of day.steps) {
-    const duty = sched(s.t + 1e-6);                              // その5分の始まりで判定（表の時刻と合わせる）
-    const supply = duty / 60 * FIX.glowCo2GPerH;                 // g/h
+    const p = sched(s.t + 1e-6);                                 // その5分の始まりで判定（表の時刻と合わせる）
+    const duty = p ? p.d : 0;
+    const on = p ? Math.round((s.t - p.from) * 60) % 60 < p.d : false;
+    const supply = on ? FIX.glowCo2GPerH : 0;                    // g/h
     const P = uptakeAt(s.grid, C);                                // g/h
-    trace.push({ t: s.t, C, duty });
-    C = Math.max(0, C + ((supply - P) / hg - s.ach * (C - FIX.outsidePpm)) * dt);
+    const next = Math.max(0, C + ((supply - P) / hg - s.ach * (C - FIX.outsidePpm)) * dt);
+    trace.push({ t: s.t, C, end: next, duty, on });
+    C = next;
     uptake += P * dt;
-    fuelL += duty / 60 * FIX.glowFuelLPerH * dt;
+    fuelL += (on ? FIX.glowFuelLPerH : 0) * dt;
     if (C > maxC) maxC = C;
   }
   return { uptakeG: uptake, fuelL, maxC, trace, endC: C };
@@ -686,7 +696,7 @@ function simulate(day, dawnPpm, sched) {
 
 /* いちばん得な動かし方を探す。①天窓が開くまで ②開いてから、それぞれ「始め・終わり・分/時」 */
 function optimize(day, c) {
-  const base = simulate(day, c.dawn, () => 0);
+  const base = simulate(day, c.dawn, () => null);
   const rise = day.g.rise, set = day.g.set;
   const openAt = c.nightOpen ? rise : Math.max(rise, Math.min(set, c.openAt));
   const slot = h => Math.ceil(h / FIX.slotH - 1e-9) * FIX.slotH;
@@ -712,7 +722,8 @@ function optimize(day, c) {
   for (const b of ends) for (const d of FIX.dutyMin) if (d > 0) phaseB.push({ b, d });
   for (const A of phaseA) {
     for (const B of phaseB) {
-      const sched = t => (A.d && t >= A.a && t < openAt) ? A.d : (B.d && t >= openAt && t < B.b) ? B.d : 0;
+      const sched = t => (A.d && t >= A.a && t < openAt) ? { d: A.d, from: A.a }
+                       : (B.d && t >= openAt && t < B.b) ? { d: B.d, from: openAt } : null;
       const sim = simulate(day, c.dawn, sched);
       if (sim.maxC > FIX.maxPpm) continue;
       const v = value(sim);
@@ -726,11 +737,15 @@ function optimize(day, c) {
   return { base, best, openAt, rise, set, excelYen, capG, tried: phaseA.length * phaseB.length };
 }
 
-/* 時刻の範囲の平均濃度 */
-function meanPpm(trace, from, to) {
-  const v = trace.filter(p => p.t >= from - 1e-9 && p.t < to - 1e-9).map(p => p.C);
-  return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null;
+/* 時刻の範囲の濃度（平均・いちばん低い・いちばん高い）。null なら範囲に記録が無い */
+function ppmIn(trace, from, to) {
+  const pts = trace.filter(p => p.t >= from - 1e-9 && p.t < to - 1e-9);
+  if (!pts.length) return null;
+  const all = pts.flatMap(p => [p.C, p.end]);
+  return { mean: pts.reduce((s, p) => s + (p.C + p.end) / 2, 0) / pts.length, min: Math.min(...all), max: Math.max(...all) };
 }
+const meanPpm = (trace, from, to) => { const r = ppmIn(trace, from, to); return r ? r.mean : null; };
+const rangeText = r => r ? yen(r.min) + "〜" + yen(r.max) : "―";
 
 /* =========================================================================
    3. 画面（入力を読む・結果を描く）
@@ -868,11 +883,11 @@ function renderResult(g, day, r) {
   const items = [];
   if (!g.nightNow || g.nightNow === "closed") {
     items.push(A.d
-      ? { no: "①", when: clock(A.a) + "〜" + clock(r.openAt), why: "天窓が閉まっている間・CO₂ 平均 約" + yen(meanPpm(tr, A.a, r.openAt) || 0) + " ppm", min: A.d }
+      ? { no: "①", when: clock(A.a) + "〜" + clock(r.openAt), why: "天窓が閉まっている間・CO₂ " + rangeText(ppmIn(tr, A.a, r.openAt)) + " ppm（平均 " + yen(meanPpm(tr, A.a, r.openAt) || 0) + "）", min: A.d }
       : { no: "①", when: clock(r.rise) + "〜" + clock(r.openAt), why: "天窓が閉まっている間・夜にたまったCO₂を使う", min: 0 });
   }
   items.push(B.d
-    ? { no: g.nightNow === "open" ? "" : "②", when: clock(r.openAt) + "〜" + clock(B.b), why: (g.nightNow === "open" ? "天窓が開いている間" : "天窓が開いてから") + "・CO₂ 平均 約" + yen(meanPpm(tr, r.openAt, B.b) || 0) + " ppm", min: B.d }
+    ? { no: g.nightNow === "open" ? "" : "②", when: clock(r.openAt) + "〜" + clock(B.b), why: (g.nightNow === "open" ? "天窓が開いている間" : "天窓が開いてから") + "・CO₂ " + rangeText(ppmIn(tr, r.openAt, B.b)) + " ppm（平均 " + yen(meanPpm(tr, r.openAt, B.b) || 0) + "）", min: B.d }
     : { no: g.nightNow === "open" ? "" : "②", when: clock(r.openAt) + "〜" + clock(r.set), why: g.nightNow === "open" ? "天窓が開いている間" : "天窓が開いてから", min: 0 });
   const list = items.map(it =>
     "<li><span class=\"no" + (it.min ? "" : " off") + "\">" + (it.no || "・") + "</span>" +
@@ -947,14 +962,26 @@ function renderHourly(day, r) {
     const pick = tr => tr.filter(p => p.t >= h && p.t < h + 1);
     const w = pick(r.best.sim.trace), b = pick(r.base.trace), st = day.steps.filter(s => s.t >= h && s.t < h + 1);
     if (!w.length) continue;
-    const mean = a => a.reduce((s, p) => s + p.C, 0) / a.length;
-    const duty = Math.max(...w.map(p => p.duty));
+    const on = w.filter(p => p.on);
     const open = st.some(s => s.open);
-    rows.push("<tr><td>" + h + "時</td><td>" + (open ? "開" : "閉") + "</td><td" + (duty ? ' class="on"' : "") + ">" + (duty ? duty + "分" : "―") +
-      "</td><td>" + yen(mean(w)) + "</td><td>" + yen(mean(b)) + "</td></tr>");
+    // グロウが動く時間。続いている5分どうしをまとめる（①と②の境目では1時間に2回になることがある）
+    const segs = [];
+    for (const p of on) {
+      const last = segs[segs.length - 1];
+      if (last && Math.abs(last[1] - p.t) < 1e-6) last[1] = p.t + FIX.stepH; else segs.push([p.t, p.t + FIX.stepH]);
+    }
+    const glow = on.length ? (on.length * 5) + "分<br><small>" + segs.map(s => clock(s[0]) + "〜" + clock(s[1])).join("<br>") + "</small>" : "―";
+    const wr = ppmIn(w, h, h + 1), br = ppmIn(b, h, h + 1);
+    rows.push("<tr><td>" + h + "時</td><td>" + (open ? "開" : "閉") + "</td><td" + (on.length ? ' class="on"' : "") + ">" + glow +
+      "</td><td><b>" + rangeText(wr) + "</b></td><td>" + yen(br.mean) + "</td></tr>");
   }
-  $("hourly").innerHTML = '<table class="tbl num"><tr><th>時刻</th><th>天窓</th><th>グロウ</th><th>CO₂ 施用あり</th><th>なし</th></tr>' + rows.join("") + "</table>" +
-    '<p class="hint">CO₂ は ppm、その1時間の平均です。点線は外気（' + FIX.outsidePpm + ' ppm）。</p>';
+  $("hourly").innerHTML = '<table class="tbl num"><tr><th>時刻</th><th>天窓</th><th>グロウ</th><th>施用あり<br>下〜上</th><th>なし<br>平均</th></tr>' + rows.join("") + "</table>" +
+    '<p class="hint">CO₂ は ppm。「施用あり」はその1時間で上下する幅（グロウが動いている間に上がり、止まると下がる）です。点線は外気（' + FIX.outsidePpm + ' ppm）。</p>' +
+    '<div class="check"><b>実際に動かして確かめるには</b>' +
+    "<ul><li>ハウス内のCO₂センサーの値を、この表の「下〜上」と比べてください</li>" +
+    "<li><b>センサーのほうが低い</b>（保てない）→ 換気回数が見込みより大きいか、光合成が見込みより多い。天窓が開いてからなら、換気回数の欄を大きくして合わせます</li>" +
+    "<li><b>センサーのほうが高い</b> → 換気回数が見込みより小さい。欄を小さくして合わせます</li>" +
+    "<li>天窓が閉まっている間（①）は換気が少ないので、ずれの多くは光合成の見込みのずれです</li></ul></div>";
 }
 
 /* 換気回数が違ったときの答えを並べる */
@@ -1021,7 +1048,7 @@ function render() {
   renderSens(g, r, sens);
   // 単価が無くても、施用なしの濃度の動きは見せる
   try {
-    const base = r ? r.base.trace : simulate(day, g.v.dawn === null ? 900 : g.v.dawn, () => 0).trace;
+    const base = r ? r.base.trace : simulate(day, g.v.dawn === null ? 900 : g.v.dawn, () => null).trace;
     drawChart(day, base, r ? r.best.sim.trace : null, g.openAt, g.nightNow);
   } catch (e) {
     $("hourly").insertAdjacentHTML("afterbegin", '<p class="err">グラフを描けませんでした：' + esc(e.message) + "</p>");
