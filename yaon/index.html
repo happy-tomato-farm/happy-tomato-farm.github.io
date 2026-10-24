@@ -302,16 +302,16 @@ footer a{color:var(--muted)}
     <h3>カーテンを閉める時刻（⑤）</h3>
     <p>デルフィの指導どおり「暖房機が動き出してから閉める」を基本にしています。暖房が動き出す時刻は、過去3冬（2024〜2026年度の11〜3月、中央・東）の5分おきの室温から読み取った実績で予想します。</p>
     <ul>
-      <li>日没時の外気（予報）と1段目の設定温度の差が大きいほど、早く動き出します（晴れの夜で差が0〜2℃なら約46分後、6〜8℃なら約13分後）</li>
-      <li>暖房が入り切りを始めた瞬間の外気（宇都宮）は、10〜4月の1,032夜の95%で「設定温度＋1℃」以下でした。外気が一晩じゅう設定＋1℃より高い予報の夜は「ほとんど動かない見込み」とし、日没時に外気が設定より高い夜は、外気が設定＋1℃まで下がる時刻より前には動き出さないとして見込みを出します</li>
+      <li>日没時の外気（鹿沼のめやす）と1段目の設定温度の差が大きいほど、早く動き出します（晴れの夜で差が0〜2℃なら約65分後、6〜8℃なら約18分後）</li>
+      <li>暖房が入り切りを始めた瞬間の外気（鹿沼）は、月ごとに見ると95%の夜で「設定温度＋境目」以下でした。境目は10月＋0.2℃、11月−1.0℃、12月−3.5℃、1月−4.8℃、2月−3.3℃、3月−2.4℃、4月0.0℃（晴れ・曇雨の高いほう。10〜4月の1,032夜）。外気が一晩じゅう設定＋境目より高い予報の夜は「ほとんど動かない見込み」とし、そうでない夜も、外気が設定＋境目まで下がる時刻より前には動き出さないとして見込みを出します</li>
       <li>タイマーの目安は<b>遅めの見込み</b>（同じ条件の夜の4夜に3夜は、それより前に動き出した時刻）です</li>
       <li>12〜2月：ラクソス・テンパとも暖房が動き出したら。いまのルールでも、この時期は暖房が動き出すころにはすでに外気（鹿沼）が設定−8℃を下回っていて、ほぼ同時に2層とも閉めていました。その夜も暖房は1時間足らずの間隔で動き続け、湿度も高くなりませんでした</li>
       <li>11月・3月：ラクソスは暖房が動き出したら、テンパは外気（鹿沼のめやす）が「その時刻の設定温度−8℃」まで下がったら。11月は湿度が高い時間が短く、早めに閉めて節約を試すのに向いた時期です</li>
       <li>10月・4月：実績が少ないので、いまのルール（設定−5℃でラクソス、−8℃でテンパ）の時刻を出します</li>
-      <li>いまのルールは鹿沼市の予報で決めてきたため、外気の判定は<b>鹿沼のめやす</b>（宇都宮の予報＋鹿沼との夜の平均の差。晴れの夜で−2.0〜−2.7℃、くもり雨で−1.3〜−1.9℃）で行います。暖房が動き出す見込みは宇都宮の実測で作った表なので、宇都宮の予報のまま使います</li>
+      <li>いまのルールは鹿沼市の予報で決めてきたため、外気の判定は<b>鹿沼のめやす</b>（宇都宮の予報＋鹿沼との夜の平均の差。晴れの夜で−2.0〜−2.7℃、くもり雨で−1.3〜−1.9℃）で行います。暖房が動き出す見込みも、鹿沼アメダスの実測で作り直した表と境目で出します（気象庁は鹿沼の地点の気温予報を出していないため、鹿沼の列は予報ではなく推定です）</li>
       <li>2〜3月の晴れた日の夜は、暖房が動いていても深夜から湿度95%以上が3時間以上続いたことがあります（2冬で9夜）。湿度は中央の乾球・湿球温度から計算しました</li>
     </ul>
-    <p>外気の予報は気象庁の地域時系列予報（宇都宮、3時間ごと）を使い、間を直線でつないでいます。予報があるのは今日と明日だけです。読んだ予報は1時間この端末に覚えさせ、その間は読み直しません。</p>
+    <p>外気の予報は気象庁の地域時系列予報（気温は宇都宮の地点、天気・風は栃木県南部。3時間ごと）を使い、間を直線でつないでいます。予報があるのは今日と明日だけです。読んだ予報は1時間この端末に覚えさせ、その間は読み直しません。</p>
     <p>出典：気象庁ホームページ（地域時系列予報）のデータを加工して作成。</p>
 
     <h3>日の出・日の入</h3>
@@ -377,9 +377,10 @@ const CURTAIN = {
   cacheKey: "htf_yaon_fc", cacheMin: 60,   // 読んだ予報を覚えておく時間（気象庁に負担をかけないため）
   stepMin: 5,                              // 外気が下がる時刻を探すきざみ
   luxousK: 5, tempaK: 8,                   // いまのルール：設定温度−5℃でラクソス、−8℃でテンパ
-  // 暖房が入り切りを始めた瞬間の（外気・宇都宮 − 設定温度）は、10〜4月の1,032夜の95%で +1℃以下だった。
-  // 外気が一晩じゅう「設定＋1℃」より高い予報なら、暖房はほとんど動かないとみなす
-  heaterMarginC: 1.0,
+  // 暖房が入り切りを始めた瞬間の（外気・鹿沼 − 設定温度）の95%点 [℃]。2024〜2026年度の10〜4月、1,032夜から。
+  // 月ごとに晴れ・曇雨の高いほう。外気（鹿沼のめやす）が一晩じゅう「設定＋この値」より高い予報なら、暖房はほとんど動かないとみなす
+  heaterMargin: { 10: 0.2, 11: -1.0, 12: -3.5, 1: -4.8, 2: -3.3, 3: -2.4, 4: 0.0 },
+  heaterMarginOther: 0.2,                  // 5〜9月（記録を取っていない月）は10月と同じ
   bothAtStartMonths: [12, 1, 2],           // 暖房が動き出したら2層とも
   luxousAtStartMonths: [11, 3],            // 暖房が動き出したらラクソス、テンパは−8℃
   humidMonths: [2, 3],                     // 晴れた日の夜に湿度がたまりやすい月
@@ -391,15 +392,17 @@ const CURTAIN = {
     4: { clear: -2.4, cloudy: -1.3 },
   },
   kanumaOffsetOther: { clear: -2.2, cloudy: -1.5 },   // 5〜9月（記録を取っていない月）は全体の平均
-  // 暖房が動き出すまでの分（日没から）。2024〜2026年度の11〜3月、中央・東の 1,218夜から。
-  // 行は「日没時の（設定温度 − 外気温）が hi 未満」。p25/p50/p75 は早め・中央・遅め
+  // 暖房が動き出すまでの分（日没から）。2024〜2026年度の11〜3月、中央・東の夜から（外気は鹿沼アメダスの実測）。
+  // 行は「日没時の（設定温度 − 外気・鹿沼）が hi 未満」。p25/p50/p75 は早め・中央・遅め
   delay: {
-    clear:  [{ hi: 0, p25: 63, p50: 92, p75: 128 }, { hi: 2, p25: 32, p50: 46, p75: 58 },
-             { hi: 4, p25: 21, p50: 30, p75: 45 },  { hi: 6, p25: 9,  p50: 19, p75: 32 },
-             { hi: 8, p25: 7,  p50: 13, p75: 27 },  { hi: Infinity, p25: 5, p50: 10, p75: 22 }],
-    cloudy: [{ hi: 0, p25: 73, p50: 113, p75: 180 }, { hi: 2, p25: 32, p50: 58, p75: 122 },
-             { hi: 4, p25: 21, p50: 38, p75: 61 },   { hi: 6, p25: 14, p50: 24, p75: 37 },
-             { hi: 8, p25: 7,  p50: 14, p75: 37 },   { hi: Infinity, p25: 4, p50: 10, p75: 23 }],
+    clear:  [{ hi: 0, p25: 87, p50: 125, p75: 182 }, { hi: 2, p25: 51, p50: 65, p75: 84 },
+             { hi: 4, p25: 28, p50: 43, p75: 55 },   { hi: 6, p25: 18, p50: 30, p75: 43 },
+             { hi: 8, p25: 9,  p50: 18, p75: 24 },   { hi: 10, p25: 6, p50: 12, p75: 31 },
+             { hi: Infinity, p25: 4, p50: 9, p75: 16 }],
+    cloudy: [{ hi: 0, p25: 94, p50: 140, p75: 234 }, { hi: 2, p25: 50, p50: 89, p75: 156 },
+             { hi: 4, p25: 26, p50: 53, p75: 81 },   { hi: 6, p25: 20, p50: 29, p75: 46 },
+             { hi: 8, p25: 9,  p50: 19, p75: 33 },   { hi: 10, p25: 5, p50: 10, p75: 27 },
+             { hi: Infinity, p25: 4, p50: 12, p75: 27 }],
   },
 };
 const D2R = Math.PI / 180;
@@ -607,6 +610,8 @@ function kanumaOffsetOf(month, sky) {
   const t = CURTAIN.kanumaOffset[month] || CURTAIN.kanumaOffsetOther;
   return t[sky || "cloudy"];
 }
+/* 暖房が動き出す境目：外気（鹿沼）が「設定温度＋この値」以下になってから動き出す（その月の95%点） */
+const heaterMarginOf = month => month in CURTAIN.heaterMargin ? CURTAIN.heaterMargin[month] : CURTAIN.heaterMarginOther;
 function kanumaAt(fc, ms, month) {
   const o = outsideAt(fc, ms);
   return o === null ? null : o + kanumaOffsetOf(month, skyAt(fc, ms));
@@ -622,13 +627,13 @@ function setpointAt(r, h) {
 /* 日没から朝までで、外気（鹿沼のめやす）が「その時刻の設定温度 − k℃」以下になる最初の時刻。
    いまのルールは鹿沼市の予報で決めてきたため、鹿沼のめやすで判定する。
    { h }／届かない { h: null, why: "none" }／予報が途中で切れる { h: null, why: "range", lastH } */
-function crossTime(fc, date, r, k, useKanuma = true, fromH = r.sunset) {
+function crossTime(fc, date, r, k, fromH = r.sunset) {
   const step = CURTAIN.stepMin / 60;
   const month = date.getMonth() + 1;
   let lastH = null;
   for (let h = fromH; h <= r.nextRise + 1e-9; h += step) {
     const ms = msAt(date, h);
-    const o = useKanuma ? kanumaAt(fc, ms, month) : outsideAt(fc, ms);
+    const o = kanumaAt(fc, ms, month);
     if (o === null) return { h: null, why: "range", lastH };
     if (o <= setpointAt(r, h) - k) return { h };
     lastH = h;
@@ -642,14 +647,15 @@ const ceil5 = h => Math.ceil(h * 12 - 1e-9) / 12;   // 5分単位に切り上げ
 function curtainPlan(date, r, fc, wxClear) {
   const month = date.getMonth() + 1;
   const msSet = msAt(date, r.sunset);
-  const o = outsideAt(fc, msSet);
+  const o = kanumaAt(fc, msSet, month);   // 日没時の外気（鹿沼のめやす）
   if (o === null) return { noForecast: true };
   const sky = skyAt(fc, msSet) || "cloudy";
   const dT = r.temps[0] - o;
   const row = CURTAIN.delay[sky].find(x => dT < x.hi);
-  // 表の時刻（早め・中央・遅め）から先で、外気（宇都宮）が「その時刻の設定温度＋1℃」以下になる最初の時刻。
+  // 表の時刻（早め・中央・遅め）から先で、外気（鹿沼のめやす）が「その時刻の設定温度＋境目」以下になる最初の時刻。
   // 外気がそこまで下がらないうちに暖房が動き出すことはまず無いので、表の時刻をそこまで遅らせる
-  const near = m => crossTime(fc, date, r, -CURTAIN.heaterMarginC, false, r.sunset + m / 60);
+  const margin = heaterMarginOf(month);
+  const near = m => crossTime(fc, date, r, -margin, r.sunset + m / 60);
   const s25 = near(row.p25), s50 = near(row.p50), s75 = near(row.p75);
   let start = null, startWhy = null;
   if (s50.h !== null) start = { p25: s25.h !== null ? s25.h : s50.h, p50: s50.h, p75: s75.h };   // p75 は null（遅ければ動かない）もある
@@ -678,7 +684,7 @@ function curtainPlan(date, r, fc, wxClear) {
   // 日中（9〜15時）の予報に「晴」があるか。予報が残っていなければ③の天気で代える
   const day = fc.weather.filter(x => x.t0 >= msAt(date, 9) && x.t0 < msAt(date, 15));
   const sunnyDay = day.length ? day.some(x => x.w.includes("晴")) : wxClear;
-  return { o, sky, dT, start, startWhy, timer, mode, luxous, tempa, c5, c8,
+  return { o, sky, dT, margin, start, startWhy, timer, mode, luxous, tempa, c5, c8,
            caution: CURTAIN.humidMonths.includes(month) && sunnyDay };
 }
 
@@ -905,15 +911,16 @@ function renderCurtain(g, r) {
     "<td class=\"num k\">" + c1(x.kanuma) + "℃</td>" +
     "<td class=\"wind\">" + windText(x) + "</td></tr>").join("");
   const fTable = '<p class="fct-title">この夜の予報（3時間ごと）</p>' +
-    '<table class="fct"><tr><th>時刻</th><th>天気</th><th>宇都宮</th><th>鹿沼</th><th>風 m/s</th></tr>' + fRows + "</table>" +
+    '<table class="fct"><tr><th>時刻</th><th>天気</th><th>宇都宮</th><th>鹿沼めやす</th><th>風 m/s</th></tr>' + fRows + "</table>" +
     '<p class="hint">鹿沼めやす＝宇都宮の予報＋鹿沼との夜の平均の差（' + (g.date.getMonth() + 1) + "月は晴れ " +
       c1(kanumaOffsetOf(g.date.getMonth() + 1, "clear")) + "℃・くもり雨 " + c1(kanumaOffsetOf(g.date.getMonth() + 1, "cloudy")) +
-      "℃）。気象庁の予報に湿度はありません。</p>";
+      "℃）で、鹿沼の予報ではありません。天気・風は栃木県南部（鹿沼市も含む区域）の予報です。気象庁の予報に湿度はありません。</p>";
+  const margin = (p.margin >= 0 ? "＋" : "−") + c1(Math.abs(p.margin)) + "℃";   // 境目（例 ＋0.2℃・−3.5℃）
   const ref = c => c.h === null ? (c.why === "none" ? "朝まで届かない" : "予報の範囲外") : (c.h <= r.sunset + 1e-9 ? "日没時にすでに" : hhmm(c.h));
 
   box.innerHTML =
     '<div class="summary">' +
-      '<div class="kv"><span class="k">日没 ' + hhmm(r.sunset) + " の外気（予報・" + skyName + "）</span><span class=\"v num\">" + c1(p.o) + "℃</span></div>" +
+      '<div class="kv"><span class="k">日没 ' + hhmm(r.sunset) + " の外気（鹿沼めやす・" + skyName + "）</span><span class=\"v num\">" + c1(p.o) + "℃</span></div>" +
       '<div class="kv"><span class="k">1段目の設定との差</span><span class="v num">' + c1(p.dT) + "℃</span></div>" +
     "</div>" +
     '<div class="start"><span class="k">暖房が動き出す見込み</span>' +
@@ -924,9 +931,9 @@ function renderCurtain(g, r) {
         "（過去3冬の11〜3月、同じ天気・同じ温度差の夜）</small>"
       : p.startWhy.why === "range"
       ? '<div class="v txt">まだ出せません</div>' +
-        "<small>予報が " + (p.startWhy.lastH !== null ? hhmm(p.startWhy.lastH) : "日没") + " ごろまでしか無く、その間は外気が設定温度＋" + CURTAIN.heaterMarginC + "℃より高い予報です。予報が更新されたら（5時・11時・17時）開き直してください。</small>"
+        "<small>予報が " + (p.startWhy.lastH !== null ? hhmm(p.startWhy.lastH) : "日没") + " ごろまでしか無く、その間は外気（鹿沼めやす）が設定温度" + margin + "より高い予報です。予報が更新されたら（5時・11時・17時）開き直してください。</small>"
       : '<div class="v txt">ほとんど動かない見込み</div>' +
-        "<small>外気（宇都宮）が一晩じゅう「その時刻の設定温度＋" + CURTAIN.heaterMarginC + "℃」より高い予報です。過去3冬（10〜4月）では、暖房が動き出した夜の95%は、外気が設定＋" + CURTAIN.heaterMarginC + "℃以下になってからでした。</small>") +
+        "<small>外気（鹿沼めやす）が一晩じゅう「その時刻の設定温度" + margin + "」より高い予報です。過去3冬の" + (g.date.getMonth() + 1) + "月は、暖房が動き出した夜の95%で、外気（鹿沼）が設定" + margin + "以下になってからでした。</small>") +
     "</div>" +
     (p.mode === "rule" ? '<p class="hint">この時期は実績が少ないので、いまのルールの時刻を出しています。</p>' : "") +
     '<ul class="ct">' +
