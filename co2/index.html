@@ -24,6 +24,8 @@
   --leaf:#3F8A4B;
   --leaf-soft:#E5F2E6;
   --accent:#2F6B4F;
+  --night:#2A4A6B;
+  --night-soft:#E6EDF5;
   --warn:#B8461F;
   --warn-soft:#FBEAE2;
   --shadow:0 1px 0 rgba(36,41,31,.04), 0 6px 18px -10px rgba(36,41,31,.28);
@@ -34,6 +36,7 @@
     --ground:#191D18; --card:#232821; --card-sub:#1E231D;
     --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
     --tomato:#FF6E5B; --leaf:#6FBB7B; --leaf-soft:#22331F; --accent:#7CC39A;
+    --night:#8FB4DE; --night-soft:#25303B;
     --warn:#FF9A73; --warn-soft:#3A2820;
     --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
   }
@@ -42,6 +45,7 @@
   --ground:#191D18; --card:#232821; --card-sub:#1E231D;
   --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
   --tomato:#FF6E5B; --leaf:#6FBB7B; --leaf-soft:#22331F; --accent:#7CC39A;
+  --night:#8FB4DE; --night-soft:#25303B;
   --warn:#FF9A73; --warn-soft:#3A2820;
   --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
 }
@@ -69,14 +73,9 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 
 /* ===== 入力欄（2列。狭い画面でも1欄の幅は140px以上ある） ===== */
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:14px 10px}
-.field.wide,.hint.wide{grid-column:1 / -1}
+.fields > .wide{grid-column:1 / -1}
 .hint.wide{margin-top:-6px}
-/* 計算したLAIの表示（入力欄ではない） */
-.lai-out{display:flex;flex-direction:column;justify-content:flex-end;
-         background:var(--card-sub);border-radius:14px;padding:6px 14px}
-.lai-out .k{font-size:14.5px;font-weight:800;color:var(--muted);line-height:1.4}
-.lai-out .v{font-size:26px;font-weight:800;color:var(--accent);line-height:1.3}
-.field label{display:block;font-size:14.5px;font-weight:800;margin-bottom:5px;line-height:1.4}
+.field label,.lbl{display:block;font-size:14.5px;font-weight:800;margin-bottom:5px;line-height:1.4}
 .row{display:flex;gap:6px;align-items:stretch}
 .field input{
   flex:1; min-width:0; width:100%; min-height:52px;
@@ -84,18 +83,41 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
   border:2px solid var(--line); border-radius:14px;
   background:var(--card-sub); color:var(--ink);
 }
-.field input::placeholder{color:var(--muted);opacity:.75;font-weight:700;font-size:16px}
+.field input::placeholder{color:var(--muted);opacity:.75;font-weight:700}
 .field input:focus{outline:3px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.field input:disabled{opacity:.45}
 .field .unit{align-self:center;font-size:13px;font-weight:800;color:var(--muted);line-height:1.2;white-space:nowrap}
+.btn{
+  flex:none; min-width:68px; min-height:52px; border-radius:14px; cursor:pointer;
+  border:2px solid var(--line); background:var(--card); color:var(--ink);
+  font:inherit; font-size:15px; font-weight:800;
+}
+.btn:active{transform:scale(.96)}
 .hint{font-size:13.5px;color:var(--muted);margin:6px 2px 0;line-height:1.6}
 .hint b{color:var(--ink)}
 .err{font-size:13.5px;color:var(--warn);font-weight:800;margin:5px 2px 0;line-height:1.5}
 .sep{grid-column:1 / -1;border-top:2px dashed var(--line-soft);margin:2px 0 0;padding-top:10px;
      font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.06em}
 
+/* ===== ボタンの切りかえ（ハウス・天気・夜の天窓） ===== */
+.seg{display:flex;gap:8px}
+.seg button{
+  flex:1; min-height:50px; border-radius:14px; cursor:pointer; padding:4px;
+  border:2px solid var(--line); background:var(--card-sub); color:var(--muted);
+  font:inherit; font-size:16px; font-weight:800; line-height:1.25;
+}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.seg button small{display:block;font-size:11.5px;font-weight:700;opacity:.85}
+
+/* 計算したLAIの表示（入力欄ではない） */
+.lai-out{display:flex;flex-direction:column;justify-content:flex-end;
+         background:var(--card-sub);border-radius:14px;padding:6px 14px}
+.lai-out .k{font-size:14.5px;font-weight:800;color:var(--muted);line-height:1.4}
+.lai-out .v{font-size:26px;font-weight:800;color:var(--accent);line-height:1.3}
+
 /* ===== 結果 ===== */
 .verdict{border-radius:16px;padding:14px 16px;background:var(--card-sub)}
-.verdict .lbl{font-size:14px;font-weight:800;color:var(--muted)}
+.verdict .lbl2{font-size:14px;font-weight:800;color:var(--muted)}
 .verdict .big{font-size:30px;font-weight:800;line-height:1.25;margin-top:2px}
 .verdict .big small{font-size:16px}
 .verdict .sub{font-size:13.5px;font-weight:700;color:var(--muted);margin-top:4px;line-height:1.5}
@@ -103,6 +125,20 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 .verdict.plus .big{color:var(--leaf)}
 .verdict.minus{background:var(--warn-soft)}
 .verdict.minus .big{color:var(--warn)}
+.plan{list-style:none;margin:12px 0 0;padding:0}
+.plan li{
+  display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:2px 12px;
+  padding:12px 4px; border-bottom:2px dashed var(--line-soft);
+}
+.plan li:last-child{border-bottom:0}
+.plan .no{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+          background:var(--leaf-soft);color:var(--accent);font-weight:800;font-size:17px}
+.plan .no.off{background:var(--card-sub);color:var(--muted)}
+.plan .when{font-size:21px;font-weight:800;line-height:1.25}
+.plan .why{display:block;font-size:12.5px;color:var(--muted);font-weight:700;line-height:1.4}
+.plan .min{font-size:30px;font-weight:800;color:var(--accent);line-height:1;text-align:right}
+.plan .min small{font-size:14px}
+.plan .min.off{font-size:17px;color:var(--muted)}
 .summary{margin-top:10px;display:grid;gap:8px}
 .kv{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
     background:var(--card-sub);border-radius:14px;padding:9px 14px}
@@ -110,7 +146,15 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 .kv .k small{display:block;font-size:12px}
 .kv .v{font-size:19px;font-weight:800;text-align:right;white-space:nowrap}
 .kv .v small{font-size:13px;font-weight:700;color:var(--muted)}
-.ref .kv .v{font-size:17px}
+
+canvas{display:block;width:100%;height:auto;margin-top:4px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;font-weight:700;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+.tbl th,.tbl td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line-soft)}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th{font-size:12.5px;color:var(--muted)}
+.tbl .on{color:var(--accent);font-weight:800}
 
 /* ===== たたむ欄 ===== */
 details{margin-top:16px}
@@ -131,6 +175,7 @@ details[open] summary::before{content:"− "}
 .steps td:last-child{text-align:right;font-weight:800;white-space:nowrap}
 .steps .h td{text-align:left;padding-top:14px;font-size:12.5px;font-weight:800;color:var(--muted);border-bottom:0}
 .steps small{display:block;font-size:12px;color:var(--muted);font-weight:700}
+.fatal{background:var(--warn-soft);color:var(--warn);font-weight:800;border-radius:14px;padding:12px 14px;margin-top:16px}
 footer{margin-top:26px;text-align:center;font-size:12px;color:var(--muted)}
 footer a{color:var(--muted)}
 </style>
@@ -142,6 +187,7 @@ footer a{color:var(--muted)}
   <h1>CO₂施用の収支</h1>
   <span class="farm">ハッピートマトファーム</span>
 </header>
+<div id="fatal" class="fatal" hidden></div>
 
 <!-- ============ 入力 ============ -->
 <!-- 数字の欄でも type="number" は使わない（上下の矢印で値が変わる・小数点が打てなくなるため） -->
@@ -164,24 +210,50 @@ footer a{color:var(--muted)}
       <p class="err" id="keroseneErr" hidden></p>
     </div>
 
-    <div class="sep">施用中のハウス</div>
-    <div class="field">
-      <label for="cin">CO₂濃度（目標）</label>
+    <div class="sep">その日のハウス</div>
+    <div class="seg wide" id="houseSeg" role="group" aria-label="ハウス">
+      <button type="button" data-house="中央" aria-pressed="true">中央</button>
+      <button type="button" data-house="東" aria-pressed="false">東</button>
+    </div>
+    <div class="field wide">
+      <label for="date">日付</label>
       <div class="row">
-        <input id="cin" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next">
+        <input id="date" type="date">
+        <button type="button" class="btn" id="today">今日</button>
+      </div>
+    </div>
+    <div class="wide">
+      <span class="lbl">天気</span>
+      <div class="seg" id="wxSeg" role="group" aria-label="天気">
+        <button type="button" data-wx="clear" aria-pressed="true">快晴</button>
+        <button type="button" data-wx="partly" aria-pressed="false">曇りがち</button>
+        <button type="button" data-wx="cloudy" aria-pressed="false">曇雨天</button>
+      </div>
+    </div>
+    <div class="wide">
+      <span class="lbl">夜の天窓</span>
+      <div class="seg" id="nightSeg" role="group" aria-label="夜の天窓">
+        <button type="button" data-night="closed" aria-pressed="true">閉めていた</button>
+        <button type="button" data-night="open" aria-pressed="false">開けていた</button>
+      </div>
+      <p class="hint" id="nightHint"></p>
+    </div>
+    <div class="field">
+      <label for="openAt">天窓が開く時刻</label>
+      <div class="row">
+        <input id="openAt" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
+      </div>
+      <p class="err" id="openAtErr" hidden></p>
+    </div>
+    <div class="field">
+      <label for="dawn">夜明けのCO₂</label>
+      <div class="row">
+        <input id="dawn" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next">
         <span class="unit">ppm</span>
       </div>
-      <p class="err" id="cinErr" hidden></p>
+      <p class="err" id="dawnErr" hidden></p>
     </div>
-    <div class="field">
-      <label for="pn">純光合成速度</label>
-      <div class="row">
-        <input id="pn" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
-        <span class="unit">mg<br>/m²/s</span>
-      </div>
-      <p class="err" id="pnErr" hidden></p>
-    </div>
-    <p class="hint wide" id="pnHint"></p>
+    <p class="hint wide" id="dayHint"></p>
 
     <div class="sep">LAI（葉面積指数）</div>
     <div class="field">
@@ -219,74 +291,93 @@ footer a{color:var(--muted)}
 
 <!-- ============ 結果 ============ -->
 <section class="card" aria-live="polite">
-  <h2>1時間あたりの収支（ハウス1棟）</h2>
+  <h2 id="resTitle">いちばん得なグロウの動かし方（1日・1棟）</h2>
   <div id="result"></div>
 </section>
 
-<section class="card ref" id="refCard">
-  <h2>参考：Excelの数え方</h2>
-  <div id="ref"></div>
+<section class="card">
+  <h2>CO₂濃度の1日の動き</h2>
+  <canvas id="chart" width="660" height="360"></canvas>
+  <div class="legend">
+    <span><i style="background:#2F6B4F"></i>施用あり</span>
+    <span><i style="background:#9AA394"></i>施用なし</span>
+    <span><i style="background:#2A4A6B"></i>天窓が開く</span>
+  </div>
+  <div id="hourly"></div>
 </section>
 
 <details>
-  <summary>途中の計算</summary>
+  <summary>計算に使った条件</summary>
   <div class="doc" id="steps"></div>
 </details>
 
 <details>
   <summary>計算の考え方と前提</summary>
   <div class="doc">
-    <h3>何と何を比べているか</h3>
-    <p>「施用した日」と「施用しなかった日」の差を比べます。</p>
+    <h3>何を求めているか</h3>
+    <p>グロウを「何時から何時まで・1時間に何分」動かすと、その日いちばん得になるかを探します。動かし方は、天窓が閉まっている間（①）と開いてから（②）で別々に決められます。</p>
+    <div class="eq">得 ＝ 施用で増えた光合成から見積もった果実 × トマト単価 − 灯油代</div>
+    <p>施用しなくても光合成は進むので、<b>施用した日と施用しなかった日の差</b>だけを得に数えます。</p>
     <ul>
-      <li><b>コスト</b>：目標濃度を保つために燃やす灯油の代金</li>
-      <li><b>得</b>：施用で<b>増えた分</b>の光合成から見積もった、果実の増収 × トマト単価</li>
+      <li>動かし始め：日の出から30分きざみ。止める時刻：天窓が開いてから30分きざみ</li>
+      <li>1時間に動かす分：0・15・30・45・60分</li>
+      <li>この全部の組み合わせを試し、得がいちばん大きいものを出します。CO₂が 1,500 ppm を超える組み合わせは外します</li>
     </ul>
-    <p>施用しなくても光合成は止まりません。換気で入ってくる外気のCO₂で続き、ハウス内は外気（400 ppm）より少し低いところで落ち着きます。そのぶんは施用しなくても得られるので、得には数えません。</p>
 
-    <h3>施用に要るCO₂</h3>
-    <div class="eq">施用量 ＝ 換気で逃げる分 ＋ 植物が吸う分</div>
+    <h3>CO₂濃度の動き（5分ごとに追いかける）</h3>
+    <div class="eq">濃度の変化 ＝（グロウが出す量 − 植物が吸う量）÷ ハウスの空気 − 換気回数 ×（ハウス内 − 外気）</div>
     <ul>
-      <li>換気で逃げる分 ＝ 容積 × 換気回数 ×（ハウス内 − 外気の濃度）。濃度差の分だけ、入れ替わった空気が外へ持ち出します</li>
-      <li>植物が吸う分 ＝ 純光合成速度 × LAI × 床面積。葉1m²あたりの吸収を、床1m²の上にある葉の枚数（LAI）でかけて床面積に広げます</li>
-      <li>灯油の量 ＝ 施用量 ÷ 灯油1Lで出るCO₂（2,490 g。環境省の排出係数 2.49 kg-CO₂/L）</li>
+      <li>グロウが出す量：13.37 kg/時 × 動かす割合（ネポン グロウエア CG-854T2 の銘板。灯油は 5.3 L/時）</li>
+      <li>ハウスの空気：容積 9,424 m³。CO₂ 1 ppm ぶんは約 18.5 g</li>
+      <li>換気回数：天窓が閉まっている間 0.182 回/時（2020/9/11 夜の測定）、開いてから 1.62 回/時（天窓が開ききったときの平均）</li>
+      <li>外気：400 ppm</li>
+      <li>天窓が閉まっている朝は換気が少ないので、夜にたまったCO₂（11〜3月は夜明けに約 900〜1,000 ppm）を朝の光合成が使います。その分は施用しなくても得られます</li>
+    </ul>
+
+    <h3>植物が吸う量（光合成.xlsx の式）</h3>
+    <p>潅水のめやすアプリと同じ式です。葉1枚の光合成を、光・CO₂・気温から求め、群落を20層に分けて足し合わせます。</p>
+    <ul>
+      <li>CO₂が濃くなるほど光合成は増えますが、増え方は鈍っていきます（CO₂係数 KC＝250 ppm）。さらに濃いCO₂では気孔が閉じぎみになります</li>
+      <li>光は上の葉から順に弱まります（消散係数 0.7）</li>
+      <li>気孔の開き方は文献の実測に合わせて 2.4 倍、光への反応は非直角双曲線（量子収率 0.06・曲率 0.8・最大 45 µmol/m²/s）</li>
+      <li>葉温は気温と同じとしています</li>
+    </ul>
+
+    <h3>光と気温</h3>
+    <ul>
+      <li>光：快晴なら来るはずの日射（日射量予測と同じ式）× 天気の割合 × ハウスの透過率（0.678、季節で少し変わる）</li>
+      <li>天気の割合：作業日誌の宇都宮の日射量から、快晴 1.02・曇りがち 0.68・曇雨天 0.24（それぞれの天気の日の平均）</li>
+      <li>気温：過去の同じ時期・同じ天気の日の、時刻ごとのハウス内気温（4週記録表）</li>
+    </ul>
+
+    <h3>天窓が開く時刻（平年値）</h3>
+    <p>4週記録表の5分おきのCO₂から判定しました。天窓が開くと、夜にたまったCO₂が急に下がり始めます。その「下がり方が急に変わった点」を開いた時刻とみなしています。11〜3月の晴れた日で、そのときの気温は15〜19℃でした（換気温度の設定 15〜18℃ と合っています）。</p>
+    <ul>
+      <li>過去の同じ時期（前後7日）・同じ天気の日の中央値です</li>
+      <li>曇雨天は判定できた日が少なく、当てにしにくい値です。分かる日は実際の時刻を入れてください</li>
+      <li>9月・5〜6月は夜も天窓が開いていることが多い時期です</li>
     </ul>
 
     <h3>LAI（葉面積指数）</h3>
-    <p>床1m²の上に、葉が何m²重なっているかを表す値です。植物が吸うCO₂の量はこれに比例します。</p>
     <div class="eq">LAI ＝ 栽植密度（本/m²）× 葉枚数（枚/本）× 葉1枚の面積</div>
     <div class="eq">葉1枚の面積（cm²）＝ e<sup>−2.644</sup> × 葉幅（cm）<sup>2.396</sup></div>
     <ul>
-      <li>葉幅から複葉1枚の面積を出す式です。愛知県農業総合試験場（樋江井ら）が大玉トマト5品種で作った式（モデルG）の係数を平均しました。「レオン」の係数はありません。品種による違いは同じ葉幅で±15%ほどです</li>
-      <li>葉幅の2.4乗に比例するので、葉幅が1割ちがうと面積は約2.5割ちがいます</li>
-      <li>全部の葉が同じ大きさとして数えています。上の若い葉は小さいので、平均的な葉を測ってください</li>
-      <li>栽植密度・葉枚数の空欄は「今週のめやす」と同じ作業計画の値で埋めます</li>
+      <li>愛知県農業総合試験場（樋江井ら）が大玉トマト5品種で作った式（モデルG）の係数の平均です。「レオン」の係数はありません</li>
+      <li>栽植密度・葉枚数の空欄は「今週のめやす」と同じ作業計画の値で埋めます。葉幅が空欄なら LAI は Excel の 1.5 です</li>
     </ul>
-
-    <h3>施用しなかった日の光合成</h3>
-    <p>「植物が吸う量 ＝ 換気で入ってくる量」になる濃度を探します。濃度が下がると光合成も下がるので、その下がり方を2通りで見て、答えを幅で出します。</p>
-    <ul>
-      <li><b>光が強い日（CO₂律速）</b>：光合成が（濃度 − 50 ppm）に比例するとみる。50 ppm は CO₂補償点（光合成と呼吸がつり合う濃度）。CO₂が効きやすいので、増収は大きめ＝幅の上側</li>
-      <li><b>光が弱い日（光律速）</b>：光の量で頭打ちになり、CO₂の効きが小さい。Farquhar モデルの電子伝達律速の式（葉の中の濃度＝外の0.7倍、Γ*＝42 ppm）で計算。増収は小さめ＝幅の下側</li>
-    </ul>
-    <p>実際の日は、この間のどこかにあります。曇りの日や朝夕は下側、晴れた日中は上側に寄ります。</p>
 
     <h3>CO₂から果実へ</h3>
     <div class="eq">増収（生体重）＝ 増えたCO₂ ÷ 44 × 30 × 果実への分配 0.5 ÷ 乾物率 0.05</div>
-    <ul>
-      <li>CO₂ 1 mol（44 g）から糖（CH₂O）が 30 g できる</li>
-      <li>その半分が果実へ行き、果実は水分95%（乾物5%）として生体重に戻す</li>
-    </ul>
 
     <h3>前提がくずれるとき</h3>
     <ul>
-      <li><b>天窓が開いている間の計算です。</b>換気回数 1.62 回/h は天窓が開ききったときの平均です。天窓が閉まっている朝は約 0.18 回/h（2020/9/11 夜の測定）と小さく、換気で逃げる分はずっと少なくなります</li>
-      <li>換気回数は 2023/10/22 朝（7:54〜）の濃度の下がり方から求めた値です。日の出後で光合成による吸収も混ざっているので、本当の換気回数はもう少し小さいかもしれません（そのときは灯油代が少し減ります）</li>
-      <li>気体の体積は 0℃ の 22.4 L/mol で数えています。25℃ なら 24.5 L/mol で、換気で逃げる分は約9%少なくなります</li>
+      <li>天窓は開いたら日の入りまで開いているとしています。夕方に閉まる日は、そのあとの施用の得が大きめに出ます</li>
+      <li>グロウを動かす15分の間は濃度が上がり、止めている間は下がります。ここでは1時間の平均で出しているので、天窓が開いている間は実際の濃度が上下します</li>
+      <li>グロウの熱（54.5 kW）は数えていません。寒い朝は暖房の足しになりますが、天窓が早く開く原因にもなります</li>
       <li>糖が果実の体になるときの呼吸（成長呼吸）は数えていません。その分、増収は少し多めに出ます</li>
-      <li>純光合成速度は「目標濃度のときの値」として入れてください。入れた値がそのまま施用中の光合成になります</li>
+      <li>床面積・容積は Excel のハウス（1,884.8 m²）の値です。東も同じ大きさとして計算しています</li>
     </ul>
-    <p>出どころ：生物環境物理学.xlsx の「Co2施用シュミレーター」「自圃場換気回数」シート。床面積・高さ・換気回数は Excel の値です。葉の面積の式は 樋江井ら「非破壊によりトマトの個葉面積を推定する回帰モデルの構築及び検証」（愛知県農業総合試験場研究報告）。</p>
+    <p id="srcNote"></p>
   </div>
 </details>
 
@@ -297,53 +388,80 @@ footer a{color:var(--muted)}
 
 <!-- 栽植密度・葉枚数は「今週のめやす」と同じデータを読む。読めなくても画面は動く（手で入力する） -->
 <script src="../keikaku/keikaku_data.js"></script>
+<!-- 天窓が開く時刻・夜明けのCO₂・気温の平年値（co2_build.py で作る） -->
+<script src="co2_tenmado.js"></script>
 <script>
 "use strict";
 
+/* 白画面にしない：思わぬ失敗は画面に出す */
+window.onerror = (msg, src, line) => {
+  const box = document.getElementById("fatal");
+  box.hidden = false;
+  box.textContent = "計算中にエラーが起きました：" + msg + "（" + line + "行目）";
+};
+
 /* =========================================================================
-   1. 決まった値（Excel の値と、計算の前提。数値はすべてここに集める）
+   1. 決まった値（数値はすべてここに集める）
    ========================================================================= */
 const FIX = {
-  floorM2: 1884.8,            // 温室床面積 [m²]（Excel B6 の値）
+  floorM2: 1884.8,            // 温室床面積 [m²]（Excel B6。ユーザー確認済み）
   eaveM: 4.5,                 // 軒高 [m]
   ridgeM: 5.5,                // 棟高 [m]
   outsidePpm: 400,            // 外気のCO₂濃度 [ppm]
-  achPerH: 1.62,              // 換気回数 [回/h]（天窓が開ききったときの平均。自圃場で 2023/10/22 に測定）
+  achOpen: 1.62,              // 換気回数 [回/h]：天窓が開ききったとき（2023/10/22 測定）
+  achClosed: 0.182,           // 換気回数 [回/h]：天窓が閉まっているとき（2020/9/11 夜の測定）
   molarVolL: 22.4,            // 気体1molの体積 [L]（0℃。Excel どおり）
   co2MolG: 44,                // CO₂ 1mol の重さ [g]
-  ch2oPerCo2G: 30,            // CO₂ 1mol からできる糖（CH₂O）[g]（Excel の 180/6）
+  ch2oPerCo2G: 30,            // CO₂ 1mol からできる糖（CH₂O）[g]
   fruitShare: 0.5,            // 糖のうち果実へ行く割合
   fruitDryFrac: 0.05,         // 果実の乾物率（水分95%）
-  keroseneCo2GPerL: 2490,     // 灯油1Lを燃やして出るCO₂ [g]（環境省 2.49 kg-CO₂/L）
-  gammaPpm: 50,               // CO₂補償点 [ppm]（CO₂律速のモデルで使う）
-  ciRatio: 0.7,               // 葉の中のCO₂濃度 ÷ 外の濃度（光律速のモデルで使う）
-  gammaStarPpm: 42,           // Γ*：光呼吸だけを考えた補償点 [ppm]（25℃）
-  excelLai: 1.5,              // 葉幅が空欄のときに使う LAI（Excel B15 の値）
-  // 葉1枚（複葉）の面積 [cm²] ＝ e^b × 葉幅[cm]^a（樋江井ら 愛知農総試研報、モデルG）。
-  // 大玉5品種（りんか409・桃太郎ヨーク・みそら64・ルネッサンス・スーパーファースト）の係数の平均
-  leafA: 2.396,
-  leafB: -2.644,
+  glowCo2GPerH: 13370,        // グロウエア CG-854T2 の炭酸ガス発生量 [g/h]（銘板）
+  glowFuelLPerH: 5.3,         // 同 燃料消費量 [L/h]（銘板）
+  maxPpm: 1500,               // これを超える動かし方は選ばない [ppm]
+  excelLai: 1.5,              // 葉幅が空欄のときの LAI（Excel B15）
+  leafA: 2.396, leafB: -2.644,  // 葉1枚の面積 = e^b × 葉幅^a（樋江井ら モデルG・大玉5品種の平均）
+  stepH: 5 / 60,              // 濃度を追いかける時間きざみ [h]
+  slotH: 0.5,                 // 動かし始め・止める時刻のきざみ [h]
+  dutyMin: [0, 15, 30, 45, 60], // 1時間に動かす分の候補
+  // 光：日射量予測と同じ快晴の式
+  latDeg: 36.52327, lonDeg: 139.762022, altM: 150, stdMeridianDeg: 135, solarConstW: 1360,
+  coverTau: 0.678, coverCos: -0.0390, coverSin: 0.0475,   // ハウスの透過率と季節変化（潅水アプリと同じ）
+  wxK: { clear: 1.02, partly: 0.68, cloudy: 0.24 },       // 平年値ファイルが読めないときの天気の割合
+  closedShare: 0.5,           // 夜に閉めていた日がこの割合以上なら、既定を「閉めていた」にする
 };
 
-/* 入力欄の既定値と、受け付ける範囲。
-   plan:true の欄は、空欄なら今週の作業計画の値を使う */
-const INPUTS = {
-  tomato:   { def: "",    min: 1,    max: 5000, label: "1〜5000" },   // 円/kg（金額はページに書かない）
-  kerosene: { def: "",    min: 1,    max: 1000, label: "1〜1000" },   // 円/L（同上）
-  cin:      { def: "500", min: 401,  max: 2000, label: "401〜2000（外気の400より高く）" }, // ppm
-  pn:       { def: "0.2", min: 0.01, max: 3,    label: "0.01〜3" },   // mg CO₂/m²/s
-  density:  { def: "",    min: 0.5,  max: 10,   label: "0.5〜10", plan: true },  // 本/m²
-  leaves:   { def: "",    min: 1,    max: 40,   label: "1〜40", plan: true },    // 枚/本
-  width:    { def: "",    min: 5,    max: 80,   label: "5〜80" },     // cm（空欄なら Excel の LAI）
+/* 光合成.xlsx の葉の式（潅水アプリ config.py と同じ値） */
+const PS = {
+  stomata: { A: 0.000103333, B: 0.0345, C: 0.001035, max: 0.207, D: 0.00005, E: 0.01 },
+  stomataScale: 2.4,          // 気孔コンダクタンスの水準補正
+  ratioStomata: 0.66, ratioBoundary: 0.75,   // 水蒸気→CO₂ のコンダクタンス換算
+  windMs: 0.2, charLenM: 0.07 * 0.72,        // 風速・葉の特性長（葉幅7cm×0.72）
+  quantumYield: 0.060, theta: 0.80, pmaxMmol: 0.0450, parUmolPerJ: 4.57,
+  kcPpm: 250, tempA: 5, tempOpt: 28,
+  rpMax: 0.3, rpZeroPpm: 1200, rd20Mmol: 0.00148, q10: 2,
+  extinctionK: 0.7, layers: 20,
 };
-const ORDER = ["tomato", "kerosene", "cin", "pn", "density", "leaves", "width"];
+
+/* 入力欄の範囲。plan:true の欄は空欄なら作業計画の値、normal:true は平年値 */
+const INPUTS = {
+  tomato:   { min: 1,   max: 5000, label: "1〜5000" },
+  kerosene: { min: 1,   max: 1000, label: "1〜1000" },
+  dawn:     { min: 300, max: 3000, label: "300〜3000", normal: true },
+  density:  { min: 0.5, max: 10,   label: "0.5〜10", plan: true },
+  leaves:   { min: 1,   max: 40,   label: "1〜40", plan: true },
+  width:    { min: 5,   max: 80,   label: "5〜80" },
+};
+const STORE_IDS = ["tomato", "kerosene", "density", "leaves", "width"];   // スマホに覚えさせる欄（その日だけの欄は覚えない）
+const ORDER = ["tomato", "kerosene", "date", "openAt", "dawn", "density", "leaves", "width"];
 const LS_KEY = "htf_co2_inputs";
+const D2R = Math.PI / 180;
+const WX_LABEL = { clear: "快晴", partly: "曇りがち", cloudy: "曇雨天" };
 
 /* =========================================================================
    2. 計算（入力を受け取って値を返すだけ。画面には触らない）
    ========================================================================= */
 
-/* 文字の数字を読む。全角の「２５０」も受け付ける。空欄は null、読めなければ NaN */
+/* 文字の数字を読む。全角も受け付ける。空欄は null、読めなければ NaN */
 function parseNum(text) {
   const s = String(text || "").trim()
     .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
@@ -352,27 +470,118 @@ function parseNum(text) {
   return /^\d+(\.\d*)?$|^\.\d+$/.test(s) ? Number(s) : NaN;
 }
 
-/* 1ppm の濃度差が、空気1m³あたり何gのCO₂にあたるか [g/m³/ppm] */
-const gPerM3PerPpm = () => FIX.co2MolG / FIX.molarVolL / 1000;
+/* 時刻を読む。「8:30」「830」「8.30」「8」を受け付け、時（小数）で返す */
+function parseClock(text) {
+  const s = String(text || "").trim()
+    .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/[：．。]/g, ":").replace(".", ":");
+  if (s === "") return null;
+  let h, m;
+  let r;
+  if ((r = /^(\d{1,2}):(\d{1,2})$/.exec(s))) { h = Number(r[1]); m = Number(r[2]); }
+  else if ((r = /^(\d{1,2})(\d{2})$/.exec(s))) { h = Number(r[1]); m = Number(r[2]); }
+  else if ((r = /^(\d{1,2})$/.exec(s))) { h = Number(r[1]); m = 0; }
+  else return NaN;
+  return h <= 23 && m < 60 ? h + m / 60 : NaN;
+}
+const clock = h => { const t = Math.round(h * 12) * 5; return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); };
 
-/* 温室容積 [m³] ＝ 軒までの直方体 ＋ 屋根の三角の部分（Excel B7 と同じ式） */
-const volumeM3 = () => FIX.floorM2 * FIX.eaveM + FIX.floorM2 * (FIX.ridgeM - FIX.eaveM) / 2;
+const gPerM3PerPpm = () => FIX.co2MolG / FIX.molarVolL / 1000;                       // 1ppm の濃度差が空気1m³で何g
+const volumeM3 = () => FIX.floorM2 * FIX.eaveM + FIX.floorM2 * (FIX.ridgeM - FIX.eaveM) / 2;  // 温室容積
+const houseGPerPpm = () => volumeM3() * gPerM3PerPpm();                            // ハウス全体で 1ppm が何g
+const fruitKgFromCo2G = g => g / FIX.co2MolG * FIX.ch2oPerCo2G * FIX.fruitShare / FIX.fruitDryFrac / 1000;
+const leafAreaCm2 = w => Math.exp(FIX.leafB) * Math.pow(w, FIX.leafA);
+const laiOf = (density, leaves, w) => density * leaves * leafAreaCm2(w) / 10000;
 
-/* 吸ったCO₂ [g] → 果実の生体重 [kg] */
-const fruitKgFromCo2G = co2G =>
-  co2G / FIX.co2MolG * FIX.ch2oPerCo2G * FIX.fruitShare / FIX.fruitDryFrac / 1000;
+/* ---- 光合成.xlsx の葉の式（潅水アプリ core/leaf_model.py をそのまま移したもの）----
+   St：葉に当たる日射 [W/m²]、T：気温＝葉温 [℃]、ca：CO₂ [ppm]
+   戻り値：純光合成速度 [mmol CO₂/(m² 葉)/s] */
+const gvaWater = PS.windMs >= 0 ? 0.147 * Math.sqrt(PS.windMs / PS.charLenM) : 0;   // 境界層コンダクタンス
+function leafNetMmol(St, T, ca) {
+  const s = PS.stomata, par = St / 2;                        // 光合成有効日射は全日射の半分
+  const light = Math.min(Math.max(s.A * par + s.B, s.C * par), s.max);   // 日射で気孔が開く
+  const close = Math.max(s.D * ca - s.E, 0);                 // CO₂ が濃いと気孔が閉じる
+  const gvs = Math.max((light - close) * PS.stomataScale, 0);
+  const a = gvs * PS.ratioStomata, b = gvaWater * PS.ratioBoundary;
+  const gc = a > 0 && b > 0 ? 1 / (1 / a + 1 / b) : 0;       // 気孔と境界層の直列
+  // 光の反応（非直角双曲線）
+  let lightMol = 0;
+  if (par > 0) {
+    const phiI = PS.quantumYield * par * PS.parUmolPerJ * 1e-6, pm = PS.pmaxMmol / 1000;
+    const tot = phiI + pm;
+    lightMol = (tot - Math.sqrt(Math.max(tot * tot - 4 * PS.theta * phiI * pm, 0))) / (2 * PS.theta);
+  }
+  // 温度の反応（最適温度で1）
+  const lt = (T + PS.tempA) ** 2, ot = (PS.tempOpt + PS.tempA) ** 2;
+  const h = Math.max((2 * lt * ot - lt * lt) / (ot * ot), 0);
+  const pmMol = lightMol * h;
+  // CO₂ の通り道と固定の速さを連立させた2次方程式の小さい解
+  let gross = 0;
+  if (gc > 0) {
+    const c = ca / 1e6, kc = PS.kcPpm / 1e6, ratio = pmMol / gc, bb = c + kc + ratio;
+    gross = gc * (bb - Math.sqrt(Math.max(bb * bb - 4 * c * ratio, 0))) / 2 * 1000;   // mmol
+  }
+  const rp = Math.max(PS.rpMax * (1 - ca / PS.rpZeroPpm), 0) * gross;   // 光呼吸
+  const rd = PS.rd20Mmol * Math.pow(PS.q10, (T - 20) / 10);             // 暗呼吸
+  return gross - rp - rd;
+}
 
-/* 葉幅 [cm] → 葉1枚の面積 [cm²] */
-const leafAreaCm2 = widthCm => Math.exp(FIX.leafB) * Math.pow(widthCm, FIX.leafA);
+/* 群落（地面1m²あたり）の純光合成 [mmol/(m²)/s]。20層に分け、上から光を弱めて足す */
+function canopyNetMmol(St, T, ca, lai) {
+  const dl = lai / PS.layers;
+  let sum = 0;
+  for (let i = 0; i < PS.layers; i++) sum += leafNetMmol(St * Math.exp(-PS.extinctionK * (i + 0.5) * dl), T, ca) * dl;
+  return sum;
+}
+/* ハウス1棟が1時間に吸うCO₂ [g/h] */
+const houseUptakeGph = (St, T, ca, lai) => canopyNetMmol(St, T, ca, lai) * FIX.co2MolG / 1000 * 3600 * FIX.floorM2;
 
-/* LAI ＝ 栽植密度 [本/m²] × 葉枚数 [枚/本] × 葉1枚の面積 [m²] */
-const laiOf = (densityPerM2, leavesPerStem, widthCm) =>
-  densityPerM2 * leavesPerStem * leafAreaCm2(widthCm) / 10000;
+/* ---- 太陽 ---- */
+const dayOfYear = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(d.getFullYear(), 0, 0)) / 86400000);
+function sunGeometry(date) {
+  const J = dayOfYear(date);
+  const LC = (FIX.lonDeg - FIX.stdMeridianDeg) / 15;
+  const f = (279.575 + 0.9856 * J) * D2R;
+  const ET = (-104.7 * Math.sin(f) + 596.2 * Math.sin(2 * f) + 4.3 * Math.sin(3 * f)
+             - 12.7 * Math.sin(4 * f) - 429.3 * Math.cos(f) - 2 * Math.cos(2 * f) + 19.3 * Math.cos(3 * f)) / 3600;
+  const t0 = 12 - LC - ET;                                                   // 南中時刻 [h]
+  const dec = Math.asin(0.39785 * Math.sin((278.97 + 0.9856 * J + 1.9165 * Math.sin((356.6 + 0.9856 * J) * D2R)) * D2R));
+  const half = Math.acos(Math.max(-1, Math.min(1, -Math.tan(FIX.latDeg * D2R) * Math.tan(dec)))) / D2R / 15;
+  return { J, t0, dec, rise: t0 - half, set: t0 + half };
+}
+/* 快晴の日の、屋外の全天日射 [W/m²]（日射量予測と同じ式） */
+function clearSkyW(g, t) {
+  const cosPsi = Math.sin(FIX.latDeg * D2R) * Math.sin(g.dec) + Math.cos(FIX.latDeg * D2R) * Math.cos(g.dec) * Math.cos(15 * (t - g.t0) * D2R);
+  if (cosPsi <= 0) return 0;
+  const tau = 0.70 + 0.10 * Math.cos(2 * Math.PI * g.J / 365);
+  const pa = 101.3 * Math.pow(1 - 2.25577e-5 * FIX.altM, 5.25588);
+  const tm = Math.pow(tau, pa / (101.3 * cosPsi));
+  return FIX.solarConstW * tm * cosPsi + 0.3 * (1 - tm) * FIX.solarConstW * cosPsi;
+}
+/* ハウスの透過率（季節で少し変わる） */
+const coverTau = J => FIX.coverTau * Math.exp(FIX.coverCos * Math.cos(2 * Math.PI * J / 365) + FIX.coverSin * Math.sin(2 * Math.PI * J / 365));
 
-/* 年度（8月〜翌7月）の始まりの年（夜温設定と同じ） */
+/* ---- 平年値 ---- */
 const seasonStartYear = d => d.getMonth() + 1 >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+function normalOf(date, house, wx, data) {
+  const weeks = data && data.houses && data.houses[house];
+  if (!weeks) return null;
+  const days = Math.round((new Date(date.getFullYear(), date.getMonth(), date.getDate()) - new Date(seasonStartYear(date), 7, 1)) / 86400000);
+  const wk = weeks[Math.max(0, Math.min(weeks.length - 1, Math.floor(days / 7)))];
+  return wk ? { week: wk, rec: wk[wx] } : null;
+}
+/* 時刻 t の気温。平年値の1時間ごとの値（5〜18時）を、各時間の真ん中でつなぐ */
+function tempAt(t, hours, temps) {
+  const pts = hours.map((h, i) => [h + 0.5, temps[i]]).filter(p => typeof p[1] === "number");
+  if (!pts.length) return null;
+  if (t <= pts[0][0]) return pts[0][1];
+  if (t >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
+  for (let i = 1; i < pts.length; i++) {
+    if (t <= pts[i][0]) { const f = (t - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0]); return pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f; }
+  }
+  return pts[pts.length - 1][1];
+}
 
-/* 作業計画の週（「10/17」はその週の初日）を探す（夜温設定と同じ） */
+/* 作業計画の週を探す（夜温設定と同じ） */
 function planWeekOf(date, plan) {
   if (!plan || !Array.isArray(plan.weeks)) return null;
   const y0 = seasonStartYear(date);
@@ -387,246 +596,379 @@ function planWeekOf(date, plan) {
   return null;
 }
 
-/* 光合成のCO₂への反応（濃度 c [ppm] のときの相対的な強さ）。2通り */
-const RESPONSES = {
-  // 光が強い日：CO₂律速。補償点からの差に比例する（CO₂の効きが大きい＝増収の上側）
-  high: c => c - FIX.gammaPpm,
-  // 光が弱い日：Farquhar モデルの電子伝達律速 J(ci−Γ*)/(4ci+8Γ*) の形（J は打ち消すので省く）
-  low: c => { const ci = FIX.ciRatio * c; return (ci - FIX.gammaStarPpm) / (4 * ci + 8 * FIX.gammaStarPpm); },
+/* ---- 1日の準備：5分ごとの光・気温・換気と、濃度ごとの吸収量の表 ---- */
+const PPM_GRID_STEP = 50, PPM_GRID_MAX = 3000;
+function prepareDay(c) {
+  const g = sunGeometry(c.date);
+  const tau = coverTau(g.J);
+  const steps = [];
+  const t0 = Math.round(g.rise * 12) / 12, t1 = g.set;
+  for (let t = t0; t < t1; t += FIX.stepH) {
+    const tm = t + FIX.stepH / 2;                                 // その5分の真ん中
+    const St = clearSkyW(g, tm) * c.k * tau;                      // ハウス内の日射
+    const T = tempAt(tm, c.hours, c.temps);
+    const open = c.nightOpen || tm >= c.openAt;
+    const grid = [];
+    for (let p = 0; p <= PPM_GRID_MAX; p += PPM_GRID_STEP) grid.push(houseUptakeGph(St, T, p, c.lai));
+    steps.push({ t, St, T, ach: open ? FIX.achOpen : FIX.achClosed, open, grid });
+  }
+  return { g, tau, steps };
+}
+const uptakeAt = (grid, ppm) => {
+  const x = Math.max(0, Math.min(PPM_GRID_MAX, ppm)) / PPM_GRID_STEP, i = Math.min(Math.floor(x), grid.length - 2), f = x - i;
+  return grid[i] + (grid[i + 1] - grid[i]) * f;
 };
 
-/* 施用しなかった日に落ち着く濃度 [ppm] と、そのときの吸収 [g/h] を求める。
-   「植物が吸う量 ＝ 換気で外気から入ってくる量」になる濃度を二分法で探す。
-   f(c) は c が上がると増える（吸収は増え、流入は減る）ので、0 と外気濃度の間に答えが1つある */
-function noEnrichment(uptakeGph, cinPpm, ventM3h, resp) {
-  const g = gPerM3PerPpm();
-  const f = c => uptakeGph * resp(c) / resp(cinPpm) - ventM3h * (FIX.outsidePpm - c) * g;
-  let lo = 0, hi = FIX.outsidePpm;
-  for (let i = 0; i < 60; i++) {
-    const mid = (lo + hi) / 2;
-    if (f(mid) > 0) hi = mid; else lo = mid;
+/* 1日の濃度を5分ごとに追いかける。sched(t) はその時刻にグロウを動かす分/時 */
+function simulate(day, dawnPpm, sched) {
+  const hg = houseGPerPpm(), dt = FIX.stepH;
+  let C = dawnPpm, uptake = 0, fuelL = 0, maxC = C;
+  const trace = [];
+  for (const s of day.steps) {
+    const duty = sched(s.t + dt / 2);
+    const supply = duty / 60 * FIX.glowCo2GPerH;                 // g/h
+    const P = uptakeAt(s.grid, C);                                // g/h
+    trace.push({ t: s.t, C, duty });
+    C = Math.max(0, C + ((supply - P) / hg - s.ach * (C - FIX.outsidePpm)) * dt);
+    uptake += P * dt;
+    fuelL += duty / 60 * FIX.glowFuelLPerH * dt;
+    if (C > maxC) maxC = C;
   }
-  const c0 = (lo + hi) / 2;
-  return { ppm: c0, uptakeGph: uptakeGph * resp(c0) / resp(cinPpm) };
+  return { uptakeG: uptake, fuelL, maxC, trace, endC: C };
 }
 
-/* 全体の計算。v は数値にした入力（単価は null のことがある） */
-function compute(v) {
-  const vol = volumeM3();                                          // m³
-  const ventM3h = vol * FIX.achPerH;                               // 換気量 m³/h
-  const ventLossGph = ventM3h * (v.cin - FIX.outsidePpm) * gPerM3PerPpm();   // 換気で逃げる g/h
-  const uptakeGph = v.pn / 1000 * v.lai * FIX.floorM2 * 3600;      // 植物が吸う g/h（mg→g、s→h）
-  const supplyGph = ventLossGph + uptakeGph;                       // 施用量 g/h
-  const keroseneLph = supplyGph / FIX.keroseneCo2GPerL;            // 灯油 L/h
-  const costYph = v.kerosene === null ? null : keroseneLph * v.kerosene;
+/* いちばん得な動かし方を探す。①天窓が開くまで ②開いてから、それぞれ「始め・終わり・分/時」 */
+function optimize(day, c) {
+  const base = simulate(day, c.dawn, () => 0);
+  const rise = day.g.rise, set = day.g.set;
+  const openAt = c.nightOpen ? rise : Math.max(rise, Math.min(set, c.openAt));
+  const slot = h => Math.ceil(h / FIX.slotH - 1e-9) * FIX.slotH;
+  const starts = [];                                              // ①の動かし始め候補
+  for (let a = slot(rise); a < openAt; a += FIX.slotH) starts.push(a);
+  const ends = [];                                                // ②の止める時刻候補
+  for (let b = slot(openAt) + FIX.slotH; b <= set + 1e-9; b += FIX.slotH) ends.push(b);
+  if (!ends.length || ends[ends.length - 1] < set - 0.25) ends.push(set);
 
-  // 施用しなかった日（2通り）と、施用で増えた分
-  const scen = {};
-  for (const [key, resp] of Object.entries(RESPONSES)) {
-    const base = noEnrichment(uptakeGph, v.cin, ventM3h, resp);
-    const gainGph = uptakeGph - base.uptakeGph;
-    const gainKg = fruitKgFromCo2G(gainGph);
-    const gainYph = v.tomato === null ? null : gainKg * v.tomato;
-    scen[key] = {
-      basePpm: base.ppm, baseUptakeGph: base.uptakeGph,
-      gainGph, gainRatio: gainGph / uptakeGph, gainKg, gainYph,
-      netYph: gainYph === null || costYph === null ? null : gainYph - costYph,
-      breakEvenYpkg: costYph === null || gainKg <= 0 ? null : costYph / gainKg,
-    };
-  }
-
-  // Excel の数え方：吸った分を全部「施用の成果」とする
-  const allKg = fruitKgFromCo2G(uptakeGph);
-  const allYph = v.tomato === null ? null : allKg * v.tomato;
-  const excel = {
-    gainKg: allKg, gainYph: allYph,
-    netYph: allYph === null || costYph === null ? null : allYph - costYph,
-    breakEvenYpkg: costYph === null || allKg <= 0 ? null : costYph / allKg,
+  const value = sim => {
+    const gainG = sim.uptakeG - base.uptakeG;
+    const gainKg = fruitKgFromCo2G(gainG);
+    return { gainG, gainKg, yen: gainKg * c.tomato - sim.fuelL * c.kerosene };
   };
+  let best = null;
+  const phaseA = [{ a: null, d: 0 }];
+  for (const a of starts) for (const d of FIX.dutyMin) if (d > 0) phaseA.push({ a, d });
+  const phaseB = [{ b: null, d: 0 }];
+  for (const b of ends) for (const d of FIX.dutyMin) if (d > 0) phaseB.push({ b, d });
+  for (const A of phaseA) {
+    for (const B of phaseB) {
+      const sched = t => (A.d && t >= A.a && t < openAt) ? A.d : (B.d && t >= openAt && t < B.b) ? B.d : 0;
+      const sim = simulate(day, c.dawn, sched);
+      if (sim.maxC > FIX.maxPpm) continue;
+      const v = value(sim);
+      // 得が同じ（1円未満の差）なら、灯油の少ないほうを選ぶ
+      if (!best || v.yen > best.v.yen + 1 || (Math.abs(v.yen - best.v.yen) <= 1 && sim.fuelL < best.sim.fuelL)) {
+        best = { A, B, sim, v, sched };
+      }
+    }
+  }
+  const excelYen = fruitKgFromCo2G(best.sim.uptakeG) * c.tomato - best.sim.fuelL * c.kerosene;
+  return { base, best, openAt, rise, set, excelYen, tried: phaseA.length * phaseB.length };
+}
 
-  return { vol, ventM3h, ventLossGph, uptakeGph, supplyGph, keroseneLph, costYph,
-           plantShare: uptakeGph / supplyGph, scen, excel };
+/* 時刻の範囲の平均濃度 */
+function meanPpm(trace, from, to) {
+  const v = trace.filter(p => p.t >= from - 1e-9 && p.t < to - 1e-9).map(p => p.C);
+  return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null;
 }
 
 /* =========================================================================
    3. 画面（入力を読む・結果を描く）
    ========================================================================= */
 const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 const yen = x => Math.round(x).toLocaleString("ja-JP");
 const signedYen = x => (Math.round(x) > 0 ? "+" : Math.round(x) < 0 ? "−" : "±") + yen(Math.abs(x));
 const fx = (x, d) => x.toLocaleString("ja-JP", { minimumFractionDigits: d, maximumFractionDigits: d });
-/* 幅のある値を「小〜大」で書く。丸めて同じなら1つだけ */
-const range = (a, b, fmt) => { const [x, y] = a <= b ? [a, b] : [b, a]; return fmt(x) === fmt(y) ? fmt(x) : fmt(x) + "〜" + fmt(y); };
+const ymd = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 
-/* URL の値（?tomato=… など）→ 覚えている値 → 既定値 の順で欄に入れる。
-   ここで入れるのは開いたときの1回だけ。打っている最中に書き戻すことはしない */
+const PLAN = typeof PLAN_DATA === "object" ? PLAN_DATA : null;
+const NORM = typeof CO2_TENMADO === "object" ? CO2_TENMADO : null;
+
+/* 開いたときの状態：URL の値 → 覚えている値 → 既定 */
+let house = "中央", wx = "clear", night = null;      // night は null なら平年値で決める
 let saved = {};
-try { saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch (e) { saved = {}; /* 覚えられない端末では毎回既定値から */ }
+try { saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch (e) { saved = {}; /* 覚えられない端末では毎回空から */ }
 const qs = new URLSearchParams(location.search);
-for (const id of ORDER) {
-  $(id).value = qs.has(id) ? qs.get(id) : typeof saved[id] === "string" ? saved[id] : INPUTS[id].def;
+for (const id of STORE_IDS) $(id).value = qs.has(id) ? qs.get(id) : typeof saved[id] === "string" ? saved[id] : "";
+if (saved.house === "中央" || saved.house === "東") house = saved.house;
+if (qs.get("house") === "中央" || qs.get("house") === "東") house = qs.get("house");
+if (WX_LABEL[qs.get("wx")]) wx = qs.get("wx");
+if (qs.get("night") === "open" || qs.get("night") === "closed") night = qs.get("night");
+$("date").value = /^\d{4}-\d{2}-\d{2}$/.test(qs.get("d") || "") ? qs.get("d") : ymd(new Date());
+if (qs.has("openAt")) $("openAt").value = qs.get("openAt");
+if (qs.has("dawn")) $("dawn").value = qs.get("dawn");
+
+function readDate() {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec($("date").value);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
 }
 
-/* 今週の作業計画（読めなければ null。そのときは手で入れてもらう） */
-const PLAN = typeof PLAN_DATA === "object" ? PLAN_DATA : null;
-const PW = planWeekOf(new Date(), PLAN);
-const planNum = key => PW && typeof PW.week[key] === "number" ? PW.week[key] : null;
-const PLAN_VAL = { density: planNum("density"), leaves: planNum("leaf_plant") };
-
-/* 入力欄を読んで、数値と、欄ごとの誤りと、LAI の出どころを返す */
+/* 入力欄と平年値を読んで、計算に使う値・出どころ・誤りをまとめる */
 function gather() {
-  const v = {}, errors = {}, from = {};
-  for (const id of ORDER) {
+  const errors = {}, from = {}, v = {};
+  const date = readDate() || new Date();
+  for (const id of ["tomato", "kerosene", "dawn", "density", "leaves", "width"]) {
     const n = parseNum($(id).value), r = INPUTS[id];
     if (Number.isNaN(n) || (n !== null && (n < r.min || n > r.max))) errors[id] = r.label + " の数字で入れてください";
-    else if (n === null && r.def !== "") errors[id] = "値を入れてください（既定は " + r.def + "）";
     v[id] = Number.isNaN(n) ? null : n;
     from[id] = "入力";
-    // 空欄で、作業計画に値があればそれを使う
-    if (r.plan && n === null && PLAN_VAL[id] !== null) { v[id] = PLAN_VAL[id]; from[id] = "作業計画"; }
   }
-  // LAI：葉幅があれば計算する。空欄なら Excel の値
+  // 平年値（その日・そのハウス・その天気）
+  const nm = normalOf(date, house, wx, NORM);
+  const rec = nm && nm.rec;
+  const nightDefault = rec ? (rec.closed >= FIX.closedShare ? "closed" : "open") : "closed";
+  const nightNow = night || nightDefault;
+  // 天窓が開く時刻
+  const oIn = parseClock($("openAt").value);
+  let openAt = null, openFrom = "";
+  if (Number.isNaN(oIn)) errors.openAt = "8:30 や 830 の形で入れてください";
+  else if (oIn !== null) { openAt = oIn; openFrom = "入力"; }
+  else if (rec && rec.open !== null) { openAt = rec.open / 60; openFrom = WX_LABEL[wx] + "の平年値"; }
+  else { openAt = 12; openFrom = "平年値が無いので正午と仮定"; }
+  // 夜明けのCO₂
+  if (v.dawn === null && !errors.dawn) {
+    if (nightNow === "open") { v.dawn = rec ? Math.min(rec.dawn, 550) : 480; from.dawn = "平年値"; }
+    else { v.dawn = rec ? Math.max(rec.dawn, FIX.outsidePpm) : 900; from.dawn = rec ? "平年値" : "仮の値"; }
+  }
+  // 栽植密度・葉枚数（空欄は作業計画）
+  const pw = planWeekOf(date, PLAN);
+  const planVal = { density: pw && typeof pw.week.density === "number" ? pw.week.density : null,
+                    leaves: pw && typeof pw.week.leaf_plant === "number" ? pw.week.leaf_plant : null };
+  for (const id of ["density", "leaves"]) if (v[id] === null && !errors[id] && planVal[id] !== null) { v[id] = planVal[id]; from[id] = "作業計画"; }
   let lai = { value: FIX.excelLai, from: "Excel" };
   if (v.width !== null && !errors.width) {
-    for (const id of ["density", "leaves"]) {
-      if (v[id] === null && !errors[id]) errors[id] = "値を入れてください";
-    }
-    if (!errors.density && !errors.leaves) {
-      lai = { value: laiOf(v.density, v.leaves, v.width), from: "葉幅", leafCm2: leafAreaCm2(v.width) };
-    }
+    for (const id of ["density", "leaves"]) if (v[id] === null && !errors[id]) errors[id] = "値を入れてください";
+    if (!errors.density && !errors.leaves) lai = { value: laiOf(v.density, v.leaves, v.width), from: "葉幅", leafCm2: leafAreaCm2(v.width) };
   }
-  v.lai = lai.value;
-  return { v, errors, from, lai };
+  // 気温（平年値）。無ければ作業計画の昼の目標で一定とする
+  let temps = rec ? rec.t : null, tempFrom = "平年値";
+  if (!temps || !temps.some(x => typeof x === "number")) {
+    const td = pw && typeof pw.week.temp_day === "number" ? pw.week.temp_day : 22;
+    temps = (NORM ? NORM.hours : [5]).map(() => td); tempFrom = pw ? "作業計画の昼の目標" : "仮の値 22℃";
+  }
+  const k = NORM && NORM.k && typeof NORM.k[wx] === "number" ? NORM.k[wx] : FIX.wxK[wx];
+  return {
+    errors, from, v, date, nm, rec, nightDefault, nightNow, openAt, openFrom, pw, planVal, lai,
+    hours: NORM ? NORM.hours : [5], temps, tempFrom, k,
+  };
 }
 
 function renderErrors(errors) {
-  for (const id of ORDER) {
+  for (const id of ["tomato", "kerosene", "openAt", "dawn", "density", "leaves", "width"]) {
     $(id + "Err").hidden = !errors[id];
     $(id + "Err").textContent = errors[id] || "";
   }
 }
 
-function renderResult(g) {
-  const box = $("result");
-  if (g.errors.cin || g.errors.pn || g.errors.density || g.errors.leaves || g.errors.width) {
-    box.innerHTML = '<p class="err">赤字の欄を直すと、ここに結果が出ます。</p>';
-    $("ref").innerHTML = ""; $("steps").innerHTML = ""; return;
-  }
-  const v = { ...g.v, tomato: g.errors.tomato ? null : g.v.tomato, kerosene: g.errors.kerosene ? null : g.v.kerosene };
-  const r = compute(v);
-  const lo = r.scen.low, hi = r.scen.high;
-  const kv = (k, val) => '<div class="kv"><span class="k">' + k + '</span><span class="v num">' + val + "</span></div>";
-
-  // いちばん上の答え：収支（幅つき）
-  let verdict;
-  if (r.costYph === null) {
-    verdict = '<div class="verdict"><div class="lbl">収支</div><div class="big">―</div>' +
-      '<div class="sub">灯油単価' + (v.tomato === null ? "とトマト単価" : "") + "を入れると出ます。</div></div>";
-  } else if (v.tomato === null) {
-    verdict = '<div class="verdict"><div class="lbl">損益分岐のトマト単価</div>' +
-      '<div class="big num">' + range(hi.breakEvenYpkg, lo.breakEvenYpkg, yen) + "<small> 円/kg</small></div>" +
-      '<div class="sub">トマト単価がこれより高ければ、施用は元がとれます。単価を入れると収支が出ます。</div></div>';
-  } else {
-    const a = lo.netYph, b = hi.netYph;
-    const cls = a > 0 ? "plus" : b < 0 ? "minus" : "";
-    const word = a > 0 ? "黒字" : b < 0 ? "赤字" : "天気しだい";
-    verdict = '<div class="verdict ' + cls + '"><div class="lbl">施用の収支・' + word + "</div>" +
-      '<div class="big num">' + range(a, b, signedYen) + "<small> 円/時</small></div>" +
-      '<div class="sub">左が光の弱い日（曇り・朝夕）、右が光の強い日の見込みです。</div></div>';
-  }
-
-  box.innerHTML = verdict + '<div class="summary">' +
-    (v.tomato === null ? "" : kv("増える果実の金額", range(lo.gainYph, hi.gainYph, yen) + "<small> 円/時</small>")) +
-    (r.costYph === null ? "" : kv("灯油代<small>" + fx(r.keroseneLph, 2) + " L/時</small>", yen(r.costYph) + "<small> 円/時</small>")) +
-    kv("増える果実<small>光合成が " + range(lo.gainRatio * 100, hi.gainRatio * 100, x => fx(x, 0)) + "% 増える</small>",
-       range(lo.gainKg, hi.gainKg, x => fx(x, 1)) + "<small> kg/時</small>") +
-    (r.costYph === null || v.tomato === null ? "" :
-      kv("損益分岐のトマト単価<small>これより高ければ元がとれる</small>", range(hi.breakEvenYpkg, lo.breakEvenYpkg, yen) + "<small> 円/kg</small>")) +
-    "</div>";
-
-  // 参考：Excel の数え方
-  const ex = r.excel;
-  $("ref").innerHTML =
-    '<p class="hint" style="margin-top:0">光合成で吸ったCO₂を<b>全部</b>施用の成果として数えた場合。施用しなくても得られた分まで入るので、得が多めに出ます。</p>' +
-    '<div class="summary">' +
-    kv("増える果実", fx(ex.gainKg, 1) + "<small> kg/時</small>") +
-    (ex.gainYph === null ? "" : kv("増える果実の金額", yen(ex.gainYph) + "<small> 円/時</small>")) +
-    (ex.netYph === null ? "" : kv("収支", signedYen(ex.netYph) + "<small> 円/時</small>")) +
-    (ex.breakEvenYpkg === null ? "" : kv("損益分岐のトマト単価", yen(ex.breakEvenYpkg) + "<small> 円/kg</small>")) +
-    "</div>";
-
-  // 途中の計算
-  const row = (k, val, note) => "<tr><td>" + k + (note ? "<small>" + note + "</small>" : "") + '</td><td class="num">' + val + "</td></tr>";
-  const head = t => '<tr class="h"><td colspan="2">' + t + "</td></tr>";
-  $("steps").innerHTML = '<table class="steps">' +
-    head("ハウス（Excel の値）") +
-    row("床面積", fx(FIX.floorM2, 1) + " m²") +
-    row("容積", yen(r.vol) + " m³", "軒高 " + FIX.eaveM + " m・棟高 " + FIX.ridgeM + " m") +
-    row("換気量", yen(r.ventM3h) + " m³/時", "換気回数 " + FIX.achPerH + " 回/時") +
-    head("葉") +
-    (g.lai.from === "葉幅"
-      ? row("葉1枚の面積", yen(g.lai.leafCm2) + " cm²", "葉幅 " + fx(v.width, 1) + " cm から") +
-        row("LAI", fx(v.lai, 2), fx(v.density, 2) + " 本/m² × " + fx(v.leaves, 1) + " 枚/本 × 葉1枚")
-      : row("LAI", fx(v.lai, 2), "葉幅が空欄なので Excel の値")) +
-    row("葉の総面積", yen(v.lai * FIX.floorM2) + " m²", "LAI × 床面積") +
-    head("施用中（" + yen(v.cin) + " ppm に保つ）") +
-    row("換気で逃げるCO₂", yen(r.ventLossGph) + " g/時", "外気 " + FIX.outsidePpm + " ppm との差 " + yen(v.cin - FIX.outsidePpm) + " ppm") +
-    row("植物が吸うCO₂", yen(r.uptakeGph) + " g/時") +
-    row("必要な施用量", yen(r.supplyGph) + " g/時", "うち植物が吸う割合 " + fx(r.plantShare * 100, 0) + "%") +
-    row("灯油", fx(r.keroseneLph, 2) + " L/時", "1 L で " + yen(FIX.keroseneCo2GPerL) + " g") +
-    head("施用しなかった日（光の弱い日／強い日）") +
-    row("落ち着く濃度", fx(lo.basePpm, 0) + "／" + fx(hi.basePpm, 0) + " ppm") +
-    row("植物が吸うCO₂", yen(lo.baseUptakeGph) + "／" + yen(hi.baseUptakeGph) + " g/時") +
-    row("施用で増えた吸収", yen(lo.gainGph) + "／" + yen(hi.gainGph) + " g/時",
-        "施用中の " + fx(lo.gainRatio * 100, 0) + "%／" + fx(hi.gainRatio * 100, 0) + "%") +
-    row("増える果実", fx(lo.gainKg, 2) + "／" + fx(hi.gainKg, 2) + " kg/時") +
-    "</table>";
-}
-
-function renderPnHint(g) {
-  // mg CO₂/m²/s を、光合成の測定器でよく出る µmol/m²/s に直して添える
-  $("pnHint").textContent = g.errors.pn || g.v.pn === null ? "" :
-    "純光合成速度は葉1m²あたり・目標濃度のときの mg CO₂/m²/s。＝ " + fx(g.v.pn / FIX.co2MolG * 1000, 1) + " µmol/m²/s（Excel の既定は 0.2）";
-}
-
-function renderLai(g) {
-  // 空欄のとき使う作業計画の値を、うすい字で欄に見せる
-  $("density").placeholder = PLAN_VAL.density !== null ? fx(PLAN_VAL.density, 2) : "入力";
-  $("leaves").placeholder = PLAN_VAL.leaves !== null ? fx(PLAN_VAL.leaves, 1) : "入力";
+function renderInputs(g) {
+  document.querySelectorAll("#houseSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.house === house)));
+  document.querySelectorAll("#wxSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.wx === wx)));
+  document.querySelectorAll("#nightSeg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.night === g.nightNow)));
+  const rec = g.rec;
+  $("nightHint").textContent = rec
+    ? "平年は、この時期の" + WX_LABEL[wx] + "の夜の " + Math.round(rec.closed * 100) + "% で天窓を閉めています（" + rec.n + "日）。"
+    : "この時期の平年値がありません。";
+  // 夜も開けていた日は、開く時刻は使わない
+  $("openAt").disabled = g.nightNow === "open";
+  $("openAt").placeholder = g.nightNow === "open" ? "終日開" : rec && rec.open !== null ? clock(rec.open / 60) : "12:00";
+  $("dawn").placeholder = String(Math.round(g.v.dawn || 0));
+  $("dayHint").innerHTML = "空欄の間は平年値（" + esc(house) + "・" + WX_LABEL[wx] + "・過去の同じ時期の前後7日）で計算します。" +
+    (rec && rec.open !== null && g.nightNow === "closed" ? "天窓が開く時刻は " + rec.det + " 日分の中央値です。" : "") +
+    (g.openFrom.indexOf("正午") >= 0 && g.nightNow === "closed" ? "<b>この天気では開く時刻の平年値がありません。分かれば入れてください。</b>" : "");
+  // LAI
+  $("density").placeholder = g.planVal.density !== null ? fx(g.planVal.density, 2) : "入力";
+  $("leaves").placeholder = g.planVal.leaves !== null ? fx(g.planVal.leaves, 1) : "入力";
   $("laiOut").textContent = g.errors.density || g.errors.leaves || g.errors.width ? "―" : fx(g.lai.value, 2);
-
-  const planNote = PW
-    ? "栽植密度・葉枚数が空欄なら、今週の作業計画（第" + esc(PW.week.week_no) + "週 " + esc(PW.week.date) + "〜）の値を使います。"
-    : PLAN ? "今週の作業計画に値がありません。栽植密度・葉枚数を入れてください。"
-           : "作業計画を読めませんでした。栽植密度・葉枚数を入れてください。";
-  $("laiHint").innerHTML = (g.lai.from === "葉幅"
-    ? "葉1枚 " + yen(g.lai.leafCm2) + " cm² で計算しています。"
+  const planNote = g.pw ? "栽植密度・葉枚数が空欄なら、作業計画（第" + esc(g.pw.week.week_no) + "週 " + esc(g.pw.week.date) + "〜）の値を使います。"
+    : PLAN ? "この日の作業計画に値がありません。栽植密度・葉枚数を入れてください。" : "作業計画を読めませんでした。栽植密度・葉枚数を入れてください。";
+  $("laiHint").innerHTML = (g.lai.from === "葉幅" ? "葉1枚 " + yen(g.lai.leafCm2) + " cm² で計算しています。"
     : "<b>葉幅が空欄の間は Excel の LAI 1.5 で計算します。</b>") +
     "葉幅は複葉全体の、葉軸に直角な最大幅です。株の中ほどの平均的な葉を測ってください。" + planNote;
+}
+
+const kv = (k, val) => '<div class="kv"><span class="k">' + k + '</span><span class="v num">' + val + "</span></div>";
+
+function renderResult(g, day, r) {
+  const box = $("result");
+  if (!r) {
+    box.innerHTML = '<p class="hint" style="margin-top:0">' +
+      (Object.keys(g.errors).length ? "赤字の欄を直すと、ここに結果が出ます。" : "トマト単価と灯油単価を入れると、いちばん得な動かし方が出ます。") + "</p>";
+    return;
+  }
+  const b = r.best, A = b.A, B = b.B, tr = b.sim.trace;
+  const items = [];
+  if (!g.nightNow || g.nightNow === "closed") {
+    items.push(A.d
+      ? { no: "①", when: clock(A.a) + "〜" + clock(r.openAt), why: "天窓が閉まっている間・CO₂ 平均 約" + yen(meanPpm(tr, A.a, r.openAt) || 0) + " ppm", min: A.d }
+      : { no: "①", when: clock(r.rise) + "〜" + clock(r.openAt), why: "天窓が閉まっている間・夜にたまったCO₂を使う", min: 0 });
+  }
+  items.push(B.d
+    ? { no: g.nightNow === "open" ? "" : "②", when: clock(r.openAt) + "〜" + clock(B.b), why: (g.nightNow === "open" ? "天窓が開いている間" : "天窓が開いてから") + "・CO₂ 平均 約" + yen(meanPpm(tr, r.openAt, B.b) || 0) + " ppm", min: B.d }
+    : { no: g.nightNow === "open" ? "" : "②", when: clock(r.openAt) + "〜" + clock(r.set), why: g.nightNow === "open" ? "天窓が開いている間" : "天窓が開いてから", min: 0 });
+  const list = items.map(it =>
+    "<li><span class=\"no" + (it.min ? "" : " off") + "\">" + (it.no || "・") + "</span>" +
+    '<span><span class="when num">' + it.when + '</span><span class="why">' + it.why + "</span></span>" +
+    (it.min ? '<span class="min num">' + it.min + "<small>分/時</small></span>" : '<span class="min off">動かさない</span>') + "</li>").join("");
+
+  const v = b.v, cost = b.sim.fuelL * g.v.kerosene;
+  const none = !A.d && !B.d;
+  const verdict = none
+    ? '<div class="verdict minus"><div class="lbl2">この日は施用しないほうが得</div><div class="big">グロウは止めておく</div>' +
+      '<div class="sub">どの動かし方でも、灯油代が増える果実の金額を上回ります。</div></div>'
+    : '<div class="verdict plus"><div class="lbl2">この動かし方での1日の収支</div><div class="big num">' + signedYen(v.yen) + "<small> 円/日</small></div>" +
+      '<div class="sub">施用しなかった日と比べた差です。</div></div>';
+  box.innerHTML = verdict + '<ul class="plan">' + list + "</ul>" +
+    (none ? "" : '<div class="summary">' +
+      kv("増える果実の金額<small>" + fx(v.gainKg, 1) + " kg 増える</small>", yen(v.gainKg * g.v.tomato) + "<small> 円</small>") +
+      kv("灯油代<small>" + fx(b.sim.fuelL, 1) + " L</small>", yen(cost) + "<small> 円</small>") +
+      kv("損益分岐のトマト単価<small>これより高ければ元がとれる</small>", (v.gainKg > 0 ? yen(cost / v.gainKg) : "―") + "<small> 円/kg</small>") +
+      kv("参考：Excel の数え方<small>吸ったCO₂を全部、施用の成果とした場合</small>", signedYen(r.excelYen) + "<small> 円</small>") +
+      "</div>");
+  $("resTitle").textContent = "いちばん得なグロウの動かし方（" + house + "・" + WX_LABEL[wx] + "）";
+}
+
+/* ---- グラフ（Canvas。色は直書き。文字は 21px 以上） ---- */
+const C_WITH = "#2F6B4F", C_BASE = "#9AA394", C_OPEN = "#2A4A6B", C_AXIS = "#6D7768", C_GRID = "#DFE7DB";
+/* base・with_ は simulate() の trace（with_ は無ければ null）、openAt は天窓が開く時刻 [h] */
+function drawChart(day, base, with_, openAt, nightNow) {
+  const cv = $("chart"), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  const L = 74, R = 16, T = 16, B = 50;
+  const all = base.concat(with_ || []).map(p => p.C);
+  const yMax = Math.max(600, Math.ceil(Math.max(...all) / 200) * 200);
+  const x0 = Math.floor(day.g.rise), x1 = Math.ceil(day.g.set);
+  const X = t => L + (t - x0) / (x1 - x0) * (W - L - R), Y = p => T + (1 - p / yMax) * (H - T - B);
+  ctx.font = "22px sans-serif"; ctx.fillStyle = C_AXIS; ctx.strokeStyle = C_GRID; ctx.lineWidth = 1;
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let p = 0; p <= yMax; p += yMax > 1200 ? 400 : 200) {
+    ctx.beginPath(); ctx.moveTo(L, Y(p)); ctx.lineTo(W - R, Y(p)); ctx.stroke();
+    ctx.fillText(String(p), L - 8, Y(p));
+  }
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (let h = x0; h <= x1; h += 2) ctx.fillText(h + "時", X(h), H - B + 10);
+  // 外気 400ppm
+  ctx.setLineDash([4, 6]); ctx.strokeStyle = C_AXIS;
+  ctx.beginPath(); ctx.moveTo(L, Y(FIX.outsidePpm)); ctx.lineTo(W - R, Y(FIX.outsidePpm)); ctx.stroke();
+  ctx.setLineDash([]);
+  // 天窓が開く時刻
+  if (nightNow === "closed" && openAt > x0 && openAt < x1) {
+    ctx.strokeStyle = C_OPEN; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(X(openAt), T); ctx.lineTo(X(openAt), H - B); ctx.stroke();
+  }
+  const line = (tr, color, w) => {
+    ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath();
+    tr.forEach((p, i) => (i ? ctx.lineTo(X(p.t), Y(p.C)) : ctx.moveTo(X(p.t), Y(p.C))));
+    ctx.stroke();
+  };
+  line(base, C_BASE, 4);
+  if (with_) line(with_, C_WITH, 5);
+  ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillStyle = C_AXIS;
+  ctx.fillText("ppm", 6, 0);
+}
+
+/* グラフの下の表：1時間ごとの天窓・グロウ・平均濃度 */
+function renderHourly(day, r) {
+  if (!r) { $("hourly").innerHTML = ""; return; }
+  const rows = [];
+  for (let h = Math.floor(day.g.rise); h < Math.ceil(day.g.set); h++) {
+    const pick = tr => tr.filter(p => p.t >= h && p.t < h + 1);
+    const w = pick(r.best.sim.trace), b = pick(r.base.trace), st = day.steps.filter(s => s.t >= h && s.t < h + 1);
+    if (!w.length) continue;
+    const mean = a => a.reduce((s, p) => s + p.C, 0) / a.length;
+    const duty = Math.max(...w.map(p => p.duty));
+    const open = st.some(s => s.open);
+    rows.push("<tr><td>" + h + "時</td><td>" + (open ? "開" : "閉") + "</td><td" + (duty ? ' class="on"' : "") + ">" + (duty ? duty + "分" : "―") +
+      "</td><td>" + yen(mean(w)) + "</td><td>" + yen(mean(b)) + "</td></tr>");
+  }
+  $("hourly").innerHTML = '<table class="tbl num"><tr><th>時刻</th><th>天窓</th><th>グロウ</th><th>CO₂ 施用あり</th><th>なし</th></tr>' + rows.join("") + "</table>" +
+    '<p class="hint">CO₂ は ppm、その1時間の平均です。点線は外気（400 ppm）。</p>';
+}
+
+function renderSteps(g, day, r) {
+  const row = (k, val, note) => "<tr><td>" + k + (note ? "<small>" + note + "</small>" : "") + '</td><td class="num">' + val + "</td></tr>";
+  const head = t => '<tr class="h"><td colspan="2">' + t + "</td></tr>";
+  const maxSt = Math.max(...day.steps.map(s => s.St));
+  const dayMJ = day.steps.reduce((s, x) => s + x.St * FIX.stepH * 3600, 0) / 1e6;
+  const temps = day.steps.map(s => s.T);
+  $("steps").innerHTML = '<table class="steps">' +
+    head("その日") +
+    row("日の出・日の入", clock(day.g.rise) + "・" + clock(day.g.set)) +
+    row("ハウス内の日射（最大）", yen(maxSt) + " W/m²", WX_LABEL[wx] + "の割合 " + fx(g.k, 2) + " × 透過率 " + fx(day.tau, 3)) +
+    row("ハウス内の日射（1日）", fx(dayMJ, 1) + " MJ/m²") +
+    row("気温", fx(Math.min(...temps), 1) + "〜" + fx(Math.max(...temps), 1) + " ℃", g.tempFrom) +
+    row("夜の天窓", g.nightNow === "open" ? "開けていた" : "閉めていた", night ? "入力" : "平年値") +
+    (g.nightNow === "closed" ? row("天窓が開く時刻", clock(g.openAt), g.openFrom) : "") +
+    (g.v.dawn === null ? "" : row("夜明けのCO₂", yen(g.v.dawn) + " ppm", g.from.dawn)) +
+    head("植物") +
+    row("LAI", fx(g.lai.value, 2), g.lai.from === "葉幅" ? fx(g.v.density, 2) + " 本/m² × " + fx(g.v.leaves, 1) + " 枚/本 × " + yen(g.lai.leafCm2) + " cm²" : "葉幅が空欄なので Excel の値") +
+    (r ? row("光合成（施用なし・1日）", yen(r.base.uptakeG) + " g CO₂") : "") +
+    (r ? row("光合成（施用あり・1日）", yen(r.best.sim.uptakeG) + " g CO₂", "増えた分 " + yen(r.best.v.gainG) + " g") : "") +
+    head("ハウスとグロウ") +
+    row("容積", yen(volumeM3()) + " m³", "床面積 " + fx(FIX.floorM2, 1) + " m²") +
+    row("CO₂ 1 ppm ぶん", fx(houseGPerPpm(), 1) + " g") +
+    row("換気回数", FIX.achClosed + "／" + FIX.achOpen + " 回/時", "天窓が閉まっている／開いている") +
+    row("グロウ（60分/時）", fx(FIX.glowCo2GPerH / 1000, 2) + " kg CO₂・" + FIX.glowFuelLPerH + " L/時") +
+    (r ? row("試した動かし方", yen(r.tried) + " 通り") : "") +
+    "</table>";
 }
 
 function render() {
   const g = gather();
   renderErrors(g.errors);
-  renderPnHint(g);
-  renderLai(g);
-  renderResult(g);
+  renderInputs(g);
+  const date = g.date;
+  const day = prepareDay({ date, k: g.k, hours: g.hours, temps: g.temps, nightOpen: g.nightNow === "open",
+                           openAt: g.openAt, lai: g.lai.value });
+  const ready = !Object.keys(g.errors).length && g.v.tomato !== null && g.v.kerosene !== null;
+  const r = ready ? optimize(day, { dawn: g.v.dawn, openAt: g.openAt, nightOpen: g.nightNow === "open",
+                                    tomato: g.v.tomato, kerosene: g.v.kerosene }) : null;
+  renderResult(g, day, r);
+  renderHourly(day, r);
+  // 単価が無くても、施用なしの濃度の動きは見せる
+  try {
+    const base = r ? r.base.trace : simulate(day, g.v.dawn === null ? 900 : g.v.dawn, () => 0).trace;
+    drawChart(day, base, r ? r.best.sim.trace : null, g.openAt, g.nightNow);
+  } catch (e) {
+    $("hourly").insertAdjacentHTML("afterbegin", '<p class="err">グラフを描けませんでした：' + esc(e.message) + "</p>");
+  }
+  renderSteps(g, day, r);
 }
 
 /* ---- 操作 ---- */
-/* 打つたびに計算し直し、打った文字のまま覚える（欄には書き戻さない） */
-ORDER.forEach(id => $(id).addEventListener("input", () => {
-  const raw = Object.fromEntries(ORDER.map(k => [k, $(k).value]));
+function store() {
+  const raw = Object.fromEntries(STORE_IDS.map(k => [k, $(k).value]));
+  raw.house = house;
   try { localStorage.setItem(LS_KEY, JSON.stringify(raw)); } catch (e) { /* 覚えられなくても計算はできる */ }
-  render();
+}
+/* 打つたびに計算し直す（欄には書き戻さない） */
+ORDER.forEach(id => $(id).addEventListener("input", () => { store(); render(); }));
+$("date").addEventListener("change", render);
+$("today").addEventListener("click", () => { $("date").value = ymd(new Date()); render(); });
+$("houseSeg").addEventListener("click", e => { const b = e.target.closest("button[data-house]"); if (!b) return; house = b.dataset.house; store(); render(); });
+$("wxSeg").addEventListener("click", e => { const b = e.target.closest("button[data-wx]"); if (!b) return; wx = b.dataset.wx; render(); });
+$("nightSeg").addEventListener("click", e => { const b = e.target.closest("button[data-night]"); if (!b) return; night = b.dataset.night; render(); });
+
+/* 上下キー・Enter で欄を移動する（値は変えない。日付の欄は標準の動きのまま） */
+ORDER.forEach((id, i) => $(id).addEventListener("keydown", e => {
+  if (id === "date") return;
+  const next = dir => { for (let j = i + dir; j >= 0 && j < ORDER.length; j += dir) if (!$(ORDER[j]).disabled) return $(ORDER[j]); return null; };
+  if (e.key === "ArrowDown" || e.key === "Enter") { const n = next(1); if (n) { e.preventDefault(); n.focus(); } }
+  if (e.key === "ArrowUp") { const n = next(-1); if (n) { e.preventDefault(); n.focus(); } }
 }));
 
-/* 上下キー・Enter で欄を移動する（値は変えない） */
-ORDER.forEach((id, i) => $(id).addEventListener("keydown", e => {
-  if ((e.key === "ArrowDown" || e.key === "Enter") && i < ORDER.length - 1) { e.preventDefault(); $(ORDER[i + 1]).focus(); }
-  if (e.key === "ArrowUp" && i > 0) { e.preventDefault(); $(ORDER[i - 1]).focus(); }
-}));
+$("srcNote").textContent = NORM
+  ? "出どころ：生物環境物理学.xlsx「Co2施用シュミレーター」「自圃場換気回数」、換気回数計算用データ.xlsx、光合成.xlsx（潅水アプリの設定値）、" + NORM.source + "（平年値の作成 " + NORM.built_at + "）。葉の面積の式は 樋江井ら（愛知県農業総合試験場研究報告）。"
+  : "平年値のデータを読めませんでした。天窓が開く時刻と夜明けのCO₂を入れてください。";
 
 render();
 </script>
