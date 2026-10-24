@@ -140,6 +140,18 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 .plan .min small{font-size:14px}
 .plan .min.off{font-size:17px;color:var(--muted)}
 .summary{margin-top:10px;display:grid;gap:8px}
+/* 2つの方式（タイマー・目標ppm）を並べる */
+.mode{margin-top:12px;border:2px solid var(--line);border-radius:16px;padding:10px 12px 2px}
+.mode.best{border-color:var(--accent)}
+.mode-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:800;font-size:15.5px}
+.mode-h .num{font-size:17px}
+.mode-h em{font-style:normal;font-size:12px;background:var(--accent);color:#fff;border-radius:999px;padding:1px 9px;margin-left:6px;vertical-align:2px}
+.mode .plan{margin-top:4px}
+.mode .plan li{gap:2px 8px;padding:10px 0}
+.mode .plan .when{font-size:17px}
+.mode .plan .min{font-size:24px}
+.mode .plan .no{width:32px;height:32px;font-size:15px}
+#viewSeg{margin-bottom:6px}
 .kv{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
     background:var(--card-sub);border-radius:14px;padding:9px 14px}
 .kv .k{font-size:14px;color:var(--muted);font-weight:700;line-height:1.4}
@@ -321,6 +333,11 @@ footer a{color:var(--muted)}
 
 <section class="card">
   <h2>CO₂濃度の1日の動き</h2>
+  <div class="seg" id="viewSeg" role="group" aria-label="見る方式">
+    <button type="button" data-view="timer" aria-pressed="true">タイマー</button>
+    <button type="button" data-view="target" aria-pressed="false">目標ppm</button>
+  </div>
+  <div id="detail"></div>
   <canvas id="chart" width="660" height="360"></canvas>
   <div class="legend">
     <span><i style="background:#2F6B4F"></i>施用あり</span>
@@ -344,13 +361,14 @@ footer a{color:var(--muted)}
   <summary>計算の考え方と前提</summary>
   <div class="doc">
     <h3>何を求めているか</h3>
-    <p>グロウを「何時から何時まで・1時間に何分」動かすと、その日いちばん得になるかを探します。動かし方は、天窓が閉まっている間（①）と開いてから（②）で別々に決められます。</p>
+    <p>グロウの動かし方を2つの方式で探し、その日いちばん得になる設定を出します。どちらも、天窓が閉まっている間（①）と開いてから（②）で別々に決めます。①と②の切りかえは、天窓が開く時刻にいちばん近い15分区切りです。</p>
     <div class="eq">得 ＝ 施用で増えた光合成から見積もった果実 × トマト単価 − 灯油代</div>
     <p>施用しなくても光合成は進むので、<b>施用した日と施用しなかった日の差</b>だけを得に数えます。</p>
     <ul>
-      <li>動かし始め：日の出から30分きざみ。止める時刻：天窓が開いてから30分きざみ</li>
-      <li>1時間に動かす分：0・15・30・45・60分</li>
-      <li>この全部の組み合わせを試し、得がいちばん大きいものを出します。CO₂が 1,500 ppm を超える組み合わせは外します</li>
+      <li><b>タイマー</b>：毎時0分から 15・30・45・60 分動かす。動かし始めは日の出から30分きざみ、止める時刻は30分きざみ</li>
+      <li><b>目標ppm</b>：センサーが目標を下回ったら動き、目標に戻ったら止まる。①は 450〜1,200 ppm、②は 420〜900 ppm から選び、②を切る時刻は1時間きざみ</li>
+      <li>全部の組み合わせを試し、得がいちばん大きいものを出します。CO₂が 1,500 ppm を超える組み合わせは外します</li>
+      <li>目標ppmは、センサーを見て足りないときだけ動くので、曇りの日や夜明け前の高いCO₂のときは自然に止まります。天窓が開いてからの目標を外気に近くすると、換気で逃げる分がほとんどなくなります（ゼロ濃度差施用）</li>
     </ul>
 
     <h3>CO₂濃度の動き（5分ごとに追いかける）</h3>
@@ -468,7 +486,9 @@ const FIX = {
   leafA: 2.396, leafB: -2.644,  // 葉1枚の面積 = e^b × 葉幅^a（樋江井ら モデルG・大玉5品種の平均）
   stepH: 5 / 60,              // 濃度を追いかける時間きざみ [h]
   slotH: 0.5,                 // 動かし始め・止める時刻のきざみ [h]
-  dutyMin: [0, 15, 30, 45, 60], // 1時間に動かす分の候補
+  dutyMin: [0, 15, 30, 45, 60], // 1時間に動かす分の候補（タイマーは15分きざみ）
+  targetsClosed: [450, 500, 550, 600, 650, 700, 750, 800, 900, 1000, 1100, 1200],   // 目標ppmの候補：天窓が閉まっている間
+  targetsOpen: [420, 440, 460, 480, 500, 550, 600, 650, 700, 800, 900],             // 目標ppmの候補：天窓が開いてから
   // 光：日射量予測と同じ快晴の式
   latDeg: 36.52327, lonDeg: 139.762022, altM: 150, stdMeridianDeg: 135, solarConstW: 1360,
   coverTau: 0.678, coverCos: -0.0390, coverSin: 0.0475,   // ハウスの透過率と季節変化（潅水アプリと同じ）
@@ -670,9 +690,10 @@ const uptakeAt = (grid, ppm) => {
   return grid[i] + (grid[i + 1] - grid[i]) * f;
 };
 
-/* 1日の濃度を5分ごとに追いかける。
-   sched(t) はその時刻の動かし方 {d: 1時間に動かす分, from: その区間の始まりの時刻} か、止めるなら null。
-   タイマーと同じく、区間の始まりから1時間ごとに「最初の d 分だけ動かし、残りは止める」としている。
+/* 1日の濃度を5分ごとに追いかける。sched(t) はその時刻の動かし方で、次のどれか。
+     { d: 分 }       … タイマー。毎時0分から d 分だけ動かす（時計の15分区切りにそろえる。実機のタイマーと同じ）
+     { target: ppm } … 目標ppm。センサーが目標を下回っていたら動かし、目標以上なら止める
+     null            … 止める
    こうすると、動かしている間は濃度が上がり、止めている間は下がる、実際のセンサーに近い動きになる */
 function simulate(day, dawnPpm, sched) {
   const hg = houseGPerPpm(), dt = FIX.stepH;
@@ -680,8 +701,8 @@ function simulate(day, dawnPpm, sched) {
   const trace = [];
   for (const s of day.steps) {
     const p = sched(s.t + 1e-6);                                 // その5分の始まりで判定（表の時刻と合わせる）
-    const duty = p ? p.d : 0;
-    const on = p ? Math.round((s.t - p.from) * 60) % 60 < p.d : false;
+    const duty = p && p.d ? p.d : 0;
+    const on = !p ? false : p.target != null ? C < p.target : Math.round(s.t * 60) % 60 < p.d;
     const supply = on ? FIX.glowCo2GPerH : 0;                    // g/h
     const P = uptakeAt(s.grid, C);                                // g/h
     const next = Math.max(0, C + ((supply - P) / hg - s.ach * (C - FIX.outsidePpm)) * dt);
@@ -694,17 +715,21 @@ function simulate(day, dawnPpm, sched) {
   return { uptakeG: uptake, fuelL, maxC, trace, endC: C };
 }
 
-/* いちばん得な動かし方を探す。①天窓が開くまで ②開いてから、それぞれ「始め・終わり・分/時」 */
+/* いちばん得な動かし方を、タイマーと目標ppmの2つの方式それぞれで探す。
+   ①天窓が開くまで ②開いてから の2区間。区間の切りかえは、天窓が開く時刻にいちばん近い15分区切り
+   （タイマーも目標の切りかえも、実機では15分きざみでしか設定できないため） */
 function optimize(day, c) {
   const base = simulate(day, c.dawn, () => null);
   const rise = day.g.rise, set = day.g.set;
   const openAt = c.nightOpen ? rise : Math.max(rise, Math.min(set, c.openAt));
+  const q = h => Math.round(h * 4) / 4;                           // 15分区切りにそろえる
+  const switchAt = c.nightOpen ? q(rise) : Math.max(q(rise), q(openAt));
   const slot = h => Math.ceil(h / FIX.slotH - 1e-9) * FIX.slotH;
-  const starts = [];                                              // ①の動かし始め候補
-  for (let a = slot(rise); a < openAt; a += FIX.slotH) starts.push(a);
-  const ends = [];                                                // ②の止める時刻候補
-  for (let b = slot(openAt) + FIX.slotH; b <= set + 1e-9; b += FIX.slotH) ends.push(b);
-  if (!ends.length || ends[ends.length - 1] < set - 0.25) ends.push(set);
+  const starts = [];                                              // ①の動かし始め候補（30分きざみ）
+  for (let a = slot(rise); a < switchAt; a += FIX.slotH) starts.push(a);
+  const ends = [];                                                // ②の止める時刻候補（30分きざみ）
+  for (let b = slot(switchAt) + FIX.slotH; b <= set + 1e-9; b += FIX.slotH) ends.push(b);
+  if (!ends.length || ends[ends.length - 1] < set - 0.25) ends.push(q(set));
 
   // 増えた光合成のうち、収量に数えるのは「施用しなかった日の光合成 × 上限」まで。
   // 葉の光合成の伸びがそのまま収量の伸びにはならない（順化・シンク・茎葉への分配・成長呼吸）ため
@@ -715,26 +740,43 @@ function optimize(day, c) {
     const gainKg = fruitKgFromCo2G(gainG);
     return { rawG, gainG, capped: rawG > capG, gainKg, yen: gainKg * c.tomato - sim.fuelL * c.kerosene };
   };
-  let best = null;
-  const phaseA = [{ a: null, d: 0 }];
-  for (const a of starts) for (const d of FIX.dutyMin) if (d > 0) phaseA.push({ a, d });
-  const phaseB = [{ b: null, d: 0 }];
-  for (const b of ends) for (const d of FIX.dutyMin) if (d > 0) phaseB.push({ b, d });
-  for (const A of phaseA) {
-    for (const B of phaseB) {
-      const sched = t => (A.d && t >= A.a && t < openAt) ? { d: A.d, from: A.a }
-                       : (B.d && t >= openAt && t < B.b) ? { d: B.d, from: openAt } : null;
-      const sim = simulate(day, c.dawn, sched);
-      if (sim.maxC > FIX.maxPpm) continue;
-      const v = value(sim);
-      // 得が同じ（1円未満の差）なら、灯油の少ないほうを選ぶ
-      if (!best || v.yen > best.v.yen + 1 || (Math.abs(v.yen - best.v.yen) <= 1 && sim.fuelL < best.sim.fuelL)) {
-        best = { A, B, sim, v, sched };
+  // 候補を全部試して、得がいちばん大きいものを返す。得が同じ（1円未満の差）なら灯油の少ないほう
+  let tried = 0;
+  const pick = (phaseA, phaseB, makeSched) => {
+    let best = null;
+    for (const A of phaseA) {
+      for (const B of phaseB) {
+        const sched = makeSched(A, B);
+        const sim = simulate(day, c.dawn, sched);
+        tried++;
+        if (sim.maxC > FIX.maxPpm) continue;
+        const v = value(sim);
+        if (!best || v.yen > best.v.yen + 1 || (Math.abs(v.yen - best.v.yen) <= 1 && sim.fuelL < best.sim.fuelL)) best = { A, B, sim, v };
       }
     }
-  }
-  const excelYen = fruitKgFromCo2G(best.sim.uptakeG) * c.tomato - best.sim.fuelL * c.kerosene;
-  return { base, best, openAt, rise, set, excelYen, capG, tried: phaseA.length * phaseB.length };
+    best.excelYen = fruitKgFromCo2G(best.sim.uptakeG) * c.tomato - best.sim.fuelL * c.kerosene;
+    return best;
+  };
+
+  // タイマー：①は「始め〜切りかえ」、②は「切りかえ〜終わり」に、毎時0分から d 分
+  const tA = [{ a: null, d: 0 }], tB = [{ b: null, d: 0 }];
+  if (!c.nightOpen) for (const a of starts) for (const d of FIX.dutyMin) if (d > 0) tA.push({ a, d });
+  for (const b of ends) for (const d of FIX.dutyMin) if (d > 0) tB.push({ b, d });
+  const timer = pick(tA, tB, (A, B) => t =>
+    (A.d && t >= A.a && t < switchAt) ? { d: A.d } : (B.d && t >= switchAt && t < B.b) ? { d: B.d } : null);
+  timer.kind = "timer";
+
+  // 目標ppm：①は日の出〜切りかえ、②は切りかえ〜終わり（1時間きざみ）に、それぞれの目標
+  const gA = [{ target: null }], gB = [{ target: null, b: null }];
+  if (!c.nightOpen) for (const p of FIX.targetsClosed) gA.push({ target: p });
+  const endsHour = ends.filter(b => Math.abs(b - Math.round(b)) < 1e-9 || b === ends[ends.length - 1]);
+  for (const b of endsHour) for (const p of FIX.targetsOpen) gB.push({ target: p, b });
+  const target = pick(gA, gB, (A, B) => t =>
+    (A.target && t < switchAt) ? { target: A.target } : (B.target && t >= switchAt && t < B.b) ? { target: B.target } : null);
+  target.kind = "target";
+
+  const better = target.v.yen > timer.v.yen + 1 ? target : timer;
+  return { base, timer, target, better, openAt, switchAt, rise, set, capG, tried };
 }
 
 /* 時刻の範囲の濃度（平均・いちばん低い・いちばん高い）。null なら範囲に記録が無い */
@@ -762,6 +804,7 @@ const NORM = typeof CO2_TENMADO === "object" ? CO2_TENMADO : null;
 
 /* 開いたときの状態：URL の値 → 覚えている値 → 既定 */
 let house = "中央", wx = "clear", night = null;      // night は null なら平年値で決める
+let view = null;                                     // グラフと表で見る方式。null なら得なほう
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch (e) { saved = {}; /* 覚えられない端末では毎回空から */ }
 const qs = new URLSearchParams(location.search);
@@ -879,37 +922,64 @@ function renderResult(g, day, r) {
       (Object.keys(g.errors).length ? "赤字の欄を直すと、ここに結果が出ます。" : "トマト単価と灯油単価を入れると、いちばん得な動かし方が出ます。") + "</p>";
     return;
   }
-  const b = r.best, A = b.A, B = b.B, tr = b.sim.trace;
-  const items = [];
-  if (!g.nightNow || g.nightNow === "closed") {
-    items.push(A.d
-      ? { no: "①", when: clock(A.a) + "〜" + clock(r.openAt), why: "天窓が閉まっている間・CO₂ " + rangeText(ppmIn(tr, A.a, r.openAt)) + " ppm（平均 " + yen(meanPpm(tr, A.a, r.openAt) || 0) + "）", min: A.d }
-      : { no: "①", when: clock(r.rise) + "〜" + clock(r.openAt), why: "天窓が閉まっている間・夜にたまったCO₂を使う", min: 0 });
-  }
-  items.push(B.d
-    ? { no: g.nightNow === "open" ? "" : "②", when: clock(r.openAt) + "〜" + clock(B.b), why: (g.nightNow === "open" ? "天窓が開いている間" : "天窓が開いてから") + "・CO₂ " + rangeText(ppmIn(tr, r.openAt, B.b)) + " ppm（平均 " + yen(meanPpm(tr, r.openAt, B.b) || 0) + "）", min: B.d }
-    : { no: g.nightNow === "open" ? "" : "②", when: clock(r.openAt) + "〜" + clock(r.set), why: g.nightNow === "open" ? "天窓が開いている間" : "天窓が開いてから", min: 0 });
-  const list = items.map(it =>
-    "<li><span class=\"no" + (it.min ? "" : " off") + "\">" + (it.no || "・") + "</span>" +
+  const closed = g.nightNow === "closed";
+  const sw = r.switchAt;
+  const ppmNote = (tr, from, to) => "CO₂ " + rangeText(ppmIn(tr, from, to)) + " ppm（平均 " + yen(meanPpm(tr, from, to) || 0) + "）";
+  const onMin = (tr, from, to) => tr.filter(p => p.on && p.t >= from - 1e-9 && p.t < to - 1e-9).length * 5;
+  const hm = m => (m >= 60 ? Math.floor(m / 60) + "時間" : "") + (m % 60 ? (m % 60) + "分" : "");
+  const li = it => "<li><span class=\"no" + (it.big ? "" : " off") + "\">" + (it.no || "・") + "</span>" +
     '<span><span class="when num">' + it.when + '</span><span class="why">' + it.why + "</span></span>" +
-    (it.min ? '<span class="min num">' + it.min + "<small>分/時</small></span>" : '<span class="min off">動かさない</span>') + "</li>").join("");
+    (it.big ? '<span class="min num">' + it.big + "</span>" : '<span class="min off">動かさない</span>') + "</li>";
+  const noA = "①", noB = closed ? "②" : "";
+  const whereA = "天窓が閉まっている間", whereB = closed ? "天窓が開いてから" : "天窓が開いている間";
 
-  const v = b.v, cost = b.sim.fuelL * g.v.kerosene;
-  const none = !A.d && !B.d;
+  // タイマー方式の行
+  const T = r.timer, tt = T.sim.trace, timerItems = [];
+  if (closed) timerItems.push(T.A.d
+    ? { no: noA, when: clock(T.A.a) + "〜" + clock(sw), why: whereA + "・毎時0分から" + T.A.d + "分・" + ppmNote(tt, T.A.a, sw), big: T.A.d + "<small>分/時</small>" }
+    : { no: noA, when: clock(r.rise) + "〜" + clock(sw), why: whereA + "・夜にたまったCO₂を使う" });
+  timerItems.push(T.B.d
+    ? { no: noB, when: clock(sw) + "〜" + clock(T.B.b), why: whereB + "・毎時0分から" + T.B.d + "分・" + ppmNote(tt, sw, T.B.b), big: T.B.d + "<small>分/時</small>" }
+    : { no: noB, when: clock(sw) + "〜" + clock(r.set), why: whereB });
+  // 目標ppm方式の行
+  const G = r.target, gt = G.sim.trace, targetItems = [];
+  if (closed) targetItems.push(G.A.target
+    ? { no: noA, when: "〜" + clock(sw), why: whereA + "・動く時間 合計" + hm(onMin(gt, r.rise, sw)) + "・" + ppmNote(gt, r.rise, sw), big: G.A.target + "<small>ppm</small>" }
+    : { no: noA, when: "〜" + clock(sw), why: whereA + "・夜にたまったCO₂を使う" });
+  targetItems.push(G.B.target
+    ? { no: noB, when: clock(sw) + "〜" + clock(G.B.b), why: whereB + "・動く時間 合計" + hm(onMin(gt, sw, G.B.b)) + "・" + ppmNote(gt, sw, G.B.b), big: G.B.target + "<small>ppm</small>" }
+    : { no: noB, when: clock(sw) + "〜" + clock(r.set), why: whereB });
+
+  const best = r.better, none = best.v.yen <= 1 && !best.sim.fuelL;
   const verdict = none
     ? '<div class="verdict minus"><div class="lbl2">この日は施用しないほうが得</div><div class="big">グロウは止めておく</div>' +
       '<div class="sub">どの動かし方でも、灯油代が増える果実の金額を上回ります。</div></div>'
-    : '<div class="verdict plus"><div class="lbl2">この動かし方での1日の収支</div><div class="big num">' + signedYen(v.yen) + "<small> 円/日</small></div>" +
-      '<div class="sub">施用しなかった日と比べた差です。</div></div>';
-  box.innerHTML = verdict + '<ul class="plan">' + list + "</ul>" +
-    (none ? "" : '<div class="summary">' +
-      kv("増える果実の金額<small>" + fx(v.gainKg, 1) + " kg 増える（増収率 " + fx(r.base.uptakeG > 0 ? v.gainG / r.base.uptakeG * 100 : 0, 0) + "%" +
-         (v.capped ? "・上限 " + fx(g.v.cap, 0) + "% で頭打ち" : "") + "）</small>", yen(v.gainKg * g.v.tomato) + "<small> 円</small>") +
-      kv("灯油代<small>" + fx(b.sim.fuelL, 1) + " L</small>", yen(cost) + "<small> 円</small>") +
-      kv("損益分岐のトマト単価<small>これより高ければ元がとれる</small>", (v.gainKg > 0 ? yen(cost / v.gainKg) : "―") + "<small> 円/kg</small>") +
-      kv("参考：Excel の数え方<small>吸ったCO₂を全部、施用の成果とした場合</small>", signedYen(r.excelYen) + "<small> 円</small>") +
-      "</div>");
+    : '<div class="verdict plus"><div class="lbl2">いちばん得なのは「' + (best.kind === "timer" ? "タイマー" : "目標ppm") + '」での1日の収支</div><div class="big num">' +
+      signedYen(best.v.yen) + "<small> 円/日</small></div>" + '<div class="sub">施用しなかった日と比べた差です。</div></div>';
+  const block = (m, title, items) =>
+    '<div class="mode' + (m === best && !none ? " best" : "") + '"><div class="mode-h"><span>' + title + "</span>" +
+    '<span class="num">' + signedYen(m.v.yen) + " 円/日" + (m === best && !none ? '<em>得</em>' : "") + "</span></div>" +
+    '<ul class="plan">' + items.map(li).join("") + "</ul></div>";
+  box.innerHTML = verdict +
+    block(T, "タイマーで動かす", timerItems) +
+    block(G, "目標ppmで動かす", targetItems) +
+    '<p class="hint">切りかえ ' + clock(sw) + " は、天窓が開く時刻（" + clock(r.openAt) + "）にいちばん近い15分区切りです。" +
+    "目標ppmは、センサーが目標を下回ったら動き、目標に戻ったら止まるとして計算しています。</p>";
   $("resTitle").textContent = "いちばん得なグロウの動かし方（" + house + "・" + WX_LABEL[wx] + "）";
+}
+
+/* 見ている方式の内訳（グラフの上に出す） */
+function renderDetail(g, r, m) {
+  const box = $("detail");
+  if (!r) { box.innerHTML = ""; return; }
+  const v = m.v, cost = m.sim.fuelL * g.v.kerosene;
+  box.innerHTML = '<div class="summary">' +
+    kv("増える果実の金額<small>" + fx(v.gainKg, 1) + " kg 増える（増収率 " + fx(r.base.uptakeG > 0 ? v.gainG / r.base.uptakeG * 100 : 0, 0) + "%" +
+       (v.capped ? "・上限 " + fx(g.v.cap, 0) + "% で頭打ち" : "") + "）</small>", yen(v.gainKg * g.v.tomato) + "<small> 円</small>") +
+    kv("灯油代<small>" + fx(m.sim.fuelL, 1) + " L</small>", yen(cost) + "<small> 円</small>") +
+    kv("損益分岐のトマト単価<small>これより高ければ元がとれる</small>", (v.gainKg > 0 ? yen(cost / v.gainKg) : "―") + "<small> 円/kg</small>") +
+    kv("参考：Excel の数え方<small>吸ったCO₂を全部、施用の成果とした場合</small>", signedYen(m.excelYen) + "<small> 円</small>") +
+    "</div>";
 }
 
 /* ---- グラフ（Canvas。色は直書き。文字は 21px 以上） ---- */
@@ -955,12 +1025,12 @@ function drawChart(day, base, with_, openAt, nightNow) {
 }
 
 /* グラフの下の表：1時間ごとの天窓・グロウ・平均濃度 */
-function renderHourly(day, r) {
+function renderHourly(day, r, m) {
   if (!r) { $("hourly").innerHTML = ""; return; }
   const rows = [];
   for (let h = Math.floor(day.g.rise); h < Math.ceil(day.g.set); h++) {
     const pick = tr => tr.filter(p => p.t >= h && p.t < h + 1);
-    const w = pick(r.best.sim.trace), b = pick(r.base.trace), st = day.steps.filter(s => s.t >= h && s.t < h + 1);
+    const w = pick(m.sim.trace), b = pick(r.base.trace), st = day.steps.filter(s => s.t >= h && s.t < h + 1);
     if (!w.length) continue;
     const on = w.filter(p => p.on);
     const open = st.some(s => s.open);
@@ -985,22 +1055,29 @@ function renderHourly(day, r) {
 }
 
 /* 換気回数が違ったときの答えを並べる */
-const planText = (r, nightNow) => {
-  const A = r.best.A, B = r.best.B, parts = [];
-  if (nightNow === "closed") parts.push("①" + (A.d ? clock(A.a) + "〜 " + A.d + "分" : "なし"));
-  parts.push((nightNow === "closed" ? "②" : "") + (B.d ? "〜" + clock(B.b) + " " + B.d + "分" : "なし"));
-  return parts.join("<br>");
+const timerText = (r, closed) => {
+  const A = r.timer.A, B = r.timer.B, parts = [];
+  if (closed) parts.push("①" + (A.d ? clock(A.a) + "〜 " + A.d + "分" : "なし"));
+  parts.push((closed ? "②" : "") + (B.d ? "〜" + clock(B.b) + " " + B.d + "分" : "なし"));
+  return parts.join("<br>") + "<br><b>" + signedYen(r.timer.v.yen) + "</b>";
+};
+const targetText = (r, closed) => {
+  const A = r.target.A, B = r.target.B, parts = [];
+  if (closed) parts.push("①" + (A.target ? A.target + "ppm" : "なし"));
+  parts.push((closed ? "②" : "") + (B.target ? B.target + "ppm 〜" + clock(B.b) : "なし"));
+  return parts.join("<br>") + "<br><b>" + signedYen(r.target.v.yen) + "</b>";
 };
 function renderSens(g, r, sens) {
   if (!r) { $("sens").innerHTML = '<p class="hint" style="margin-top:0">単価を入れると出ます。</p>'; return; }
+  const closed = g.nightNow === "closed";
   const rows = [{ f: 1, ach: g.v.achOpen, r }].concat(sens).sort((a, b) => a.ach - b.ach).map(s =>
-    "<tr" + (s.f === 1 ? ' style="font-weight:800"' : "") + "><td>" + fx(s.ach, 1) + (s.f === 1 ? "（今）" : "") + "</td><td>" +
-    planText(s.r, g.nightNow) + "</td><td>" + signedYen(s.r.best.v.yen) + "</td></tr>").join("");
-  $("sens").innerHTML = '<table class="tbl num"><tr><th>換気回数<br>回/時</th><th>グロウ（分/時）</th><th>収支 円/日</th></tr>' + rows + "</table>" +
-    '<p class="hint">天窓が開いてからの換気回数を半分・2倍にしたときの答えです。動かし方が大きく変わるなら、その日の答えは換気回数しだいなので、天窓の開き具合や風を見て判断してください。</p>';
+    "<tr" + (s.f === 1 ? ' style="background:var(--card-sub)"' : "") + "><td>" + fx(s.ach, 1) + (s.f === 1 ? "<br>（今）" : "") + "</td><td>" +
+    timerText(s.r, closed) + "</td><td>" + targetText(s.r, closed) + "</td></tr>").join("");
+  $("sens").innerHTML = '<table class="tbl num"><tr><th>換気回数<br>回/時</th><th>タイマー<br>（分/時）</th><th>目標ppm</th></tr>' + rows + "</table>" +
+    '<p class="hint">天窓が開いてからの換気回数を半分・2倍にしたときの答えと、1日の収支（円）です。タイマーは換気回数が違うと答えが大きく変わりますが、目標ppmはセンサーを見て動くので、換気回数がずれても大きく外れにくい方式です。</p>';
 }
 
-function renderSteps(g, day, r) {
+function renderSteps(g, day, r, m) {
   const row = (k, val, note) => "<tr><td>" + k + (note ? "<small>" + note + "</small>" : "") + '</td><td class="num">' + val + "</td></tr>";
   const head = t => '<tr class="h"><td colspan="2">' + t + "</td></tr>";
   const maxSt = Math.max(...day.steps.map(s => s.St));
@@ -1018,7 +1095,7 @@ function renderSteps(g, day, r) {
     head("植物") +
     row("LAI", fx(g.lai.value, 2), g.lai.from === "葉幅" ? fx(g.v.density, 2) + " 本/m² × " + fx(g.v.leaves, 1) + " 枚/本 × " + yen(g.lai.leafCm2) + " cm²" : "葉幅が空欄なので Excel の値") +
     (r ? row("光合成（施用なし・1日）", yen(r.base.uptakeG) + " g CO₂") : "") +
-    (r ? row("光合成（施用あり・1日）", yen(r.best.sim.uptakeG) + " g CO₂", "増えた分 " + yen(r.best.v.rawG) + " g（収量に数えるのは上限 " + yen(r.capG) + " g まで）") : "") +
+    (r ? row("光合成（施用あり・1日）", yen(m.sim.uptakeG) + " g CO₂", (m.kind === "timer" ? "タイマー" : "目標ppm") + "・増えた分 " + yen(m.v.rawG) + " g（収量に数えるのは上限 " + yen(r.capG) + " g まで）") : "") +
     row("増収率の上限", fx(g.v.cap === null ? FIX.capPct : g.v.cap, 0) + " %", g.from.cap) +
     head("ハウスとグロウ") +
     row("容積", yen(volumeM3()) + " m³", "床面積 " + fx(FIX.floorM2, 1) + " m²") +
@@ -1041,19 +1118,24 @@ function render() {
   const cond = { dawn: g.v.dawn, openAt: g.openAt, nightOpen: g.nightNow === "open",
                  tomato: g.v.tomato, kerosene: g.v.kerosene, cap: g.v.cap };
   const r = ready ? optimize(day, cond) : null;
+  // グラフと表で見る方式。ボタンで選んでいなければ、得なほう
+  const m = r ? (view === "timer" ? r.timer : view === "target" ? r.target : r.better) : null;
+  document.querySelectorAll("#viewSeg button").forEach(b => b.setAttribute("aria-pressed", String(!!m && b.dataset.view === m.kind)));
+  $("viewSeg").hidden = !r;
   renderResult(g, day, r);
-  renderHourly(day, r);
+  renderDetail(g, r, m);
+  renderHourly(day, r, m);
   // 換気回数を半分・2倍にしたときの答え（当てにしてよいかを見るため）
   const sens = ready ? FIX.sensitivity.map(f => ({ f, ach: g.v.achOpen * f, r: optimize(dayOf(g.v.achOpen * f), cond) })) : [];
   renderSens(g, r, sens);
   // 単価が無くても、施用なしの濃度の動きは見せる
   try {
     const base = r ? r.base.trace : simulate(day, g.v.dawn === null ? 900 : g.v.dawn, () => null).trace;
-    drawChart(day, base, r ? r.best.sim.trace : null, g.openAt, g.nightNow);
+    drawChart(day, base, m ? m.sim.trace : null, g.openAt, g.nightNow);
   } catch (e) {
     $("hourly").insertAdjacentHTML("afterbegin", '<p class="err">グラフを描けませんでした：' + esc(e.message) + "</p>");
   }
-  renderSteps(g, day, r);
+  renderSteps(g, day, r, m);
 }
 
 /* ---- 操作 ---- */
@@ -1069,6 +1151,7 @@ $("today").addEventListener("click", () => { $("date").value = ymd(new Date()); 
 $("houseSeg").addEventListener("click", e => { const b = e.target.closest("button[data-house]"); if (!b) return; house = b.dataset.house; store(); render(); });
 $("wxSeg").addEventListener("click", e => { const b = e.target.closest("button[data-wx]"); if (!b) return; wx = b.dataset.wx; render(); });
 $("nightSeg").addEventListener("click", e => { const b = e.target.closest("button[data-night]"); if (!b) return; night = b.dataset.night; render(); });
+$("viewSeg").addEventListener("click", e => { const b = e.target.closest("button[data-view]"); if (!b) return; view = b.dataset.view; render(); });
 
 /* 上下キー・Enter で欄を移動する（値は変えない。日付の欄は標準の動きのまま） */
 ORDER.forEach((id, i) => $(id).addEventListener("keydown", e => {
