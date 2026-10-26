@@ -209,11 +209,10 @@ canvas{width:100%;height:auto;display:block}
     <h2>宇賀神の伝票（東・西・南）</h2>
     <div class="body">
       <div id="g-uga"></div>
+      <div class="chk" id="uga-total" style="margin-top:14px"><span>総玉数（表の合計・自動）</span><b>—</b></div>
       <div class="grid2" style="margin-top:14px">
         <div><label>コンテナ数</label><input type="number" inputmode="numeric" id="uga-con"></div>
-        <div><label>伝票の総玉数</label><input type="number" inputmode="numeric" id="uga-chk" placeholder="照合用"></div>
       </div>
-      <div class="chk" id="uga-verdict"><span>合計</span><b>—</b></div>
       <div class="chk" id="slip-split"><span>東＋西＋南</span><b>—</b></div>
       <p class="note" style="margin-top:14px;font-weight:700;color:var(--ink)">お帰り</p>
       <div class="grid3">
@@ -221,6 +220,7 @@ canvas{width:100%;height:auto;display:block}
         <div><label>赤青玉</label><input type="number" inputmode="numeric" id="uga-o2"></div>
         <div><label>小玉</label><input type="number" inputmode="numeric" id="uga-o3"></div>
       </div>
+      <p class="note" id="uga-oksum"></p>
     </div>
   </div>
 
@@ -228,17 +228,17 @@ canvas{width:100%;height:auto;display:block}
     <h2>中央の伝票</h2>
     <div class="body">
       <div id="g-chu"></div>
+      <div class="chk" id="chu-total" style="margin-top:14px"><span>総玉数（表の合計・自動）</span><b>—</b></div>
       <div class="grid2" style="margin-top:14px">
         <div><label>コンテナ数</label><input type="number" inputmode="numeric" id="chu-con"></div>
-        <div><label>伝票の総玉数</label><input type="number" inputmode="numeric" id="chu-chk" placeholder="照合用"></div>
       </div>
-      <div class="chk" id="chu-verdict"><span>合計</span><b>—</b></div>
       <p class="note" style="margin-top:14px;font-weight:700;color:var(--ink)">お帰り</p>
       <div class="grid3">
         <div><label>手選格外</label><input type="number" inputmode="numeric" id="chu-o1"></div>
         <div><label>赤青玉</label><input type="number" inputmode="numeric" id="chu-o2"></div>
         <div><label>小玉</label><input type="number" inputmode="numeric" id="chu-o3"></div>
       </div>
+      <p class="note" id="chu-oksum"></p>
     </div>
   </div>
 
@@ -307,7 +307,7 @@ canvas{width:100%;height:auto;display:block}
    ===================================================================== */
 
 /* 版番号。ここを上げたら service worker の VER も上げること */
-var APP_VER = "3.0";
+var APP_VER = "3.1";
 
 /* ===================== 定数 ===================== */
 var SIZES = ["3L","2L","L","M","S","2S","3S","4S"];
@@ -507,14 +507,22 @@ function refreshGrid(prefix){
   GRADES.forEach(function(g){ el(prefix+"-ct-"+g).textContent = colTot[g] || ""; });
   el(prefix+"-all").textContent = all || "";
 
-  var want = num(el(prefix+"-chk").value);
-  var v = el(prefix+"-verdict");
-  var b = v.querySelector("b");
-  if(!all && !want){ v.className = "chk"; b.textContent = "—"; }
-  else if(!want){ v.className = "chk"; b.textContent = all + " 個"; }
-  else if(want === all){ v.className = "chk ok"; b.textContent = all + " 個  一致"; }
-  else { v.className = "chk ng"; b.textContent = all + " ／ 伝票 " + want; }
+  /* 総玉数＝表（大きさ×等級）の合計。打ち込まずに自動で出し、紙の伝票と見比べる。
+     お帰りは総玉数に入れない（2026-10-26 ユーザー確認） */
+  el(prefix+"-total").querySelector("b").textContent =
+    all ? all.toLocaleString("ja-JP") + " 個" : "—";
+  refreshOkaeri(prefix, all);
   return all;
+}
+
+/* お帰り（手選格外・赤青玉・小玉）の合計を、総玉数の下に添えて出す。
+   お帰りは総玉数とは別に、内訳ごと記録している（後で検証に使うため） */
+function refreshOkaeri(prefix, all){
+  var ok = num(el(prefix+"-o1").value) + num(el(prefix+"-o2").value) + num(el(prefix+"-o3").value);
+  el(prefix+"-oksum").textContent = ok
+    ? "お帰り 計 " + ok.toLocaleString("ja-JP") + " 個（総玉数と合わせて " +
+      (all + ok).toLocaleString("ja-JP") + " 個）"
+    : "";
 }
 
 /* ===================== コンテナ数の照合 ===================== */
@@ -600,8 +608,9 @@ function saveSlip(){
     var cur = state.records[k];
     var rec;
     if(grid || con || ok){
+      /* 総玉数は表の合計から出せるので保存しない（以前打ち込んだ値はシートに残る） */
       rec = {date:curDate, house:house, container:con||null, okaeri:ok||null, grid:grid,
-             okaeriParts:[o1,o2,o3], slipTotal:num(el(p+"-chk").value)||null};
+             okaeriParts:[o1,o2,o3]};
     }
     else if(isLive(cur)) rec = {date:curDate, house:house, cleared:true};
     else return;
@@ -619,7 +628,6 @@ function loadDay(date){
     if(!isLive(r)) r = null;
     writeGrid(p, r && r.grid);
     setVal(p+"-con", r && r.container);
-    setVal(p+"-chk", r && r.slipTotal);
     var op = (r && r.okaeriParts) || [r && r.okaeri || 0, 0, 0];
     setVal(p+"-o1", op[0]); setVal(p+"-o2", op[1]); setVal(p+"-o3", op[2]);
   });
@@ -1290,9 +1298,9 @@ function setupSW(){
   document.addEventListener("input", function(e){
     var t = e.target;
     if(t.dataset && t.dataset.p){ refreshGrid(t.dataset.p); scheduleSave("slip"); return; }
-    if(t.id === "uga-chk" || t.id === "chu-chk"){ refreshGrid(t.id.slice(0,3)); scheduleSave("slip"); return; }
     if(t.id === "uga-con"){ refreshSplit(); scheduleSave("slip"); return; }
-    if(t.id === "chu-con" || /^(uga|chu)-o[123]$/.test(t.id)){ scheduleSave("slip"); return; }
+    if(/^(uga|chu)-o[123]$/.test(t.id)){ refreshGrid(t.id.slice(0,3)); scheduleSave("slip"); return; }
+    if(t.id === "chu-con"){ scheduleSave("slip"); return; }
     if(t.id === "c-east" || t.id === "c-west" || t.id === "c-south"){ refreshSplit(); scheduleSave("con"); return; }
   });
 
@@ -1329,12 +1337,8 @@ function setupSW(){
      ここでやるのは照合の確認と、すぐ送ること */
   el("verify").addEventListener("click", function(){
     flush();
+    /* 総玉数は表の合計を自動で出すようにしたので、照合するのはコンテナ数だけ */
     var bad = [];
-    SLIP_HOUSES.forEach(function(p){
-      var want = num(el(p[1]+"-chk").value);
-      var got = num(el(p[1]+"-all").textContent);
-      if(want && want !== got) bad.push(p[0]+" の総玉数（"+got+" ／ 伝票 "+want+"）");
-    });
     var sum = 0;
     CON_HOUSES.forEach(function(p){ sum += num(el(p[1]).value); });
     var ugaCon = num(el("uga-con").value);
