@@ -220,7 +220,8 @@ canvas{width:100%;height:auto;display:block}
         <div><label>赤青玉</label><input type="number" inputmode="numeric" id="uga-o2"></div>
         <div><label>小玉</label><input type="number" inputmode="numeric" id="uga-o3"></div>
       </div>
-      <p class="note" id="uga-oksum"></p>
+      <div class="chk" id="uga-okonly" style="margin-top:12px"><span>お帰り（自動）</span><b>—</b></div>
+      <div class="chk" id="uga-oksum"><span>総玉数＋お帰り（自動）</span><b>—</b></div>
     </div>
   </div>
 
@@ -238,7 +239,8 @@ canvas{width:100%;height:auto;display:block}
         <div><label>赤青玉</label><input type="number" inputmode="numeric" id="chu-o2"></div>
         <div><label>小玉</label><input type="number" inputmode="numeric" id="chu-o3"></div>
       </div>
-      <p class="note" id="chu-oksum"></p>
+      <div class="chk" id="chu-okonly" style="margin-top:12px"><span>お帰り（自動）</span><b>—</b></div>
+      <div class="chk" id="chu-oksum"><span>総玉数＋お帰り（自動）</span><b>—</b></div>
     </div>
   </div>
 
@@ -307,7 +309,7 @@ canvas{width:100%;height:auto;display:block}
    ===================================================================== */
 
 /* 版番号。ここを上げたら service worker の VER も上げること */
-var APP_VER = "3.1";
+var APP_VER = "3.2";
 
 /* ===================== 定数 ===================== */
 var SIZES = ["3L","2L","L","M","S","2S","3S","4S"];
@@ -515,14 +517,15 @@ function refreshGrid(prefix){
   return all;
 }
 
-/* お帰り（手選格外・赤青玉・小玉）の合計を、総玉数の下に添えて出す。
+/* お帰り（手選格外・赤青玉・小玉）の合計と、総玉数にお帰りを足した数を出す。
+   紙の伝票の数字がお帰り込みでも見比べられるように、総玉数と同じ見た目の行で常に出す。
    お帰りは総玉数とは別に、内訳ごと記録している（後で検証に使うため） */
 function refreshOkaeri(prefix, all){
   var ok = num(el(prefix+"-o1").value) + num(el(prefix+"-o2").value) + num(el(prefix+"-o3").value);
-  el(prefix+"-oksum").textContent = ok
-    ? "お帰り 計 " + ok.toLocaleString("ja-JP") + " 個（総玉数と合わせて " +
-      (all + ok).toLocaleString("ja-JP") + " 個）"
-    : "";
+  el(prefix+"-okonly").querySelector("b").textContent =
+    ok ? ok.toLocaleString("ja-JP") + " 個" : "—";
+  el(prefix+"-oksum").querySelector("b").textContent =
+    (all || ok) ? (all + ok).toLocaleString("ja-JP") + " 個" : "—";
 }
 
 /* ===================== コンテナ数の照合 ===================== */
