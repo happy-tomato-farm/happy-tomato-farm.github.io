@@ -313,6 +313,12 @@ input:focus,textarea:focus{outline:3px solid var(--tomato);outline-offset:1px;bo
 .bar.on{opacity:1}
 .bar.ng{background:var(--tomato);color:#fff}
 .loading{text-align:center;color:var(--muted);font-weight:700;padding:60px 16px}
+
+/* hidden を付けた要素は必ず隠す。
+   hidden は「display:none を当てる」だけの決まりなので、.field（display:flex）の
+   ように display を書いてあると、指定の強さで負けて出たままになる。
+   実際に「なおす」ときの「なまえ」欄が隠れていなかった（2026-10-28） */
+[hidden]{display:none !important}
 </style>
 </head>
 <body>
