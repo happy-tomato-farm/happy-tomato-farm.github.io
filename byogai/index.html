@@ -203,6 +203,21 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balanc
 .tg:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
 .mnote{font-size:11.5px;font-weight:700;color:var(--muted);margin:0 0 6px;padding:0 3px;line-height:1.6}
 
+/* 合計の帯。ハウス内でも読めるよう、数字を大きく・色を付けて出す */
+.total{
+  margin:0 0 10px;padding:13px 15px;text-align:center;line-height:1.75;
+  font-size:14.5px;font-weight:800;
+  color:color-mix(in srgb, var(--accent) 74%, var(--ink));
+  background:color-mix(in srgb, var(--accent) 12%, var(--card));
+  border:1.5px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  border-radius:var(--r-card);
+}
+.total b{
+  font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;
+  margin:0 4px;vertical-align:-1px;
+  color:color-mix(in srgb, var(--accent) 90%, var(--ink));
+}
+
 /* まだGoogleに届いていない記録。届くまでのあいだ、少し薄く出す */
 .card.matteru{border-style:dashed;opacity:.72}
 .matteru-n{font-size:12.5px;font-weight:800;color:var(--muted)}
@@ -247,6 +262,12 @@ button.pest:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
   padding:44px 16px;border:2px dashed var(--line);border-radius:var(--r-card);
 }
 .loading{text-align:center;color:var(--muted);font-weight:700;padding:60px 16px}
+
+/* hidden を付けた要素は必ず隠す。
+   hidden は「display:none を当てる」だけの決まりなので、.more（display:block）や
+   .field（display:flex）のように display を書いてあると、指定の強さで負けて出たままになる。
+   実際に「もっと見る（あと -40 件）」と、なおすときの「なまえ」欄が出ていた */
+[hidden]{display:none !important}
 .more{
   display:block;margin:18px auto 0;background:var(--card);border:1.5px solid var(--line);
   border-radius:var(--r-chip);padding:11px 26px;font-family:inherit;
@@ -420,10 +441,11 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
         <button type="button" class="tg" data-mode="ken" aria-pressed="false">件数</button>
         <button type="button" class="tg" data-mode="hon" aria-pressed="true">本数</button>
       </div>
-      <span class="count" id="m-total">0</span>
       <span class="rule"></span>
       <button class="linkbtn" type="button" id="m-clear" hidden>月のしぼりこみを外す</button>
     </div>
+    <!-- 合計。しぼりこみを変えると書き換わるので、読み上げにも伝わるようにしておく -->
+    <div class="total" id="m-total" aria-live="polite"></div>
     <div class="months" id="months"></div>
     <p class="mnote" id="m-note" hidden></p>
 
@@ -555,7 +577,6 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
   /* いま選ばれている数え方で、この記録がいくつ分になるか。
      件数モードでは本数に関わらず 1 件として数える */
   var kazu = function(n){ return mode === "hon" ? honOf(n) : 1; };
-  var tani = function(){ return mode === "hon" ? "本" : "件"; };
 
   /* 入力欄に打たれた本数を数に直す。読めないときは 0（＝数えていない）。
      スマホの日本語入力では「３」のように全角になりやすいので、半角に直してから読む。
@@ -703,6 +724,25 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
            (!filter.month || +String(n.date).slice(5,7) === filter.month);
   };
 
+  /* 合計の帯に出す文を作る。
+     いま何でしぼっているかを言葉にしておかないと、数字だけ見て
+     「その年ぜんぶの数」と思い込んでしまうため。
+     病害虫の名前は誰でも足せる（＝何が書かれるか分からない）ので、
+     画面に出す前に esc() を通す */
+  var totalBun = function(kei){
+    var toki = filter.season ? seasonLabel(+filter.season) : "ぜんぶの年";
+
+    var joken = [];
+    if(filter.house) joken.push(esc(filter.house) + "ハウス");
+    if(filter.pest)  joken.push(esc(filter.pest));
+
+    var atama = toki + (joken.length ? "・" + joken.join("・") : "");
+
+    return mode === "hon"
+      ? atama + "の発生件数は<b>" + kei + "本</b>です"
+      : atama + "の記録は<b>" + kei + "件</b>です";
+  };
+
   var renderMonths = function(){
     var base = ITEMS.filter(matchesExceptMonth);
     var cnt = {};
@@ -736,10 +776,11 @@ input:focus,textarea:focus{outline:3px solid var(--accent);outline-offset:1px;bo
       box.appendChild(col);
     });
 
-    /* 右上の合計。しぼりこみが効いた状態の数を出す（月のしぼりこみは除く） */
+    /* 合計の帯。しぼりこみが効いた状態の数を出す。
+       月のしぼりこみは入れない（月を選んでもその年の合計が見えるようにする） */
     var kei = 0;
     base.forEach(function(n){ kei += kazu(n); });
-    $("#m-total").textContent = kei + tani();
+    $("#m-total").innerHTML = totalBun(kei);
 
     /* 本数モードのとき、本数が入っていない記録は数に入らない。
        数が少なく見える理由が分からないと不安になるので、その件数を添える */
