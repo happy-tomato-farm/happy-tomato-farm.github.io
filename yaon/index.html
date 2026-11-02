@@ -759,7 +759,8 @@ function curtainPlan(date, r, fc, wxClear) {
   const month = date.getMonth() + 1;
   const msSet = msAt(date, r.sunset);
   const o = kanumaAt(fc, msSet, month);   // 日没時の外気（鹿沼のめやす）
-  if (o === null) return { noForecast: true };
+  // 予報が無いとき：日没がもう予報の始まりより前（17時の発表は18時から）か、まだ先すぎるか
+  if (o === null) return { noForecast: true, past: fc.temps[0].t > msSet };
   const sky = skyAt(fc, msSet) || "cloudy";
   const dT = r.temps[0] - o;
   // 参考：暖房が動き出す見込み（過去3冬の実績表）。外気（鹿沼のめやす）が「設定＋境目」まで下がる時刻より前にはしない
@@ -976,7 +977,12 @@ function renderCurtain(g, r) {
     return;
   }
   const p = curtainPlan(g.date, r, FC.data, !g.typed && wx === "clear");
-  if (p.noForecast) { box.innerHTML = '<p class="hint">この夜の日没時刻の予報がまだありません（予報は約2日先まで）。</p>'; return; }
+  if (p.noForecast) {
+    box.innerHTML = '<p class="hint">' + (p.past
+      ? "この夜の日没時刻は、もう気象庁の予報に残っていません（17時の発表は18時からの予報です）。閉める時刻は17時より前に見てください。"
+      : "この夜の日没時刻の予報がまだありません（予報は約2日先まで）。") + "</p>";
+    return;
+  }
 
   const skyName = p.sky === "clear" ? "晴れ" : "くもり・雨";
   const t = x => x.h !== null ? '<span class="time num">' + hhmm(x.h) + "</span>"
