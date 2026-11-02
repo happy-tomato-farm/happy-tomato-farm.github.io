@@ -738,10 +738,10 @@ function offMinAt(fc, date, r, state, h) {
 
 /* 閉めてよい最初の時刻：そこから朝（日の出の1時間前）まで、ずっと offMaxMin 分以内の見込みになる時刻。
    { h, worst }／閉めない { h: null, why: "never", worst, worstH }／予報が途中で切れる { h: null, why: "range", lastH } */
-function closeTime(fc, date, r, state) {
+function closeTime(fc, date, r, state, fromH = r.sunset) {
   const step = CURTAIN.stepMin / 60, endH = r.nextRise - CURTAIN.checkUntilBeforeRiseH;
   const pts = [];
-  for (let h = r.sunset; h <= endH + 1e-9; h += step) {
+  for (let h = fromH; h <= endH + 1e-9; h += step) {
     const m = offMinAt(fc, date, r, state, h);
     if (m === null) return { h: null, why: "range", lastH: pts.length ? pts[pts.length - 1].h : null };
     pts.push({ h, m });
@@ -757,30 +757,35 @@ function closeTime(fc, date, r, state) {
 /* カーテンの目安をまとめて出す。wxClear は③で快晴を選んでいるか（日中の予報が無いときの代わり） */
 function curtainPlan(date, r, fc, wxClear) {
   const month = date.getMonth() + 1;
-  const msSet = msAt(date, r.sunset);
-  const o = kanumaAt(fc, msSet, month);   // 日没時の外気（鹿沼のめやす）
-  // 予報が無いとき：日没がもう予報の始まりより前（17時の発表は18時から）か、まだ先すぎるか
-  if (o === null) return { noForecast: true, past: fc.temps[0].t > msSet };
-  const sky = skyAt(fc, msSet) || "cloudy";
-  const dT = r.temps[0] - o;
-  // 参考：暖房が動き出す見込み（過去3冬の実績表）。外気（鹿沼のめやす）が「設定＋境目」まで下がる時刻より前にはしない
-  const row = CURTAIN.delay[sky].find(x => dT < x.hi);
+  // 計算を始める時刻：日没。ただし予報がそれより後から始まるとき（17時の発表は18時から）は、予報の始まりから
+  const firstH = (fc.temps[0].t - date.getTime()) / 3600000;
+  const fromH = Math.max(r.sunset, firstH);
+  const late = fromH > r.sunset + 1e-9;
+  const o = fromH <= r.nextRise ? kanumaAt(fc, msAt(date, fromH), month) : null;   // その時刻の外気（鹿沼のめやす）
+  if (o === null) return { noForecast: true };
+  const sky = skyAt(fc, msAt(date, fromH)) || "cloudy";
+  const dT = setpointAt(r, fromH) - o;
+  // 参考：暖房が動き出す見込み（過去3冬の実績表。日没時の差で引くので、日没の予報があるときだけ）。
+  // 外気（鹿沼のめやす）が「設定＋境目」まで下がる時刻より前にはしない
   const margin = heaterMarginOf(month);
-  const near = m => crossTime(fc, date, r, -margin, r.sunset + m / 60);
-  const s25 = near(row.p25), s50 = near(row.p50), s75 = near(row.p75);
   let start = null, startWhy = null;
-  if (s50.h !== null) start = { p25: s25.h !== null ? s25.h : s50.h, p50: s50.h, p75: s75.h };   // p75 は null（遅ければ動かない）もある
-  else startWhy = s50.why === "range" ? { why: "range", lastH: s50.lastH } : { why: "noheat" };
+  if (!late) {
+    const row = CURTAIN.delay[sky].find(x => dT < x.hi);
+    const near = m => crossTime(fc, date, r, -margin, r.sunset + m / 60);
+    const s25 = near(row.p25), s50 = near(row.p50), s75 = near(row.p75);
+    if (s50.h !== null) start = { p25: s25.h !== null ? s25.h : s50.h, p50: s50.h, p75: s75.h };   // p75 は null（遅ければ動かない）もある
+    else startWhy = s50.why === "range" ? { why: "range", lastH: s50.lastH } : { why: "noheat" };
+  }
   // 閉める時刻：ラクソスは「ラクソスだけ閉めた状態」、テンパは「2層とも閉めた状態」で、朝まで止まりすぎない最初の時刻
   // （2層で満たせる時刻ならラクソスだけでも満たせるので、テンパがラクソスより先になることはない）
-  const luxous = closeTime(fc, date, r, "lux");
-  const tempa = closeTime(fc, date, r, "both");
-  const c5 = crossTime(fc, date, r, CURTAIN.luxousK);
-  const c8 = crossTime(fc, date, r, CURTAIN.tempaK);
+  const luxous = closeTime(fc, date, r, "lux", fromH);
+  const tempa = closeTime(fc, date, r, "both", fromH);
+  const c5 = crossTime(fc, date, r, CURTAIN.luxousK, fromH);
+  const c8 = crossTime(fc, date, r, CURTAIN.tempaK, fromH);
   // 日中（9〜15時）の予報に「晴」があるか。予報が残っていなければ③の天気で代える
   const day = fc.weather.filter(x => x.t0 >= msAt(date, 9) && x.t0 < msAt(date, 15));
   const sunnyDay = day.length ? day.some(x => x.w.includes("晴")) : wxClear;
-  return { o, sky, dT, margin, start, startWhy, luxous, tempa, c5, c8,
+  return { fromH, late, o, sky, dT, margin, start, startWhy, luxous, tempa, c5, c8,
            caution: CURTAIN.humidMonths.includes(month) && sunnyDay };
 }
 
@@ -977,12 +982,7 @@ function renderCurtain(g, r) {
     return;
   }
   const p = curtainPlan(g.date, r, FC.data, !g.typed && wx === "clear");
-  if (p.noForecast) {
-    box.innerHTML = '<p class="hint">' + (p.past
-      ? "この夜の日没時刻は、もう気象庁の予報に残っていません（17時の発表は18時からの予報です）。閉める時刻は17時より前に見てください。"
-      : "この夜の日没時刻の予報がまだありません（予報は約2日先まで）。") + "</p>";
-    return;
-  }
+  if (p.noForecast) { box.innerHTML = '<p class="hint">この夜の予報がまだありません（予報は約2日先まで）。</p>'; return; }
 
   const skyName = p.sky === "clear" ? "晴れ" : "くもり・雨";
   const t = x => x.h !== null ? '<span class="time num">' + hhmm(x.h) + "</span>"
@@ -1019,15 +1019,18 @@ function renderCurtain(g, r) {
 
   box.innerHTML =
     '<div class="summary">' +
-      '<div class="kv"><span class="k">日没 ' + hhmm(r.sunset) + " の外気（鹿沼めやす・" + skyName + "）</span><span class=\"v num\">" + c1(p.o) + "℃</span></div>" +
-      '<div class="kv"><span class="k">1段目の設定との差</span><span class="v num">' + c1(p.dT) + "℃</span></div>" +
+      '<div class="kv"><span class="k">' + (p.late ? hhmm(p.fromH) + "（予報の始まり）" : "日没 " + hhmm(r.sunset)) +
+        " の外気（鹿沼めやす・" + skyName + "）</span><span class=\"v num\">" + c1(p.o) + "℃</span></div>" +
+      '<div class="kv"><span class="k">' + (p.late ? "その時刻" : "1段目") + "の設定との差</span><span class=\"v num\">" + c1(p.dT) + "℃</span></div>" +
     "</div>" +
+    (p.late ? '<p class="hint">いま読める予報は ' + hhmm(p.fromH) + " からなので（17時の発表は18時から）、その時刻から朝までで確かめています。" +
+      "時刻欄が " + hhmm(p.fromH) + " なら、その時点ですでに閉めてよい見込みです。</p>" : "") +
     '<ul class="ct">' +
       '<li><span><span class="name">1層目 ラクソス</span><span class="sub">' + esc(sub(p.luxous)) + "</span></span>" + t(p.luxous) + "</li>" +
       '<li><span><span class="name">2層目 テンパ</span><span class="sub">' + esc(sub(p.tempa)) + "</span></span>" + t(p.tempa) + "</li>" +
     "</ul>" +
     '<p class="hint">閉めたあとも暖房が' + CURTAIN.offMaxMin + "分以上止まらない（＝30分に1回は動く）と見込める、いちばん早い時刻です。暖房の設定の段が下がる時間や、明け方までの冷え方もふくめて確かめています。</p>" +
-    '<div class="start"><span class="k">参考・暖房が動き出す見込み</span>' +
+    (p.late ? "" : '<div class="start"><span class="k">参考・暖房が動き出す見込み</span>' +
     (p.start
       ? '<div class="v num">' + hhmm(p.start.p50) + " ごろ</div>" +
         "<small>早ければ " + hhmm(p.start.p25) + "、" +
@@ -1038,7 +1041,7 @@ function renderCurtain(g, r) {
         "<small>予報が " + (p.startWhy.lastH !== null ? hhmm(p.startWhy.lastH) : "日没") + " ごろまでしか無く、その間は外気（鹿沼めやす）が設定温度" + margin + "より高い予報です。予報が更新されたら（5時・11時・17時）開き直してください。</small>"
       : '<div class="v txt">ほとんど動かない見込み</div>' +
         "<small>外気（鹿沼めやす）が一晩じゅう「その時刻の設定温度" + margin + "」より高い予報です。過去3冬の" + (g.date.getMonth() + 1) + "月は、暖房が動き出した夜の95%で、外気（鹿沼）が設定" + margin + "以下になってからでした。</small>") +
-    "</div>" +
+    "</div>") +
     '<p class="hint">参考・いまのルール（鹿沼のめやすで判定）：設定−' + CURTAIN.luxousK + "℃は " + ref(p.c5) + "、−" + CURTAIN.tempaK + "℃は " + ref(p.c8) + "</p>" +
     (p.caution ? '<div class="short">深夜に湿度がたまりやすい夜です' +
       "<small>2〜3月の晴れた日の夜は、暖房が動いていても深夜から湿度95%以上が3時間以上続いたことがあります。テンパを遅らせるか、閉める前に30分換気する・カーテンにすき間をあけるなどで湿気を逃がしてください。</small></div>" : "") +
