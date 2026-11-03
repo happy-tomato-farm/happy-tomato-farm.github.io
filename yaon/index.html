@@ -77,6 +77,16 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 }
 .seg button[aria-pressed="true"]{background:var(--night);border-color:var(--night);color:#fff}
 
+/* ===== ⑤ 暖房が動く間隔の切りかえ（.seg とは別。.seg のボタンはハウスの切りかえとして拾われるため） ===== */
+.freq-q{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--muted)}
+.freq{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.freq button{
+  min-height:48px; border-radius:14px; cursor:pointer; padding:4px 6px;
+  border:2px solid var(--line); background:var(--card-sub); color:var(--muted);
+  font:inherit; font-size:14px; font-weight:800; line-height:1.3;
+}
+.freq button[aria-pressed="true"]{background:var(--night);border-color:var(--night);color:#fff}
+
 /* ===== 入力欄 ===== */
 .field{margin-top:16px}
 .field:first-of-type{margin-top:0}
@@ -251,6 +261,8 @@ footer a{color:var(--muted)}
 
 <section class="card" aria-live="polite">
   <h2>⑤ カーテンを閉める時刻の目安</h2>
+  <p class="freq-q">閉めたあと、暖房が少なくとも何分に1回動けばよいか</p>
+  <div class="freq" id="freqBtns" role="group" aria-label="暖房が動く間隔"></div>
   <div id="curtain"></div>
 </section>
 
@@ -300,8 +312,9 @@ footer a{color:var(--muted)}
     <p>夜の転流（葉の糖を果実へ送る流れ）は消灯後の最初の4時間に集中し、0〜4時間で10%、4〜8時間で6%、8〜16時間で4%という測定があります（宍戸 2013、トマト苗）。夜温が高いほど果実への転流は多くなります（全ら 1988）。後半は低くして呼吸による消耗を抑えます。県の指針も「夕方から3時間（愛知）」「4〜5時間（千葉）」を高めにする形です。</p>
 
     <h3>カーテンを閉める時刻（⑤）</h3>
-    <p>決まりは2つです：①カーテンは暖房機が動き出してから閉める、②閉めたあとも少なくとも30分に1回は暖房が動く。②が満たされていれば暖房は動いているので、①も満たされます。</p>
-    <p>そこで、予報の5分ごとに「そのカーテンを閉めた状態で、暖房が消えてから次に点くまでの時間（止まっている時間）」を見込み、<b>閉めてから日の出の1時間前まで、ずっと20分以内</b>になる最初の時刻を出しています。過去3冬の実績では、20分以内の見込みのときは9割以上が実際に30分以内でした。ラクソスは「ラクソスだけ閉めた状態」、テンパは「2層とも閉めた状態」で確かめます。どの時刻からでも朝までに外れる夜は「閉めない」と出します。</p>
+    <p>決まりは2つです：①カーテンは暖房機が動き出してから閉める、②閉めたあとも少なくとも決めた間隔（30分・1時間・1時間半から選ぶ。既定は1時間）に1回は暖房が動く。①は、下の「暖房が動き出す見込み」の遅め（同じ条件の夜の4夜に3夜は、それより前に動き出した時刻）より前には閉めないことで守ります。止まっている時間の見込みは暖房が入り切りしている状態が前提なので、昼の熱が残る日没直後には使えないためです。暖房がほとんど動かない見込みの夜は閉めません。</p>
+    <p>そこで、予報の5分ごとに「そのカーテンを閉めた状態で、暖房が消えてから次に点くまでの時間（止まっている時間）」を見込み、<b>閉めてから日の出の1時間前まで、ずっと見込みの上限以内</b>になる最初の時刻を出しています。ラクソスは「ラクソスだけ閉めた状態」、テンパは「2層とも閉めた状態」で確かめます。どの時刻からでも朝までに外れる夜は「閉めない」と出します。</p>
+    <p>見込みの上限は、過去3冬・約14,000回の止まっている時間と見込みを比べ、実際に決めた間隔以内に9割が収まる値にしています：30分に1回 → 見込み20分以内（9割以上が30分以内）、1時間に1回 → 40分以内（見込み30〜40分で90〜91%が60分以内）、1時間半に1回 → 60分以内（見込み40〜60分で90〜91%が90分以内）。一度止まったまま朝まで点かなかった夜はこの比べに入らないため、長い間隔ほど実際は少し悪い可能性があります。</p>
     <div class="eq">止まっている時間 ＝ ハウスの熱容量 × 2℃ ÷ ハウスから逃げる熱</div>
     <ul>
       <li>2℃は、暖房機が設定−1℃で点き、設定＋1℃で消える幅です。熱容量（室温を1℃下げるのに逃げる熱の量）は約35 MJ/K で、空気だけの約3倍です（作物・骨組みも一緒に冷えるため。実測の止まっている時間から逆算）</li>
@@ -309,7 +322,7 @@ footer a{color:var(--muted)}
       <li>カーテンは屋根の部分だけに効きます。熱節減率はラクソス0.47（メーカー値）、テンパ0.42（アルミ50%）、2層はそれぞれの熱抵抗を足して0.62</li>
       <li>晴れた夜は空が冷たく、放射で熱が余分に逃げます。くもりや雨の夜は雲が熱を返すので、外気に近い温度になります。天気の予報から雲量（晴れ0.5・くもり0.95・雨1.0）を決め、空の放射温度を出して屋根の外の「相当外気温」を下げています（側面は空を半分見るので半分だけ）</li>
       <li>床から出てくる熱（夏・昼にためた地面や作物の熱）は、資料の地中伝熱係数で見積もるより大きく、重油の使用量に合わせると10〜12月で28〜34 W/m²、1〜2月で約20 W/m²、3月12 W/m²、4月6 W/m²でした。秋に暖房が止まりがちなのはこのためです</li>
-      <li>あわせて、過去3冬・約14,000回の「止まっている時間」をそのまま当てはめた式でも見込みを出し、<b>2つのうち長いほう（慎重な側）</b>を使います。2つの式で、閉めてよい「設定−鹿沼」の差はおおむね1〜2℃の範囲で合いました</li>
+      <li>あわせて、過去3冬・約14,000回の「止まっている時間」をそのまま当てはめた式でも見込みを出し、<b>2つのうち長いほう（慎重な側）</b>を使います。30分に1回の基準では、2つの式で閉めてよい「設定−鹿沼」の差はおおむね1〜2℃の範囲で合いました。実測の式は短い止まり方のデータで作ったため、30分をこえる見込みは当てになりません（見込み30〜40分で実際に60分以内は53%。物理の式は91%）。1時間・1時間半の基準では、実質的に物理の式で決まります</li>
       <li>いまのルール（設定−5℃・−8℃）は参考として、暖房が動き出す見込み（過去3冬の実績表）も参考として出しています</li>
       <li>外気は<b>鹿沼のめやす</b>（宇都宮の予報＋鹿沼との夜の平均の差。晴れの夜で−2.0〜−2.7℃、くもり雨で−1.3〜−1.9℃）で判定します。気象庁は鹿沼の地点の気温予報を出していないため、鹿沼の列は予報ではなく推定です</li>
       <li>2〜3月の晴れた日の夜は、暖房が動いていても深夜から湿度95%以上が3時間以上続いたことがあります（2冬で9夜）。湿度は中央の乾球・湿球温度から計算しました</li>
@@ -387,9 +400,15 @@ const CURTAIN = {
   humidMonths: [2, 3],                     // 晴れた日の夜に湿度がたまりやすい月
 
   // ---- 閉めたあとに暖房が止まっている時間の見込み（2026-11 の検証。画面下「計算の考え方」）----
-  // カーテンは「閉めてから朝まで、暖房が止まっている時間がずっと offMaxMin 分以内」の見込みになったら閉める。
-  // 20分以内の見込みなら、過去3冬の実績で9割以上が実際に30分以内だった
-  offMaxMin: 20,
+  // カーテンは「閉めてから朝まで、暖房が止まっている時間の見込みがずっと predMin 分以内」になったら閉める。
+  // 何分に1回動けばよいか（maxOffMin）は画面で選ぶ。predMin は、過去3冬の実績で9割が実際に maxOffMin 以内に収まった見込みの上限
+  //   30分：見込み20分以内なら9割以上が30分以内／1時間：見込み30〜40分で90〜91%が60分以内／1時間30分：見込み40〜60分で90〜91%が90分以内
+  freqs: [
+    { key: "30", label: "30分に1回", maxOffMin: 30, predMin: 20 },
+    { key: "60", label: "1時間に1回", maxOffMin: 60, predMin: 40 },
+    { key: "90", label: "1時間半に1回", maxOffMin: 90, predMin: 60 },
+  ],
+  freqDefault: "60", freqKey: "htf_yaon_freq",   // 既定は1時間に1回。選んだものはこの端末に覚えさせる
   checkUntilBeforeRiseH: 1,                // 日の出の1時間前まで確かめる
   hystC: 2,                                // 暖房機は 設定−1℃で点き、設定＋1℃で消える
   // (1) 物理の式（狩野 敦「温室の熱収支」の資料）：止まっている時間 ＝ 熱容量 × hystC ÷ 逃げる熱
@@ -736,9 +755,9 @@ function offMinAt(fc, date, r, state, h) {
                   offMinEmp(state, ti, to, w.includes("晴"), month, h - r.sunset));
 }
 
-/* 閉めてよい最初の時刻：そこから朝（日の出の1時間前）まで、ずっと offMaxMin 分以内の見込みになる時刻。
+/* 閉めてよい最初の時刻：そこから朝（日の出の1時間前）まで、ずっと predMin 分以内の見込みになる時刻。
    { h, worst }／閉めない { h: null, why: "never", worst, worstH }／予報が途中で切れる { h: null, why: "range", lastH } */
-function closeTime(fc, date, r, state, fromH = r.sunset) {
+function closeTime(fc, date, r, state, predMin, fromH = r.sunset) {
   const step = CURTAIN.stepMin / 60, endH = r.nextRise - CURTAIN.checkUntilBeforeRiseH;
   const pts = [];
   for (let h = fromH; h <= endH + 1e-9; h += step) {
@@ -747,15 +766,16 @@ function closeTime(fc, date, r, state, fromH = r.sunset) {
     pts.push({ h, m });
   }
   let i = pts.length;   // 後ろから見て、条件を満たす時刻が途切れずに続く最初の位置
-  while (i > 0 && pts[i - 1].m <= CURTAIN.offMaxMin) i--;
+  while (i > 0 && pts[i - 1].m <= predMin) i--;
   if (i < pts.length) return { h: ceil5(pts[i].h), worst: Math.max(...pts.slice(i).map(x => x.m)) };
   const w = pts.reduce((a, b) => (b.m > a.m ? b : a), pts[0]);
   // 夜の途中で満たしても朝までに外れる夜は、いちばん止まりやすい最初の時刻とその長さを返す
   return { h: null, why: "never", worst: w.m, worstH: w.h, allOff: pts.every(x => x.m === Infinity) };
 }
 
-/* カーテンの目安をまとめて出す。wxClear は③で快晴を選んでいるか（日中の予報が無いときの代わり） */
-function curtainPlan(date, r, fc, wxClear) {
+/* カーテンの目安をまとめて出す。wxClear は③で快晴を選んでいるか（日中の予報が無いときの代わり）、
+   predMin は止まっている時間の見込みの上限（選んだ「何分に1回」から決まる） */
+function curtainPlan(date, r, fc, wxClear, predMin) {
   const month = date.getMonth() + 1;
   // 計算を始める時刻：日没。ただし予報がそれより後から始まるとき（17時の発表は18時から）は、予報の始まりから
   const firstH = (fc.temps[0].t - date.getTime()) / 3600000;
@@ -778,8 +798,16 @@ function curtainPlan(date, r, fc, wxClear) {
   }
   // 閉める時刻：ラクソスは「ラクソスだけ閉めた状態」、テンパは「2層とも閉めた状態」で、朝まで止まりすぎない最初の時刻
   // （2層で満たせる時刻ならラクソスだけでも満たせるので、テンパがラクソスより先になることはない）
-  const luxous = closeTime(fc, date, r, "lux", fromH);
-  const tempa = closeTime(fc, date, r, "both", fromH);
+  // ①暖房が動き出してから閉める：止まっている時間の式は「暖房が入り切りしている状態」が前提なので、日没直後
+  // （昼の熱で室温がまだ設定より高い）には使えない。動き出す見込みの遅め（4夜に3夜はそれより前に動いた時刻）まで遅らせる
+  const startT = start ? ceil5(start.p75 !== null ? start.p75 : start.p50) : null;
+  const afterStart = x => {
+    if (x.h === null || late) return x;                                     // 18時からの予報では動き出しを見込めない（画面で注意）
+    if (!start) return startWhy.why === "range" ? { h: null, why: "range", lastH: startWhy.lastH } : { h: null, why: "noheat" };
+    return x.h < startT ? { ...x, h: startT, waited: true } : x;
+  };
+  const luxous = afterStart(closeTime(fc, date, r, "lux", predMin, fromH));
+  const tempa = afterStart(closeTime(fc, date, r, "both", predMin, fromH));
   const c5 = crossTime(fc, date, r, CURTAIN.luxousK, fromH);
   const c8 = crossTime(fc, date, r, CURTAIN.tempaK, fromH);
   // 日中（9〜15時）の予報に「晴」があるか。予報が残っていなければ③の天気で代える
@@ -824,7 +852,10 @@ const LS_KEY = "htf_yaon_house";
 
 let house = "中央";
 let wx = "clear";        // 空欄のときに使う天気。開くたびに快晴から始める
+let freq = CURTAIN.freqDefault;   // ⑤ 暖房が少なくとも何分に1回動けばよいか（CURTAIN.freqs の key）
 try { const h = localStorage.getItem(LS_KEY); if (h === "中央" || h === "東") house = h; } catch (e) { /* 覚えられない端末では毎回 中央 から */ }
+try { const f = localStorage.getItem(CURTAIN.freqKey); if (CURTAIN.freqs.some(x => x.key === f)) freq = f; } catch (e) { /* 覚えられない端末では毎回 既定 から */ }
+$("freqBtns").innerHTML = CURTAIN.freqs.map(x => '<button type="button" data-freq="' + x.key + '">' + x.label + "</button>").join("");
 const qs = new URLSearchParams(location.search);
 if (qs.get("house") === "中央" || qs.get("house") === "東") house = qs.get("house");
 $("date").value = /^\d{4}-\d{2}-\d{2}$/.test(qs.get("d") || "") ? qs.get("d") : ymd(new Date());
@@ -978,10 +1009,11 @@ function renderCurtain(g, r) {
   if (FC.state === "loading") { box.innerHTML = '<p class="hint">気象庁の予報を読んでいます…</p>'; return; }
   if (FC.state === "error") {
     box.innerHTML = '<p class="err">' + esc(FC.error) + "</p>" +
-      '<p class="hint">外気（鹿沼）が設定温度より十分に下がってから閉めてください。過去3冬の検証では、閉めたあとも暖房が30分に1回動くには、ラクソスで6〜10℃、テンパ（2層）で7〜13℃ほど下がっている必要がありました（くもりの夜・11月ほど大きい）。</p>';
+      '<p class="hint">外気（鹿沼）が設定温度より十分に下がってから閉めてください。過去3冬の検証では、閉めたあとも暖房が1時間に1回動くには、ラクソスで3〜9℃、テンパ（2層）で4〜10℃ほど下がっている必要がありました（30分に1回ならさらに約3℃大きく、1時間半に1回なら約1℃小さい。くもりの夜・11〜12月ほど大きい）。</p>';
     return;
   }
-  const p = curtainPlan(g.date, r, FC.data, !g.typed && wx === "clear");
+  const F = CURTAIN.freqs.find(x => x.key === freq);   // 選んでいる「何分に1回」
+  const p = curtainPlan(g.date, r, FC.data, !g.typed && wx === "clear", F.predMin);
   if (p.noForecast) { box.innerHTML = '<p class="hint">この夜の予報がまだありません（予報は約2日先まで）。</p>'; return; }
 
   const skyName = p.sky === "clear" ? "晴れ" : "くもり・雨";
@@ -989,7 +1021,9 @@ function renderCurtain(g, r) {
     : '<span class="time none">' + (x.why === "range" ? "まだ出せません" : "閉めない") + "</span>";
   // 時刻の下の説明。閉めない夜は、閉めたらどれだけ止まりそうかを出す
   const sub = x => x.h !== null
-    ? "閉めてから朝まで、暖房が止まるのは長くて" + Math.round(x.worst) + "分の見込み"
+    ? (x.waited ? "暖房が動き出す見込み（遅め）まで待つ。" : "") + "閉めてから朝まで、暖房が止まるのは長くて" + Math.round(x.worst) + "分の見込み"
+    : x.why === "noheat"
+    ? "暖房がほとんど動かない見込みの夜"
     : x.why === "range"
     ? "予報が " + (x.lastH !== null ? hhmm(x.lastH) : "日没") + " ごろまでしか無い。予報が更新されたら（5時・11時・17時）開き直す"
     : x.allOff
@@ -1024,12 +1058,13 @@ function renderCurtain(g, r) {
       '<div class="kv"><span class="k">' + (p.late ? "その時刻" : "1段目") + "の設定との差</span><span class=\"v num\">" + c1(p.dT) + "℃</span></div>" +
     "</div>" +
     (p.late ? '<p class="hint">いま読める予報は ' + hhmm(p.fromH) + " からなので（17時の発表は18時から）、その時刻から朝までで確かめています。" +
-      "時刻欄が " + hhmm(p.fromH) + " なら、その時点ですでに閉めてよい見込みです。</p>" : "") +
+      "時刻欄が " + hhmm(p.fromH) + " なら、その時点ですでに閉めてよい見込みです。暖房が動き出す時刻は見込めないので、動き出したのを確かめてから閉めてください。</p>" : "") +
     '<ul class="ct">' +
       '<li><span><span class="name">1層目 ラクソス</span><span class="sub">' + esc(sub(p.luxous)) + "</span></span>" + t(p.luxous) + "</li>" +
       '<li><span><span class="name">2層目 テンパ</span><span class="sub">' + esc(sub(p.tempa)) + "</span></span>" + t(p.tempa) + "</li>" +
     "</ul>" +
-    '<p class="hint">閉めたあとも暖房が' + CURTAIN.offMaxMin + "分以上止まらない（＝30分に1回は動く）と見込める、いちばん早い時刻です。暖房の設定の段が下がる時間や、明け方までの冷え方もふくめて確かめています。</p>" +
+    '<p class="hint">閉めたあとも暖房が' + F.label + "は動く（止まっている時間の見込みが" + F.predMin + "分以内。過去3冬では、その9割が実際に" +
+      F.maxOffMin + "分以内）と見込める、いちばん早い時刻です。暖房の設定の段が下がる時間や、明け方までの冷え方もふくめて確かめています。</p>" +
     (p.late ? "" : '<div class="start"><span class="k">参考・暖房が動き出す見込み</span>' +
     (p.start
       ? '<div class="v num">' + hhmm(p.start.p50) + " ごろ</div>" +
@@ -1070,6 +1105,7 @@ function renderYears(g) {
 
 function render() {
   document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.house === house)));
+  document.querySelectorAll("#freqBtns button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.freq === freq)));
   const g = gather();
   renderHints(g);
   const r = renderResult(g);
@@ -1084,6 +1120,13 @@ document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click"
   try { localStorage.setItem(LS_KEY, house); } catch (e) { /* 覚えられなくても計算はできる */ }
   render();
 }));
+$("freqBtns").addEventListener("click", e => {
+  const b = e.target.closest("button[data-freq]");
+  if (!b) return;
+  freq = b.dataset.freq;
+  try { localStorage.setItem(CURTAIN.freqKey, freq); } catch (e2) { /* 覚えられなくても計算はできる */ }
+  render();
+});
 $("today").addEventListener("click", () => { $("date").value = ymd(new Date()); render(); });
 /* 天気別の平年値を押したら、入力欄を空にしてその値で計算する（書き換えるのは押したときだけ） */
 $("wxBtns").addEventListener("click", e => {
