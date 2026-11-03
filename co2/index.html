@@ -320,7 +320,7 @@ footer a{color:var(--muted)}
       </div>
       <p class="err" id="capErr" hidden></p>
     </div>
-    <p class="hint wide">施用で増える収量は、1時間ごとに、施用しなかったときのこの割合までで頭打ちにします。日本の冬の促成トマトの試験は +25〜30% でした（千葉 総収量+30%、岩手+25%）。</p>
+    <p class="hint wide">外気並みの濃度のときと比べて、収量はこの割合までしか増えないとします（施用しないと外気より下がる分を戻すのは別に全部数えます）。日本の冬の促成トマトの試験は +25〜30% でした（千葉 総収量+30%、岩手+25%）。CO₂への反応は実測に合わせてあるので、ふつうはこの上限まで届きません。</p>
   </div>
   <p class="hint">入れた値はこのスマホが覚えます（ページには書き込まれません）。</p>
 </section>
@@ -382,9 +382,13 @@ footer a{color:var(--muted)}
     </ul>
 
     <h3>植物が吸う量（光合成.xlsx の式）</h3>
-    <p>潅水のめやすアプリと同じ式です。葉1枚の光合成を、光・CO₂・気温から求め、群落を20層に分けて足し合わせます。</p>
+    <p>光と気温の効き方は、潅水のめやすアプリと同じ式です。葉1枚の光合成を光・気温から求め、群落を20層に分けて足し合わせます（このときの濃度は 400 ppm）。</p>
+    <div class="eq">光合成（濃度 C）＝ 式で出した 400 ppm のときの光合成 × e<sup>150 × (1/400 − 1/C)</sup></div>
     <ul>
-      <li>CO₂が濃くなるほど光合成は増えますが、増え方は鈍っていきます（CO₂係数 KC＝250 ppm）。さらに濃いCO₂では気孔が閉じぎみになります</li>
+      <li><b>CO₂の効き方は、温室の群落で測った実測則</b>（Nederhoff 1994）に合わせています。100 ppm 上げたときの伸び［%］＝（1000 ÷ C）² × 1.5 で、400 ppm 付近では約 +9%、1,000 ppm 付近では約 +1.5% です。上の式はこれを積み上げた形です</li>
+      <li>例：350→700 ppm で +24%（大型ハウスでの実測 +27%）、400→1,000 ppm で +25%。冬の試験の増収 +25〜30% とも合います</li>
+      <li>葉の式のままだと 400→1,000 ppm で約 +90% と、実測の3倍ほど強く出ます。葉の式には、濃いCO₂が続いたときの順化（光合成の能力が下がること）や、群落の中の制限が入っていないためです</li>
+      <li>実測則は 200〜1,100 ppm で測ったもので、光の強さによる違いをならした平均です</li>
       <li>光は上の葉から順に弱まります（消散係数 0.7）</li>
       <li>気孔の開き方は文献の実測に合わせて 2.4 倍、光への反応は非直角双曲線（量子収率 0.06・曲率 0.8・最大 45 µmol/m²/s）</li>
       <li>葉温は気温と同じとしています</li>
@@ -416,14 +420,14 @@ footer a{color:var(--muted)}
     <h3>CO₂から果実へ</h3>
     <div class="eq">増収（生体重）＝ 増えたCO₂ ÷ 44 × 30 × 果実への分配 0.5 ÷ 乾物率 0.05</div>
 
-    <h3>増収率の上限（既定 30%）</h3>
-    <p>葉の光合成は、CO₂ を 400→1,000 ppm にすると5割ほど増えます。しかし収量はそこまで増えません。CO₂ が濃い状態が続くと光合成の能力が下がること（順化）、果実の受け入れが追いつかないこと、茎葉にも回ること、成長の呼吸で失われることが理由です。</p>
+    <h3>増収の数え方と上限（既定 30%）</h3>
+    <p>増えた光合成を、1日の合計で果実への糖の増分として数えます。日中にできた糖は、夜にも果実へ送られるためです。</p>
     <ul>
-      <li>日本の冬の促成トマトの試験：千葉 総収量 +30%（施用と温度管理の組み合わせ）、岩手 +25%</li>
-      <li>海外：野菜107報のメタ解析で重さ +11%、長期栽培の試験で +37〜43%、換気しないハウスで1,000 ppm にして +48%</li>
-      <li>そこで、施用で増える光合成のうち収量に数えるのは、1時間ごとに「その時間の、施用しなかったときの光合成 × 上限」までとしています</li>
-      <li>その時間の上限に届いたあとは CO₂ を増やしても得が増えないので、濃度を上げすぎず、光のある時間に広く施用する答えになりやすくなります</li>
-      <li>1日の合計でかけないのは、そうすると午前だけで上限を使い切り、光の強い午後は施用しない、という偏った答えになるためです</li>
+      <li>施用しないと光合成で外気より濃度が下がる分を、外気並みに戻す分は全部数えます（不足の解消）</li>
+      <li>外気より上げた分は「外気の濃度のときの1日の光合成 × 上限」までとします。果実の受け入れが追いつかないこと、茎葉にも回ることで頭打ちになるためです</li>
+      <li>日本の冬の促成トマトの試験：千葉 総収量 +30%（施用と温度管理の組み合わせ）、岩手 +25%。海外：野菜107報のメタ解析で重さ +11%、長期栽培の試験で +37〜43%</li>
+      <li>CO₂への反応は実測則なので、1,500 ppm でも外気のときの +29% ほどです。そのため、この上限はふつう効きません（念のための歯止めです）</li>
+      <li>上限の基準を「施用しなかったときの光合成」にしないのは、閉め切りに近い日ほど基準が下がり、外気並みに戻す途中で上限に届いてしまうためです（換気が少ないほど施用しない、という逆さまの答えになります）</li>
     </ul>
 
     <h3>換気回数が大きい日</h3>
@@ -473,7 +477,11 @@ const FIX = {
   // ほかの月は文献（天窓の面積×風速でほぼ決まる。全開・風速3m/秒で10〜58回/h）からの見込みで、実測ではない
   achOpenByMonth: [1.6, 1.6, 3, 6, 10, 15, 15, 15, 10, 6, 3, 1.6],
   achClosed: 0.182,           // 換気回数 [回/h]：天窓が閉まっているとき（2020/9/11 夜の測定）
-  capPct: 30,                 // 増収率の上限 [%]（日本の冬の促成トマトの試験：千葉 総収量+30%、岩手 +25%）
+  capPct: 30,                 // 増収率の上限 [%]：外気のときの光合成より何割まで増えたら数えるか（千葉 総収量+30%、岩手 +25%）
+  // CO₂への反応は温室の群落の実測則（Nederhoff 1994）：100ppm上げたときの伸び[%] ＝ (1000/C)² × 1.5
+  // 積分すると P(C) ＝ P(400) × exp(150 × (1/400 − 1/C))。葉の式のままだと 400→1000ppm で約+90% と、実測（+25%前後）の3倍強く出るため
+  co2RuleK: 150,              // 上の式の 150 [ppm]
+  co2RefPpm: 400,             // 葉の式で光・気温の効きを出すときの濃度 [ppm]
   sensitivity: [0.5, 2],      // 換気回数をこの倍率にしたときの答えも並べる
   molarVolL: 22.4,            // 気体1molの体積 [L]（0℃。Excel どおり）
   co2MolG: 44,                // CO₂ 1mol の重さ [g]
@@ -680,8 +688,12 @@ function prepareDay(c) {
     const St = clearSkyW(g, tm) * c.k * tau;                      // ハウス内の日射
     const T = tempAt(tm, c.hours, c.temps);
     const open = c.nightOpen || tm >= c.openAt;
+    // 光・気温・LAI の効きは葉の式で 400ppm のときの値を出し、CO₂の効きは実測則で掛ける。
+    // 光が弱く呼吸のほうが多い（マイナス）ときは、CO₂で変わらないとする
+    const pRef = houseUptakeGph(St, T, FIX.co2RefPpm, c.lai);
     const grid = [];
-    for (let p = 0; p <= PPM_GRID_MAX; p += PPM_GRID_STEP) grid.push(houseUptakeGph(St, T, p, c.lai));
+    for (let p = 0; p <= PPM_GRID_MAX; p += PPM_GRID_STEP)
+      grid.push(pRef <= 0 ? pRef : pRef * Math.exp(FIX.co2RuleK * (1 / FIX.co2RefPpm - 1 / Math.max(p, 1))));
     steps.push({ t, St, T, ach: open ? c.achOpen : FIX.achClosed, open, grid });
   }
   return { g, tau, steps };
@@ -699,7 +711,8 @@ const uptakeAt = (grid, ppm) => {
 function simulate(day, dawnPpm, sched) {
   const hg = houseGPerPpm(), dt = FIX.stepH;
   let C = dawnPpm, uptake = 0, fuelL = 0, maxC = C;
-  const trace = [], hourG = {};                                   // hourG: 時（0〜23）ごとの光合成 [g CO₂]
+  let ambG = 0;                                                   // 濃度が外気より低い間は外気の濃度とした光合成 [g CO₂]（増収の上限の基準）
+  const trace = [];
   for (const s of day.steps) {
     const p = sched(s.t + 1e-6);                                 // その5分の始まりで判定（表の時刻と合わせる）
     const duty = p && p.d ? p.d : 0;
@@ -710,12 +723,11 @@ function simulate(day, dawnPpm, sched) {
     trace.push({ t: s.t, C, end: next, duty, on });
     C = next;
     uptake += P * dt;
-    const h = Math.floor(s.t + 1e-6);
-    hourG[h] = (hourG[h] || 0) + P * dt;
+    ambG += Math.max(P, uptakeAt(s.grid, FIX.outsidePpm)) * dt;
     fuelL += (on ? FIX.glowFuelLPerH : 0) * dt;
     if (C > maxC) maxC = C;
   }
-  return { uptakeG: uptake, hourG, fuelL, maxC, trace, endC: C };
+  return { uptakeG: uptake, ambG, fuelL, maxC, trace, endC: C };
 }
 
 /* いちばん得な動かし方を、タイマーと目標ppmの2つの方式それぞれで探す。
@@ -734,19 +746,18 @@ function optimize(day, c) {
   for (let b = slot(switchAt) + FIX.slotH; b <= set + 1e-9; b += FIX.slotH) ends.push(b);
   if (!ends.length || ends[ends.length - 1] < set - 0.25) ends.push(q(set));
 
-  // 増えた光合成のうち、収量に数えるのは1時間ごとに「その時間の、施用しなかったときの光合成 × 上限」まで。
-  // 葉の光合成の伸びがそのまま収量の伸びにはならない（順化・シンク・茎葉への分配・成長呼吸）ため。
-  // 1日の合計でかけると、午前に上限まで使い切って午後は施用しない、という偏った答えになるので時間ごとにかける
-  const capG = Math.max(0, base.uptakeG) * c.cap / 100;          // 1日に数えられる最大（時間ごとの上限の合計）
+  // 増えた光合成（＝果実への糖の増分）を1日の合計で数える。日中にできた糖は夜も果実へ送られるため。
+  // ・施用しないと外気より下がる分を、外気並みに戻す分（restoreG）は全部数える
+  // ・外気より上げた分は「外気のときの1日の光合成 × 上限」まで（果実の受け入れ・順化で頭打ちになるため）
+  // 上限の基準を「施用しなかったときの光合成」にすると、閉め切りに近い日ほど基準が下がり、
+  // 外気並みに戻す途中で上限に届いてしまう（換気が少ないほど施用しない、という逆さまの答えになる）
+  const restoreG = Math.max(0, base.ambG - base.uptakeG);
+  const capG = restoreG + Math.max(0, base.ambG) * c.cap / 100;  // 1日に数えられる最大 [g CO₂]
   const value = sim => {
     const rawG = sim.uptakeG - base.uptakeG;
-    let gainG = 0;
-    for (const h of Object.keys(sim.hourG)) {
-      const b = base.hourG[h] || 0;
-      gainG += Math.min(sim.hourG[h] - b, Math.max(0, b) * c.cap / 100);
-    }
+    const gainG = Math.min(rawG, capG);
     const gainKg = fruitKgFromCo2G(gainG);
-    return { rawG, gainG, capped: rawG > gainG + 0.5, gainKg, yen: gainKg * c.tomato - sim.fuelL * c.kerosene };
+    return { rawG, gainG, capped: rawG > capG + 0.5, gainKg, yen: gainKg * c.tomato - sim.fuelL * c.kerosene };
   };
   // 候補を全部試して、得がいちばん大きいものを返す。得が同じ（1円未満の差）なら灯油の少ないほう
   let tried = 0;
@@ -972,8 +983,33 @@ function renderResult(g, day, r) {
     block(T, "タイマーで動かす", timerItems) +
     block(G, "目標ppmで動かす", targetItems) +
     '<p class="hint">切りかえ ' + clock(sw) + " は、天窓が開く時刻（" + clock(r.openAt) + "）にいちばん近い15分区切りです。" +
-    "目標ppmは、センサーが目標を下回ったら動き、目標に戻ったら止まるとして計算しています。</p>";
+    "目標ppmは、センサーが目標を下回ったら動き、目標に戻ったら止まるとして計算しています。</p>" +
+    senseRuleHtml(g.v.tomato, g.v.kerosene);
   $("resTitle").textContent = "いちばん得なグロウの動かし方（" + house + "・" + WX_LABEL[wx] + "）";
+}
+
+/* 換気回数が分からなくても、センサーの値で施用するかを決める目安。
+   天窓が開いて濃度が落ち着いているとき、施用しないときの濃度の外気からの下がり幅を D [ppm] とすると
+     D ＝ 光合成 ÷（ハウスの g/ppm × 換気回数）
+   濃度を少し上げたときの「増える果実の金額」と「逃げるCO₂の灯油代」がつり合うのは
+     C² ＝ 150 × D ×（果実の金額 − 灯油代）÷ 灯油代 （どちらも吸ったCO₂ 1gあたり）
+   C を外気の濃度にしたときの D より下がり幅が小さければ、上げても元がとれない。
+   光の強さ・換気回数が消えて、単価だけで決まる（計算の全体と照らして、季節・天気によらず合うことを確かめた） */
+function senseRuleHtml(tomato, kerosene) {
+  const fuelYenPerG = kerosene / (FIX.glowCo2GPerH / FIX.glowFuelLPerH);   // CO₂ 1g を出す灯油代 [円/g]
+  const fruitYenPerG = fruitKgFromCo2G(1) * tomato;                           // 吸ったCO₂ 1g が生む果実の金額 [円/g]
+  const head = '<div class="sep">センサーで決めるときの目安</div>';
+  if (fruitYenPerG <= fuelYenPerG) return head + '<p class="hint">この単価では、どんな日も施用で元がとれません。</p>';
+  const ratio = FIX.co2RuleK * (fruitYenPerG - fuelYenPerG) / fuelYenPerG;   // C² ＝ ratio × D
+  const dMin = FIX.outsidePpm * FIX.outsidePpm / ratio;                      // これより下がり幅が小さければ施用しない
+  const rows = [50, 75, 100, 150].filter(d => d > dMin).map(d =>
+    "<li>" + (FIX.outsidePpm - d) + " ppm まで下がる（−" + d + "）→ 目標 約 " + Math.round(Math.sqrt(ratio * d) / 10) * 10 + " ppm</li>").join("");
+  return head + '<p class="hint">晴れた昼、天窓が開いてから<b>グロウを30分止めて</b>センサーを見ます。' +
+    "<b>" + Math.round(FIX.outsidePpm - dMin) + " ppm 以上</b>（外気 " + FIX.outsidePpm + " との差 " + Math.round(dMin) + " ppm 以内）で止まっていれば、" +
+    "換気が大きく、その日は施用しても元がとれません。それより下がるなら施用します。目標の濃度の目安：</p>" +
+    '<ul class="hint">' + rows + "</ul>" +
+    '<p class="hint">トマト ' + yen(tomato) + " 円/kg・灯油 " + yen(kerosene) + " 円/L で計算。換気回数が大きいほど早く落ち着きます（6回/時なら約10分で6割、30分でほぼ落ち着く）。" +
+    "下がり続けて止まらないなら換気が小さいので、施用する日です。センサーの誤差（数十ppm）があるので、天窓が全開で暗い時間の値（＝外気）と比べると確かです。</p>";
 }
 
 /* 見ている方式の内訳（グラフの上に出す） */
@@ -983,7 +1019,7 @@ function renderDetail(g, r, m) {
   const v = m.v, cost = m.sim.fuelL * g.v.kerosene;
   box.innerHTML = '<div class="summary">' +
     kv("増える果実の金額<small>" + fx(v.gainKg, 1) + " kg 増える（増収率 " + fx(r.base.uptakeG > 0 ? v.gainG / r.base.uptakeG * 100 : 0, 0) + "%" +
-       (v.capped ? "・上限 " + fx(g.v.cap, 0) + "% で頭打ちの時間あり" : "") + "）</small>", yen(v.gainKg * g.v.tomato) + "<small> 円</small>") +
+       (v.capped ? "・上限 " + fx(g.v.cap, 0) + "% で頭打ち" : "") + "）</small>", yen(v.gainKg * g.v.tomato) + "<small> 円</small>") +
     kv("灯油代<small>" + fx(m.sim.fuelL, 1) + " L</small>", yen(cost) + "<small> 円</small>") +
     kv("損益分岐のトマト単価<small>これより高ければ元がとれる</small>", (v.gainKg > 0 ? yen(cost / v.gainKg) : "―") + "<small> 円/kg</small>") +
     kv("参考：Excel の数え方<small>吸ったCO₂を全部、施用の成果とした場合</small>", signedYen(m.excelYen) + "<small> 円</small>") +
@@ -1103,7 +1139,7 @@ function renderSteps(g, day, r, m) {
     head("植物") +
     row("LAI", fx(g.lai.value, 2), g.lai.from === "葉幅" ? fx(g.v.density, 2) + " 本/m² × " + fx(g.v.leaves, 1) + " 枚/本 × " + yen(g.lai.leafCm2) + " cm²" : "葉幅が空欄なので Excel の値") +
     (r ? row("光合成（施用なし・1日）", yen(r.base.uptakeG) + " g CO₂") : "") +
-    (r ? row("光合成（施用あり・1日）", yen(m.sim.uptakeG) + " g CO₂", (m.kind === "timer" ? "タイマー" : "目標ppm") + "・増えた分 " + yen(m.v.rawG) + " g（収量に数えるのは1時間ごとに上限まで、計 " + yen(m.v.gainG) + " g）") : "") +
+    (r ? row("光合成（施用あり・1日）", yen(m.sim.uptakeG) + " g CO₂", (m.kind === "timer" ? "タイマー" : "目標ppm") + "・増えた分 " + yen(m.v.rawG) + " g（収量に数えるのは " + yen(r.capG) + " g まで）") : "") +
     row("増収率の上限", fx(g.v.cap === null ? FIX.capPct : g.v.cap, 0) + " %", g.from.cap) +
     head("ハウスとグロウ") +
     row("容積", yen(volumeM3()) + " m³", "床面積 " + fx(FIX.floorM2, 1) + " m²") +
@@ -1170,7 +1206,7 @@ ORDER.forEach((id, i) => $(id).addEventListener("keydown", e => {
 }));
 
 $("srcNote").textContent = NORM
-  ? "出どころ：生物環境物理学.xlsx「Co2施用シュミレーター」「自圃場換気回数」、換気回数計算用データ.xlsx、光合成.xlsx（潅水アプリの設定値）、" + NORM.source + "（平年値の作成 " + NORM.built_at + "）。葉の面積の式は 樋江井ら（愛知県農業総合試験場研究報告）。"
+  ? "出どころ：生物環境物理学.xlsx「Co2施用シュミレーター」「自圃場換気回数」、換気回数計算用データ.xlsx、光合成.xlsx（潅水アプリの設定値）、" + NORM.source + "（平年値の作成 " + NORM.built_at + "）。葉の面積の式は 樋江井ら（愛知県農業総合試験場研究報告）。CO₂への反応は Nederhoff (1994) Effects of CO2 concentration on photosynthesis, transpiration and production of greenhouse fruit vegetable crops（ワーヘニンゲン大学 博士論文）。"
   : "平年値のデータを読めませんでした。天窓が開く時刻と夜明けのCO₂を入れてください。";
 
 render();
