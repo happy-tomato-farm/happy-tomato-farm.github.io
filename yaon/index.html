@@ -87,6 +87,20 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 }
 .freq button[aria-pressed="true"]{background:var(--night);border-color:var(--night);color:#fff}
 
+/* ===== ⑤ 閉めた時刻の記録 ===== */
+.rec{margin-top:16px;padding-top:14px;border-top:2px dashed var(--line)}
+.rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rec-grid .field{margin-top:0}
+.rec-grid .field input{width:100%;box-sizing:border-box}
+.rec-grid .field input::placeholder{font-size:15px}
+.rec-send{
+  width:100%; margin-top:12px; min-height:52px; border-radius:14px; cursor:pointer;
+  border:2px solid var(--night); background:var(--night); color:#fff;
+  font:inherit; font-size:17px; font-weight:800;
+}
+.rec-send:disabled{opacity:.5;cursor:default}
+.rec .rec-ng{color:var(--warn);font-weight:800}
+
 /* ===== 入力欄 ===== */
 .field{margin-top:16px}
 .field:first-of-type{margin-top:0}
@@ -264,6 +278,23 @@ footer a{color:var(--muted)}
   <p class="freq-q">閉めたあと、暖房が少なくとも何分に1回動けばよいか</p>
   <div class="freq" id="freqBtns" role="group" aria-label="暖房が動く間隔"></div>
   <div id="curtain"></div>
+  <!-- 閉めた時刻の記録。スプレッドシートへ送る（同じ夜・同じハウスは、送り直すと上書き） -->
+  <div class="rec" id="recBox" hidden>
+    <p class="freq-q" id="recTitle">閉めた時刻を記録する</p>
+    <div class="rec-grid">
+      <div class="field">
+        <label for="recLux">ラクソス</label>
+        <!-- 数字の欄でも type="number" は使わない。スマホの数字キーには「:」が無いので 1730 でも受け付ける -->
+        <input id="recLux" type="text" inputmode="numeric" autocomplete="off" placeholder="例 1730">
+      </div>
+      <div class="field">
+        <label for="recTem">テンパ</label>
+        <input id="recTem" type="text" inputmode="numeric" autocomplete="off" placeholder="空＝閉めない">
+      </div>
+    </div>
+    <button type="button" class="rec-send" id="recSend">この時刻で記録する</button>
+    <p class="hint" id="recMsg"></p>
+  </div>
 </section>
 
 <section class="card">
@@ -314,15 +345,16 @@ footer a{color:var(--muted)}
     <h3>カーテンを閉める時刻（⑤）</h3>
     <p>決まりは2つです：①カーテンは暖房機が動き出してから閉める、②閉めたあとも少なくとも決めた間隔（30分・1時間・1時間半から選ぶ。既定は1時間）に1回は暖房が動く。①は、下の「暖房が動き出す見込み」の遅め（同じ条件の夜の4夜に3夜は、それより前に動き出した時刻）より前には閉めないことで守ります。止まっている時間の見込みは暖房が入り切りしている状態が前提なので、昼の熱が残る日没直後には使えないためです。暖房がほとんど動かない見込みの夜は閉めません。</p>
     <p>そこで、予報の5分ごとに「そのカーテンを閉めた状態で、暖房が消えてから次に点くまでの時間（止まっている時間）」を見込み、<b>閉めてから日の出の1時間前まで、ずっと見込みの上限以内</b>になる最初の時刻を出しています。ラクソスは「ラクソスだけ閉めた状態」、テンパは「2層とも閉めた状態」で確かめます。どの時刻からでも朝までに外れる夜は「閉めない」と出します。</p>
-    <p>見込みの上限は、過去3冬・約14,000回の止まっている時間と見込みを比べ、実際に決めた間隔以内に9割が収まる値にしています：30分に1回 → 見込み20分以内（9割以上が30分以内）、1時間に1回 → 40分以内（見込み30〜40分で90〜91%が60分以内）、1時間半に1回 → 60分以内（見込み40〜60分で90〜91%が90分以内）。一度止まったまま朝まで点かなかった夜はこの比べに入らないため、長い間隔ほど実際は少し悪い可能性があります。</p>
+    <p>見込みの上限は、選んだ間隔の3分の2（30分に1回 → 20分、1時間に1回 → 40分、1時間半に1回 → 60分）です。式の値の不確かさのぶん、余裕を持たせています。</p>
     <div class="eq">止まっている時間 ＝ ハウスの熱容量 × 2℃ ÷ ハウスから逃げる熱</div>
     <ul>
-      <li>2℃は、暖房機が設定−1℃で点き、設定＋1℃で消える幅です。熱容量（室温を1℃下げるのに逃げる熱の量）は約35 MJ/K で、空気だけの約3倍です（作物・骨組みも一緒に冷えるため。実測の止まっている時間から逆算）</li>
-      <li>逃げる熱は、狩野 敦「温室の熱収支」の式で計算します：屋根（エフクリーン、熱貫流係数6.4）＋側面（PO 3層、3.2）＋すき間（0.4）− 床から出てくる熱。面積は間口9m×3.5連棟・床面積1,884.8 m² から、屋根約1,930 m²・側面約850 m²</li>
+      <li>2℃は、暖房機が設定−1℃で点き、設定＋1℃で消える幅です</li>
+      <li>逃げる熱は、狩野 敦「温室の熱収支」の資料の式で計算します：屋根（エフクリーン、熱貫流係数6.4）＋側面（PO 3層、3.2）＋すき間（換気伝熱係数0.4）− 床から出てくる熱。面積は間口9m×3.5連棟・床面積1,884.8 m² から、屋根約1,930 m²・側面約850 m²</li>
+      <li><b>既定は資料どおりの式</b>です。床から出てくる熱は資料の式で「地中伝熱係数1.3 ×（地表−室温）3℃」＝3.9 W/m²（3℃は資料の演習の値）。熱容量（室温を1℃下げるのに逃げる熱の量）は、空気（約11 MJ/K）に作物の葉と茎（床1 m²あたり2.5 kgと仮定）を足して約29 MJ/K です</li>
       <li>カーテンは屋根の部分だけに効きます。熱節減率はラクソス0.47（メーカー値）、テンパ0.42（アルミ50%）、2層はそれぞれの熱抵抗を足して0.62</li>
       <li>晴れた夜は空が冷たく、放射で熱が余分に逃げます。くもりや雨の夜は雲が熱を返すので、外気に近い温度になります。天気の予報から雲量（晴れ0.5・くもり0.95・雨1.0）を決め、空の放射温度を出して屋根の外の「相当外気温」を下げています（側面は空を半分見るので半分だけ）</li>
-      <li>床から出てくる熱（夏・昼にためた地面や作物の熱）は、資料の地中伝熱係数で見積もるより大きく、重油の使用量に合わせると10〜12月で28〜34 W/m²、1〜2月で約20 W/m²、3月12 W/m²、4月6 W/m²でした。秋に暖房が止まりがちなのはこのためです</li>
-      <li>あわせて、過去3冬・約14,000回の「止まっている時間」をそのまま当てはめた式でも見込みを出し、<b>2つのうち長いほう（慎重な側）</b>を使います。30分に1回の基準では、2つの式で閉めてよい「設定−鹿沼」の差はおおむね1〜2℃の範囲で合いました。実測の式は短い止まり方のデータで作ったため、30分をこえる見込みは当てになりません（見込み30〜40分で実際に60分以内は53%。物理の式は91%）。1時間・1時間半の基準では、実質的に物理の式で決まります</li>
+      <li><b>参考として、床の熱を重油に合わせた式</b>の時刻も出します。資料どおりの式では、過去3冬の夜に要る熱が実際の重油の1.6〜4倍（秋ほど大きい）になったため、床から出てくる熱を月ごとに重油に合わせたもの（10〜12月28〜34 W/m²、1〜2月約20、3月12、4月6）です。熱容量は過去の止まっている時間から逆算した35 MJ/K です</li>
+      <li>2つの式を過去3冬の夜（5分ごとの室温）と比べると、資料どおりの式は秋・春に「すぐ点く」と見込みすぎる傾向がありました（見込み40分以内で、実際に60分以内に点いた時間は10〜11月43%・3〜4月65%・12〜2月94%）。重油に合わせた式は全体では約9割当たりましたが、ラクソスだけ閉めた夜は止まると見込みすぎる傾向がありました。2026年11月3日の朝（ラクソス・設定13℃・外気6.8℃で30分に1回燃えた）は資料どおりの式が合いました。過去の測定データには全面的には信用できない部分があるため、既定は資料どおりの式にしています</li>
       <li>いまのルール（設定−5℃・−8℃）は参考として、暖房が動き出す見込み（過去3冬の実績表）も参考として出しています</li>
       <li>外気は<b>鹿沼のめやす</b>（宇都宮の予報＋鹿沼との夜の平均の差。晴れの夜で−2.0〜−2.7℃、くもり雨で−1.3〜−1.9℃）で判定します。気象庁は鹿沼の地点の気温予報を出していないため、鹿沼の列は予報ではなく推定です</li>
       <li>2〜3月の晴れた日の夜は、暖房が動いていても深夜から湿度95%以上が3時間以上続いたことがあります（2冬で9夜）。湿度は中央の乾球・湿球温度から計算しました</li>
@@ -401,8 +433,7 @@ const CURTAIN = {
 
   // ---- 閉めたあとに暖房が止まっている時間の見込み（2026-11 の検証。画面下「計算の考え方」）----
   // カーテンは「閉めてから朝まで、暖房が止まっている時間の見込みがずっと predMin 分以内」になったら閉める。
-  // 何分に1回動けばよいか（maxOffMin）は画面で選ぶ。predMin は、過去3冬の実績で9割が実際に maxOffMin 以内に収まった見込みの上限
-  //   30分：見込み20分以内なら9割以上が30分以内／1時間：見込み30〜40分で90〜91%が60分以内／1時間30分：見込み40〜60分で90〜91%が90分以内
+  // 何分に1回動けばよいか（maxOffMin）は画面で選ぶ。predMin は間隔の3分の2（式の不確かさのぶん余裕を持たせる）
   freqs: [
     { key: "30", label: "30分に1回", maxOffMin: 30, predMin: 20 },
     { key: "60", label: "1時間に1回", maxOffMin: 60, predMin: 40 },
@@ -411,26 +442,34 @@ const CURTAIN = {
   freqDefault: "60", freqKey: "htf_yaon_freq",   // 既定は1時間に1回。選んだものはこの端末に覚えさせる
   checkUntilBeforeRiseH: 1,                // 日の出の1時間前まで確かめる
   hystC: 2,                                // 暖房機は 設定−1℃で点き、設定＋1℃で消える
-  // (1) 物理の式（狩野 敦「温室の熱収支」の資料）：止まっている時間 ＝ 熱容量 × hystC ÷ 逃げる熱
+  // 物理の式（狩野 敦「温室の熱収支」の資料）：止まっている時間 ＝ 熱容量 × hystC ÷ 逃げる熱
   phys: {
     floorM2: 1884.8, spanM: 9, nSpan: 3.5, eaveM: 4.5, ridgeM: 5.5,   // 間口9m×3.5連棟
     hRoof: 6.4,                            // 屋根（エフクリーン1層。PO と同じとみなす）の熱貫流係数 [W/m²K]
     hSide: 3.2,                            // 側面・妻面（PO 3層 ＝ 6.4 ×（1 − 0.5））
     hVent: 0.4,                            // すき間（換気伝熱係数。窓全閉で0.2〜0.8）
     frLux: 0.47, frTempa: 0.42,            // 熱節減率：ラクソス（メーカー値）、テンパ（アルミ50%、資料の値）。カーテンは屋根だけ
-    heatCapJ: 35e6,                        // ハウスの熱容量 [J/K]（空気の約3倍。実測の止まっている時間から逆算）
-    // 床（地面・作物などにため込んだ熱）から夜に出てくる熱 [W/m²]。月ごとに重油の使用量に合うよう求めた
-    floorW: { 10: 28, 11: 30, 12: 34, 1: 20, 2: 22, 3: 12, 4: 6 }, floorWOther: 28,
     epsFilm: 0.8,                          // 被覆外面の放射率
     cloud: [["快晴", 0.05], ["晴", 0.5], ["くもり", 0.95], ["曇", 0.95], ["雨", 1.0], ["雪", 1.0]],   // 天気 → 雲量
   },
-  // (2) 実測の当てはめ：1 ÷ 止まっている時間[h] ＝ c×（設定−鹿沼）＋ d（晴れ）＋ g（月）− 宵の分
-  emp: {
-    c: { open: 0.5772, lux: 0.3254, both: 0.2403 },
-    d: { open: 0.7662, lux: 0.2127, both: 0.4008 },
-    g: { 10: 0.5585, 11: 0.4609, 12: 0.9987, 1: 0.8541, 2: 0.5462, 3: 0.4836, 4: 0.7820 }, gOther: 0.5585,
-    early: [{ hi: 1.5, g: 0.1400 }, { hi: 3, g: 0.0861 }],   // 日没から hi 時間までは g だけ引く（昼の熱が残っている）
+  // 資料に値が無い「床から出てくる熱」と「ハウスの熱容量」は、2通り持つ。
+  // 既定は資料どおり（2026-11-03 ユーザー決定。過去の測定データは全面的には信用できないため）。もう一方は参考に出す
+  variants: {
+    doc: {
+      label: "資料どおりの式",
+      // 床の熱 ＝ 地中伝熱係数 1.3 W/m²K ×（地表 − 室温）3℃（資料の式。差の3℃は資料の演習の値）
+      hS: 1.3, soilMinusAirC: 3,
+      // 熱容量 ＝ 空気（容積×1.2 kg/m³×1005 J/kgK）＋ 作物の葉と茎（床1 m²あたり2.5 kg × 3800 J/kgK と仮定）
+      cropKgM2: 2.5, cropJKgK: 3800,
+    },
+    fuel: {
+      label: "床の熱を重油に合わせた式",
+      // 床（地面・作物などにため込んだ熱）から夜に出てくる熱 [W/m²]。月ごとに重油の使用量に合うよう求めた
+      floorW: { 10: 28, 11: 30, 12: 34, 1: 20, 2: 22, 3: 12, 4: 6 }, floorWOther: 28,
+      heatCapJ: 35e6,                      // 熱容量 [J/K]（空気の約3倍。過去の止まっている時間から逆算）
+    },
   },
+  variantMain: "doc", variantRef: "fuel",
   // 鹿沼 − 宇都宮 の夜（日没〜日の出）の気温差 [℃]。2024〜2026年度の毎時の実測（鹿沼アメダス・宇都宮地方気象台）の平均。
   // いまのルール（設定−5℃・−8℃）は鹿沼市の予報で決めてきたので、宇都宮の予報にこの差を足して合わせる
   kanumaOffset: {
@@ -700,8 +739,21 @@ const HOUSE = (() => {
   const side = 2 * (width + length) * p.eaveM + 2 * p.nSpan * p.spanM * rise / 2;
   // 2層の熱節減率：カーテン1枚ずつの熱抵抗（熱の通りにくさ）を、屋根の熱抵抗に直列に足して求める
   const r0 = 1 / p.hRoof, rl = 1 / (p.hRoof * (1 - p.frLux)) - r0, rt = 1 / (p.hRoof * (1 - p.frTempa)) - r0;
-  return { roof, side, total: roof + side, fr: { open: 0, lux: p.frLux, both: 1 - 1 / ((r0 + rl + rt) * p.hRoof) } };
+  const volume = p.floorM2 * p.eaveM + p.floorM2 * rise / 2;   // 容積 [m³]
+  return { roof, side, total: roof + side, volume, fr: { open: 0, lux: p.frLux, both: 1 - 1 / ((r0 + rl + rt) * p.hRoof) } };
 })();
+
+/* 式の2通り（CURTAIN.variants）ごとの「床から出てくる熱 [W/m²]」と「熱容量 [J/K]」 */
+function floorWOf(vkey, month) {
+  const v = CURTAIN.variants[vkey];
+  if (vkey === "doc") return v.hS * v.soilMinusAirC;
+  return month in v.floorW ? v.floorW[month] : v.floorWOther;
+}
+function heatCapOf(vkey) {
+  const v = CURTAIN.variants[vkey];
+  if (vkey === "doc") return HOUSE.volume * 1.2 * 1005 + CURTAIN.phys.floorM2 * v.cropKgM2 * v.cropJKgK;
+  return v.heatCapJ;
+}
 
 /* 天気の言葉 → 雲量（0〜1）。分からなければ 0.95（くもり）とみなす（雲が多いほど暖房は止まりがちなので、慎重な側） */
 function cloudOf(w) {
@@ -725,43 +777,33 @@ function eqShiftK(to, c, wind) {
   return hr / (ho + hr) * (to - tSky);
 }
 
-/* (1) 物理の式：逃げる熱 [W] → 止まっている時間 [分]。熱が逃げない（暖房が要らない）ときは Infinity */
-function offMinPhys(state, ti, to, c, wind, month) {
+/* 物理の式：逃げる熱 [W] → 止まっている時間 [分]。熱が逃げない（暖房が要らない）ときは Infinity
+   vkey は式の2通りのどちらか（"doc" 資料どおり／"fuel" 床の熱を重油に合わせた式） */
+function offMinPhys(state, ti, to, c, wind, month, vkey) {
   const p = CURTAIN.phys, s = eqShiftK(to, c, wind);
-  const floorW = month in p.floorW ? p.floorW[month] : p.floorWOther;
   const q = HOUSE.roof * p.hRoof * (1 - HOUSE.fr[state]) * (ti - (to - s))   // 屋根（空を全部見る）
           + HOUSE.side * p.hSide * (ti - (to - 0.5 * s))                     // 側面（空を半分見る）
           + HOUSE.total * p.hVent * (ti - to)                                // すき間
-          - p.floorM2 * floorW;                                              // 床から出てくる熱
-  return q > 0 ? p.heatCapJ * CURTAIN.hystC / q / 60 : Infinity;
+          - p.floorM2 * floorWOf(vkey, month);                               // 床から出てくる熱
+  return q > 0 ? heatCapOf(vkey) * CURTAIN.hystC / q / 60 : Infinity;
 }
 
-/* (2) 実測の当てはめ → 止まっている時間 [分] */
-function offMinEmp(state, ti, to, clear, month, hFromSunset) {
-  const e = CURTAIN.emp;
-  const early = e.early.find(x => hFromSunset < x.hi);
-  const y = e.c[state] * (ti - to) + (clear ? e.d[state] : 0) + (month in e.g ? e.g[month] : e.gOther) - (early ? early.g : 0);
-  return y > 0 ? 60 / y : Infinity;
-}
-
-/* 時刻 h の見込み：2つの式の長いほう（慎重な側）。予報が無ければ null */
-function offMinAt(fc, date, r, state, h) {
+/* 時刻 h の見込み。予報が無ければ null */
+function offMinAt(fc, date, r, state, h, vkey) {
   const ms = msAt(date, h), month = date.getMonth() + 1;
   const to = kanumaAt(fc, ms, month);
   if (to === null) return null;
   const b = fc.weather.find(x => x.t0 <= ms && ms < x.t1);
-  const w = b ? b.w : "", ti = setpointAt(r, h);
-  return Math.max(offMinPhys(state, ti, to, cloudOf(w), windOf(b && b.windRange), month),
-                  offMinEmp(state, ti, to, w.includes("晴"), month, h - r.sunset));
+  return offMinPhys(state, setpointAt(r, h), to, cloudOf(b ? b.w : ""), windOf(b && b.windRange), month, vkey);
 }
 
 /* 閉めてよい最初の時刻：そこから朝（日の出の1時間前）まで、ずっと predMin 分以内の見込みになる時刻。
    { h, worst }／閉めない { h: null, why: "never", worst, worstH }／予報が途中で切れる { h: null, why: "range", lastH } */
-function closeTime(fc, date, r, state, predMin, fromH = r.sunset) {
+function closeTime(fc, date, r, state, predMin, vkey, fromH = r.sunset) {
   const step = CURTAIN.stepMin / 60, endH = r.nextRise - CURTAIN.checkUntilBeforeRiseH;
   const pts = [];
   for (let h = fromH; h <= endH + 1e-9; h += step) {
-    const m = offMinAt(fc, date, r, state, h);
+    const m = offMinAt(fc, date, r, state, h, vkey);
     if (m === null) return { h: null, why: "range", lastH: pts.length ? pts[pts.length - 1].h : null };
     pts.push({ h, m });
   }
@@ -806,14 +848,17 @@ function curtainPlan(date, r, fc, wxClear, predMin) {
     if (!start) return startWhy.why === "range" ? { h: null, why: "range", lastH: startWhy.lastH } : { h: null, why: "noheat" };
     return x.h < startT ? { ...x, h: startT, waited: true } : x;
   };
-  const luxous = afterStart(closeTime(fc, date, r, "lux", predMin, fromH));
-  const tempa = afterStart(closeTime(fc, date, r, "both", predMin, fromH));
+  // 既定の式（資料どおり）で出す時刻と、参考の式（床の熱を重油に合わせた）で出す時刻
+  const plan = vkey => ({ luxous: afterStart(closeTime(fc, date, r, "lux", predMin, vkey, fromH)),
+                          tempa: afterStart(closeTime(fc, date, r, "both", predMin, vkey, fromH)) });
+  const { luxous, tempa } = plan(CURTAIN.variantMain);
+  const ref = plan(CURTAIN.variantRef);
   const c5 = crossTime(fc, date, r, CURTAIN.luxousK, fromH);
   const c8 = crossTime(fc, date, r, CURTAIN.tempaK, fromH);
   // 日中（9〜15時）の予報に「晴」があるか。予報が残っていなければ③の天気で代える
   const day = fc.weather.filter(x => x.t0 >= msAt(date, 9) && x.t0 < msAt(date, 15));
   const sunnyDay = day.length ? day.some(x => x.w.includes("晴")) : wxClear;
-  return { fromH, late, o, sky, dT, margin, start, startWhy, luxous, tempa, c5, c8,
+  return { fromH, late, o, sky, dT, margin, start, startWhy, luxous, tempa, ref, c5, c8,
            caution: CURTAIN.humidMonths.includes(month) && sunnyDay };
 }
 
@@ -1003,18 +1048,18 @@ function renderCurtain(g, r) {
   const box = $("curtain");
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const near = g.date && (ymd(g.date) === ymd(today) || ymd(g.date) === ymd(addDays(today, 1)));
-  if (!r) { box.innerHTML = '<p class="hint">④の設定が出ると、ここに目安が出ます。</p>'; return; }
-  if (!near) { box.innerHTML = '<p class="hint">気象庁の予報があるのは今日と明日だけです。日付を今日か明日にすると、目安が出ます。</p>'; return; }
+  if (!r) { box.innerHTML = '<p class="hint">④の設定が出ると、ここに目安が出ます。</p>'; return null; }
+  if (!near) { box.innerHTML = '<p class="hint">気象庁の予報があるのは今日と明日だけです。日付を今日か明日にすると、目安が出ます。</p>'; return null; }
   if (FC.state === "idle") loadForecast();
-  if (FC.state === "loading") { box.innerHTML = '<p class="hint">気象庁の予報を読んでいます…</p>'; return; }
+  if (FC.state === "loading") { box.innerHTML = '<p class="hint">気象庁の予報を読んでいます…</p>'; return null; }
   if (FC.state === "error") {
     box.innerHTML = '<p class="err">' + esc(FC.error) + "</p>" +
-      '<p class="hint">外気（鹿沼）が設定温度より十分に下がってから閉めてください。過去3冬の検証では、閉めたあとも暖房が1時間に1回動くには、ラクソスで3〜9℃、テンパ（2層）で4〜10℃ほど下がっている必要がありました（30分に1回ならさらに約3℃大きく、1時間半に1回なら約1℃小さい。くもりの夜・11〜12月ほど大きい）。</p>';
-    return;
+      '<p class="hint">暖房が動き出したのを確かめてから閉めてください。資料どおりの式では、閉めたあとも暖房が1時間に1回動くのは、外気（鹿沼）が設定温度よりラクソスで約1〜2.5℃、テンパ（2層）で約2〜3℃以上低いときです（30分に1回ならラクソス約3〜5℃・テンパ約4.5〜6℃。くもりの夜ほど大きい）。床の熱を重油に合わせた式（慎重な側）では、1時間に1回でラクソス3〜9℃、テンパ4〜10℃でした。</p>';
+    return null;
   }
   const F = CURTAIN.freqs.find(x => x.key === freq);   // 選んでいる「何分に1回」
   const p = curtainPlan(g.date, r, FC.data, !g.typed && wx === "clear", F.predMin);
-  if (p.noForecast) { box.innerHTML = '<p class="hint">この夜の予報がまだありません（予報は約2日先まで）。</p>'; return; }
+  if (p.noForecast) { box.innerHTML = '<p class="hint">この夜の予報がまだありません（予報は約2日先まで）。</p>'; return null; }
 
   const skyName = p.sky === "clear" ? "晴れ" : "くもり・雨";
   const t = x => x.h !== null ? '<span class="time num">' + hhmm(x.h) + "</span>"
@@ -1050,6 +1095,7 @@ function renderCurtain(g, r) {
       "℃）で、鹿沼の予報ではありません。天気・風は栃木県南部（鹿沼市も含む区域）の予報です。気象庁の予報に湿度はありません。</p>";
   const margin = (p.margin >= 0 ? "＋" : "−") + c1(Math.abs(p.margin)) + "℃";   // 境目（例 ＋0.2℃・−3.5℃）
   const ref = c => c.h === null ? (c.why === "none" ? "朝まで届かない" : "予報の範囲外") : (c.h <= r.sunset + 1e-9 ? "日没時にすでに" : hhmm(c.h));
+  const refTime = x => x.h !== null ? hhmm(x.h) : x.why === "range" ? "まだ出せない" : "閉めない";
 
   box.innerHTML =
     '<div class="summary">' +
@@ -1063,8 +1109,10 @@ function renderCurtain(g, r) {
       '<li><span><span class="name">1層目 ラクソス</span><span class="sub">' + esc(sub(p.luxous)) + "</span></span>" + t(p.luxous) + "</li>" +
       '<li><span><span class="name">2層目 テンパ</span><span class="sub">' + esc(sub(p.tempa)) + "</span></span>" + t(p.tempa) + "</li>" +
     "</ul>" +
-    '<p class="hint">閉めたあとも暖房が' + F.label + "は動く（止まっている時間の見込みが" + F.predMin + "分以内。過去3冬では、その9割が実際に" +
-      F.maxOffMin + "分以内）と見込める、いちばん早い時刻です。暖房の設定の段が下がる時間や、明け方までの冷え方もふくめて確かめています。</p>" +
+    '<p class="hint">閉めたあとも暖房が' + F.label + "は動く（" + CURTAIN.variants[CURTAIN.variantMain].label + "で、止まっている時間の見込みが" +
+      F.predMin + "分以内）と見込める、いちばん早い時刻です。暖房の設定の段が下がる時間や、明け方までの冷え方もふくめて確かめています。</p>" +
+    '<p class="hint">参考・' + CURTAIN.variants[CURTAIN.variantRef].label + "（慎重な側）なら：ラクソス " + refTime(p.ref.luxous) +
+      "、テンパ " + refTime(p.ref.tempa) + "</p>" +
     (p.late ? "" : '<div class="start"><span class="k">参考・暖房が動き出す見込み</span>' +
     (p.start
       ? '<div class="v num">' + hhmm(p.start.p50) + " ごろ</div>" +
@@ -1082,6 +1130,104 @@ function renderCurtain(g, r) {
       "<small>2〜3月の晴れた日の夜は、暖房が動いていても深夜から湿度95%以上が3時間以上続いたことがあります。テンパを遅らせるか、閉める前に30分換気する・カーテンにすき間をあけるなどで湿気を逃がしてください。</small></div>" : "") +
     fTable +
     '<p class="hint">予報：気象庁 地域時系列予報（' + esc(CURTAIN.point) + "、" + esc(String(FC.data.issued || "").slice(5, 16).replace("T", " ")) + " 発表）を加工。3時間ごとの気温を直線でつないでいます。</p>";
+  return p;
+}
+
+/* ---- 閉めた時刻の記録（スプレッドシート。収量・液肥・ノートと同じ Apps Script） ---- */
+const REC_API = "https://script.google.com/macros/s/AKfycbzYkVlVngoC6CXf9HKPlfnFbJHs5lrarw2J9dLjdqaqvdVQFIN15aMr5EyNSA8tj1UU/exec";
+let REC = { state: "idle", rows: {}, error: "" };   // idle → loading → ok / error。rows は「日付|ハウス」→ 記録
+// 記録欄の状態。key は「日付|ハウス」。edited は打ちかけ（画面を描き直しても書き換えない）、sug はアプリの目安の控え
+let recForm = { key: "", edited: false, sending: false, msg: "", ng: false, sug: {} };
+
+/* 打った時刻 → "17:30"。空は ""（閉めなかった）、読めなければ null。
+   スマホの数字キーには「:」が無いことが多いので、1730・930 のような形も受け付ける */
+function normTime(s) {
+  const t = String(s || "").replace(/[０-９：]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/\s/g, "");
+  if (!t) return "";
+  const m = /^(\d{1,2}):?(\d{2})$/.exec(t);
+  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
+  return m[1].padStart(2, "0") + ":" + m[2];
+}
+
+/* 記録をまとめて読む（開いたときに1回。1夜1ハウス1行なので軽い） */
+function loadRecords() {
+  REC = { state: "loading", rows: {}, error: "" };
+  fetch(REC_API + "?want=curtain")
+    .then(res => { if (!res.ok) throw new Error("記録を読めませんでした（応答 " + res.status + "）"); return res.json(); })
+    .then(j => {
+      if (!j.ok || !Array.isArray(j.curtain)) {
+        throw new Error("記録を読めませんでした（" + (j.error || "スプレッドシート側の Apps Script がまだ新しくなっていないようです") + "）");
+      }
+      REC = { state: "ok", rows: Object.fromEntries(j.curtain.map(x => [x.id, x])), error: "" };
+    })
+    .catch(e => { REC = { state: "error", rows: {}, error: e.message || String(e) }; })
+    .then(render);
+}
+
+const recWhen = at => { const d = new Date(at); return (d.getMonth() + 1) + "/" + d.getDate() + " " + hhmm(d.getHours() + d.getMinutes() / 60); };
+const recShow = x => "ラクソス " + (x.luxous || "閉めなかった") + "・テンパ " + (x.tempa || "閉めなかった");
+
+/* 記録欄を描く。p は⑤の計算結果（無いときは null）。記録があればその時刻、無ければ⑤の目安の時刻を入れておく */
+function renderRec(g, r, p) {
+  const box = $("recBox");
+  if (!g.date) { box.hidden = true; return; }
+  box.hidden = false;
+  if (REC.state === "idle") loadRecords();
+  const key = ymd(g.date) + "|" + house;
+  const saved = REC.rows[key];
+  if (recForm.key !== key) recForm = { key, edited: false, sending: false, msg: "", ng: false, sug: {} };
+  const sugText = x => !x ? "" : x.h !== null ? hhmm(x.h) : x.why === "range" ? "まだ出せない" : "閉めない";
+  // 送るときに一緒に残す、アプリの目安（あとで「目安どおりに閉めた夜か」を見分けるため）
+  recForm = { ...recForm, sug: {
+    sugLuxous: p ? sugText(p.luxous) : "", sugTempa: p ? sugText(p.tempa) : "", freq,
+    stages: r ? r.starts.map((s, i) => hhmm(s) + " " + r.temps[i]).join(" / ") : "",
+  } };
+  if (!recForm.edited) {   // 打ちかけの時刻は書き換えない
+    const pick = x => (x && x.h !== null ? hhmm(x.h) : "");
+    $("recLux").value = saved ? saved.luxous : pick(p && p.luxous);
+    $("recTem").value = saved ? saved.tempa : pick(p && p.tempa);
+  }
+  $("recTitle").textContent = "閉めた時刻を記録する（" + (g.date.getMonth() + 1) + "/" + g.date.getDate() + " の夜・" + house + "）";
+  $("recSend").disabled = recForm.sending;
+  $("recSend").textContent = recForm.sending ? "送っています…" : saved ? "この時刻で記録し直す" : "この時刻で記録する";
+  const status = REC.state === "loading" ? "記録を読んでいます…"
+    : REC.state === "error" ? REC.error
+    : saved ? "記録済み：" + recShow(saved) + "（" + recWhen(saved.at) + " に記録）。直して送ると上書きします。"
+    : "まだ記録していません。時刻は⑤の目安を入れてあるので、実際に閉めた時刻に直して送ってください。空欄は「閉めなかった」、0時を過ぎた時刻もこの夜の分です。";
+  $("recMsg").textContent = recForm.msg || status;
+  $("recMsg").className = "hint" + ((recForm.msg ? recForm.ng : REC.state === "error") ? " rec-ng" : "");
+}
+
+/* 記録を送る。同じ夜・同じハウスは上書きなので、つながらなかったときに1回だけ送り直しても二重にならない */
+function sendRecord() {
+  const luxous = normTime($("recLux").value), tempa = normTime($("recTem").value);
+  if (luxous === null || tempa === null) {
+    recForm = { ...recForm, msg: "時刻は 17:30 か 1730 の形で入れてください（空欄は「閉めなかった」）。", ng: true };
+    render();
+    return;
+  }
+  const key = recForm.key, [date, h] = key.split("|");
+  const item = { date, house: h, luxous, tempa, ...recForm.sug };
+  recForm = { ...recForm, sending: true, msg: "", ng: false };
+  render();
+  const once = () => fetch(REC_API, {
+      method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "saveCurtain", item }),
+    })
+    .then(res => { if (!res.ok) throw new Error("応答 " + res.status); return res.json(); })
+    .then(j => { if (!j.ok || !j.item) throw new Error(j.error || "保存できませんでした"); return j.item; });
+  once()
+    .catch(() => new Promise(res => setTimeout(res, 2500)).then(once))
+    .then(saved => {
+      REC = { ...REC, rows: { ...REC.rows, [saved.id]: saved } };
+      if (recForm.key === key) recForm = { ...recForm, sending: false, edited: false, ng: false,
+        msg: "記録しました：" + recShow(saved) + "。直して送ると上書きします。" };
+    })
+    .catch(e => {
+      if (recForm.key === key) recForm = { ...recForm, sending: false, ng: true,
+        msg: "記録できませんでした（" + (e.message || e) + "）。入れた時刻はそのまま残っています。少し待ってからもう一度押してください。" };
+    })
+    .then(render);
 }
 
 function renderSun(g) {
@@ -1109,7 +1255,8 @@ function render() {
   const g = gather();
   renderHints(g);
   const r = renderResult(g);
-  renderCurtain(g, r);
+  const p = renderCurtain(g, r);
+  renderRec(g, r, p);
   renderSun(g);
   renderYears(g);
 }
@@ -1128,6 +1275,12 @@ $("freqBtns").addEventListener("click", e => {
   render();
 });
 $("today").addEventListener("click", () => { $("date").value = ymd(new Date()); render(); });
+/* 記録欄：打ちはじめたら目安で書き換えない。欄を離れたら「1730」を「17:30」の形に直して見せる */
+["recLux", "recTem"].forEach(id => {
+  $(id).addEventListener("input", () => { recForm = { ...recForm, edited: true, msg: "" }; });
+  $(id).addEventListener("blur", () => { const v = normTime($(id).value); if (v) $(id).value = v; });
+});
+$("recSend").addEventListener("click", sendRecord);
 /* 天気別の平年値を押したら、入力欄を空にしてその値で計算する（書き換えるのは押したときだけ） */
 $("wxBtns").addEventListener("click", e => {
   const b = e.target.closest("button[data-wx]");
