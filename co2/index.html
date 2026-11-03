@@ -146,6 +146,7 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 .mode-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:800;font-size:15.5px}
 .mode-h .num{font-size:17px}
 .mode-h em{font-style:normal;font-size:12px;background:var(--accent);color:#fff;border-radius:999px;padding:1px 9px;margin-left:6px;vertical-align:2px}
+.mode-s{font-size:13px;font-weight:700;color:var(--muted);margin-top:2px;text-align:right}
 .mode .plan{margin-top:4px}
 .mode .plan li{gap:2px 8px;padding:10px 0}
 .mode .plan .when{font-size:17px}
@@ -225,6 +226,7 @@ footer a{color:var(--muted)}
       </div>
       <p class="err" id="keroseneErr" hidden></p>
     </div>
+    <p class="hint wide">トマト単価は<b>手取り</b>（市場手数料・箱代・運賃を引いた額）を入れてください。売値のままだと果実の値打ちを高く見て、施用しすぎる答えになります。</p>
 
     <div class="sep">その日のハウス</div>
     <div class="seg wide" id="houseSeg" role="group" aria-label="ハウス">
@@ -315,12 +317,21 @@ footer a{color:var(--muted)}
     <div class="field">
       <label for="cap">増収率の上限</label>
       <div class="row">
-        <input id="cap" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done">
+        <input id="cap" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
         <span class="unit">%</span>
       </div>
       <p class="err" id="capErr" hidden></p>
     </div>
     <p class="hint wide">外気並みの濃度のときと比べて、収量はこの割合までしか増えないとします（施用しないと外気より下がる分を戻すのは別に全部数えます）。日本の冬の促成トマトの試験は +25〜30% でした（千葉 総収量+30%、岩手+25%）。CO₂への反応は実測に合わせてあるので、ふつうはこの上限まで届きません。</p>
+    <div class="field">
+      <label for="safety">安全率</label>
+      <div class="row">
+        <input id="safety" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done">
+        <span class="unit">%</span>
+      </div>
+      <p class="err" id="safetyErr" hidden></p>
+    </div>
+    <p class="hint wide">果実の増分が見込みよりこの割合だけ少なくても元がとれる動かし方を選びます。果実への分配・乾物率・CO₂への反応（平均の式）に、合わせて2〜3割の幅があるためです。0 にすると、見込みどおりでいちばん得な動かし方になります。</p>
   </div>
   <p class="hint">入れた値はこのスマホが覚えます（ページには書き込まれません）。</p>
 </section>
@@ -430,6 +441,15 @@ footer a{color:var(--muted)}
       <li>上限の基準を「施用しなかったときの光合成」にしないのは、閉め切りに近い日ほど基準が下がり、外気並みに戻す途中で上限に届いてしまうためです（換気が少ないほど施用しない、という逆さまの答えになります）</li>
     </ul>
 
+    <h3>安全率（既定 30%）</h3>
+    <p>果実の増分の見込みには幅があります。動かし方は「果実の増分が見込みより安全率だけ少なくても元がとれる」もののうち、いちばん得なものを選びます。</p>
+    <ul>
+      <li>幅の元：果実への分配 0.5・乾物率 0.05（成長の呼吸は入れていません）と、CO₂則が光の強さによる違いをならした平均の式であること。合わせて2〜3割です</li>
+      <li>換気が大きい日は、出したCO₂のほとんどが天窓から逃げるので、利益が灯油代の1〜4割と薄くなります。見込みが3割外れると赤字になる動かし方は選びません</li>
+      <li>換気が小さい日は利益が厚いので、安全率を見込んでも答えはあまり変わりません</li>
+      <li>結果の金額は見込みどおりの差で、その下に安全率だけ少なかったときの差を並べています。「センサーで決めるときの目安」も同じ割引で出しています</li>
+    </ul>
+
     <h3>換気回数が大きい日</h3>
     <p>天窓を大きく開ける日（春先・秋口、風の強い日）は、出した CO₂ の多くが外へ逃げます。一方、施用しなくても外気から CO₂ がよく入るので、濃度は下がりにくくなります。こういう日は、外気より上げるより「光合成で外気より下がった分だけ補う」動かし方（ゼロ濃度差施用）が得になりやすくなります。「換気回数が違ったら」の表で、半分・2倍のときの答えを確かめてください。</p>
 
@@ -478,6 +498,8 @@ const FIX = {
   achOpenByMonth: [1.6, 1.6, 3, 6, 10, 15, 15, 15, 10, 6, 3, 1.6],
   achClosed: 0.182,           // 換気回数 [回/h]：天窓が閉まっているとき（2020/9/11 夜の測定）
   capPct: 30,                 // 増収率の上限 [%]：外気のときの光合成より何割まで増えたら数えるか（千葉 総収量+30%、岩手 +25%）
+  safetyPct: 30,              // 安全率 [%]：果実の増分がこの割合だけ見込みより少なくても元がとれる動かし方を選ぶ
+                              // （果実への分配・乾物率・CO₂則の平均の式に、合わせて2〜3割の幅があるため）
   // CO₂への反応は温室の群落の実測則（Nederhoff 1994）：100ppm上げたときの伸び[%] ＝ (1000/C)² × 1.5
   // 積分すると P(C) ＝ P(400) × exp(150 × (1/400 − 1/C))。葉の式のままだと 400→1000ppm で約+90% と、実測（+25%前後）の3倍強く出るため
   co2RuleK: 150,              // 上の式の 150 [ppm]
@@ -524,13 +546,14 @@ const INPUTS = {
   dawn:     { min: 300, max: 3000, label: "300〜3000", normal: true },
   achOpen:  { min: 0.2, max: 80,   label: "0.2〜80" },
   cap:      { min: 0,   max: 100,  label: "0〜100" },
+  safety:   { min: 0,   max: 90,   label: "0〜90" },
   density:  { min: 0.5, max: 10,   label: "0.5〜10", plan: true },
   leaves:   { min: 1,   max: 40,   label: "1〜40", plan: true },
   width:    { min: 5,   max: 80,   label: "5〜80" },
 };
-const STORE_IDS = ["tomato", "kerosene", "density", "leaves", "width", "cap"];   // スマホに覚えさせる欄（その日だけの欄は覚えない）
-const ORDER = ["tomato", "kerosene", "date", "openAt", "dawn", "achOpen", "density", "leaves", "width", "cap"];
-const NUM_IDS = ["tomato", "kerosene", "dawn", "achOpen", "density", "leaves", "width", "cap"];
+const STORE_IDS = ["tomato", "kerosene", "density", "leaves", "width", "cap", "safety"];   // スマホに覚えさせる欄（その日だけの欄は覚えない）
+const ORDER = ["tomato", "kerosene", "date", "openAt", "dawn", "achOpen", "density", "leaves", "width", "cap", "safety"];
+const NUM_IDS = ["tomato", "kerosene", "dawn", "achOpen", "density", "leaves", "width", "cap", "safety"];
 const LS_KEY = "htf_co2_inputs";
 const D2R = Math.PI / 180;
 const WX_LABEL = { clear: "快晴", partly: "曇りがち", cloudy: "曇雨天" };
@@ -753,14 +776,18 @@ function optimize(day, c) {
   // 外気並みに戻す途中で上限に届いてしまう（換気が少ないほど施用しない、という逆さまの答えになる）
   const restoreG = Math.max(0, base.ambG - base.uptakeG);
   const capG = restoreG + Math.max(0, base.ambG) * c.cap / 100;  // 1日に数えられる最大 [g CO₂]
+  const keep = 1 - c.safety / 100;                                // 安全率を引いた、果実の増分の見込みの割合
   const value = sim => {
     const rawG = sim.uptakeG - base.uptakeG;
     const gainG = Math.min(rawG, capG);
     const gainKg = fruitKgFromCo2G(gainG);
-    return { rawG, gainG, capped: rawG > capG + 0.5, gainKg, yen: gainKg * c.tomato - sim.fuelL * c.kerosene };
+    const fruitYen = gainKg * c.tomato, fuelYen = sim.fuelL * c.kerosene;
+    // yen：見込みどおりの差、yenSafe：果実の増分が安全率だけ少なかったときの差（動かし方はこちらで選ぶ）
+    return { rawG, gainG, capped: rawG > capG + 0.5, gainKg, yen: fruitYen - fuelYen, yenSafe: fruitYen * keep - fuelYen };
   };
-  // 候補を全部試して、得がいちばん大きいものを返す。得が同じ（1円未満の差）なら灯油の少ないほう
-  let tried = 0;
+  // 候補を全部試して、安全率を見込んだ得がいちばん大きいものを返す。得が同じ（1円未満の差）なら灯油の少ないほう。
+  // 見込みが外れても赤字にならない動かし方を選ぶため。topYen は、見込みどおりで数えたときにいちばん得な候補の差
+  let tried = 0, topYen = 0;
   const pick = (phaseA, phaseB, makeSched) => {
     let best = null;
     for (const A of phaseA) {
@@ -770,7 +797,8 @@ function optimize(day, c) {
         tried++;
         if (sim.maxC > FIX.maxPpm) continue;
         const v = value(sim);
-        if (!best || v.yen > best.v.yen + 1 || (Math.abs(v.yen - best.v.yen) <= 1 && sim.fuelL < best.sim.fuelL)) best = { A, B, sim, v };
+        if (v.yen > topYen) topYen = v.yen;
+        if (!best || v.yenSafe > best.v.yenSafe + 1 || (Math.abs(v.yenSafe - best.v.yenSafe) <= 1 && sim.fuelL < best.sim.fuelL)) best = { A, B, sim, v };
       }
     }
     best.excelYen = fruitKgFromCo2G(best.sim.uptakeG) * c.tomato - best.sim.fuelL * c.kerosene;
@@ -794,8 +822,8 @@ function optimize(day, c) {
     (A.target && t < switchAt) ? { target: A.target } : (B.target && t >= switchAt && t < B.b) ? { target: B.target } : null);
   target.kind = "target";
 
-  const better = target.v.yen > timer.v.yen + 1 ? target : timer;
-  return { base, timer, target, better, openAt, switchAt, rise, set, capG, tried };
+  const better = target.v.yenSafe > timer.v.yenSafe + 1 ? target : timer;
+  return { base, timer, target, better, openAt, switchAt, rise, set, capG, tried, topYen };
 }
 
 /* 時刻の範囲の濃度（平均・いちばん低い・いちばん高い）。null なら範囲に記録が無い */
@@ -855,6 +883,7 @@ function gather() {
   const achMonth = FIX.achOpenByMonth[date.getMonth()];
   if (v.achOpen === null && !errors.achOpen) { v.achOpen = achMonth; from.achOpen = (date.getMonth() + 1) + "月の見込み"; }
   if (v.cap === null && !errors.cap) { v.cap = FIX.capPct; from.cap = "既定"; }
+  if (v.safety === null && !errors.safety) { v.safety = FIX.safetyPct; from.safety = "既定"; }
   // 平年値（その日・そのハウス・その天気）
   const nm = normalOf(date, house, wx, NORM);
   const rec = nm && nm.rec;
@@ -896,7 +925,7 @@ function gather() {
 }
 
 function renderErrors(errors) {
-  for (const id of ["tomato", "kerosene", "openAt", "dawn", "achOpen", "density", "leaves", "width", "cap"]) {
+  for (const id of ["tomato", "kerosene", "openAt", "dawn", "achOpen", "density", "leaves", "width", "cap", "safety"]) {
     $(id + "Err").hidden = !errors[id];
     $(id + "Err").textContent = errors[id] || "";
   }
@@ -918,6 +947,7 @@ function renderInputs(g) {
   $("achHint").innerHTML = "天窓が開いてからの換気回数です。空欄なら <b>" + (g.date.getMonth() + 1) + "月の見込み " + fx(g.achMonth, 1) +
     " 回/時</b> を使います（真冬の 1.6 だけが自圃場の実測で、ほかの月は文献からの見込み）。天窓を大きく開ける日・風の強い日は大きくなります。";
   $("cap").placeholder = String(FIX.capPct);
+  $("safety").placeholder = String(FIX.safetyPct);
   $("dayHint").innerHTML = "空欄の間は平年値（" + esc(house) + "・" + WX_LABEL[wx] + "・過去の同じ時期の前後7日）で計算します。" +
     (rec && rec.open !== null && g.nightNow === "closed" ? "天窓が開く時刻は " + rec.det + " 日分の中央値です。" : "") +
     (g.openFrom.indexOf("正午") >= 0 && g.nightNow === "closed" ? "<b>この天気では開く時刻の平年値がありません。分かれば入れてください。</b>" : "");
@@ -969,22 +999,27 @@ function renderResult(g, day, r) {
     ? { no: noB, when: clock(sw) + "〜" + clock(G.B.b), why: whereB + "・動く時間 合計" + hm(onMin(gt, sw, G.B.b)) + "・" + ppmNote(gt, sw, G.B.b), big: G.B.target + "<small>ppm</small>" }
     : { no: noB, when: clock(sw) + "〜" + clock(r.set), why: whereB });
 
-  const best = r.better, none = best.v.yen <= 1 && !best.sim.fuelL;
+  // 動かし方は安全率を見込んで選んである。グロウを動かさない答えなら「施用しない」
+  const best = r.better, none = !best.sim.fuelL, s = g.v.safety;
   const verdict = none
     ? '<div class="verdict minus"><div class="lbl2">この日は施用しないほうが得</div><div class="big">グロウは止めておく</div>' +
-      '<div class="sub">どの動かし方でも、灯油代が増える果実の金額を上回ります。</div></div>'
+      '<div class="sub">' + (s > 0 && r.topYen > 1
+        ? "見込みどおりなら最大 " + signedYen(r.topYen) + " 円/日 ですが、果実の増分が見込みより " + fx(s, 0) + "% 少ないと赤字になります。利益が薄く、確かではありません。"
+        : "どの動かし方でも、灯油代が増える果実の金額を上回ります。") + "</div></div>"
     : '<div class="verdict plus"><div class="lbl2">いちばん得なのは「' + (best.kind === "timer" ? "タイマー" : "目標ppm") + '」での1日の収支</div><div class="big num">' +
-      signedYen(best.v.yen) + "<small> 円/日</small></div>" + '<div class="sub">施用しなかった日と比べた差です。</div></div>';
+      signedYen(best.v.yen) + "<small> 円/日</small></div>" + '<div class="sub">施用しなかった日と比べた差です。' +
+      (s > 0 ? "果実の増分が見込みより " + fx(s, 0) + "% 少なくても " + signedYen(best.v.yenSafe) + " 円/日 です。" : "") + "</div></div>";
   const block = (m, title, items) =>
     '<div class="mode' + (m === best && !none ? " best" : "") + '"><div class="mode-h"><span>' + title + "</span>" +
     '<span class="num">' + signedYen(m.v.yen) + " 円/日" + (m === best && !none ? '<em>得</em>' : "") + "</span></div>" +
+    (s > 0 && m.sim.fuelL ? '<div class="mode-s">' + fx(s, 0) + "% 少なくても " + signedYen(m.v.yenSafe) + " 円/日</div>" : "") +
     '<ul class="plan">' + items.map(li).join("") + "</ul></div>";
   box.innerHTML = verdict +
     block(T, "タイマーで動かす", timerItems) +
     block(G, "目標ppmで動かす", targetItems) +
     '<p class="hint">切りかえ ' + clock(sw) + " は、天窓が開く時刻（" + clock(r.openAt) + "）にいちばん近い15分区切りです。" +
     "目標ppmは、センサーが目標を下回ったら動き、目標に戻ったら止まるとして計算しています。</p>" +
-    senseRuleHtml(g.v.tomato, g.v.kerosene);
+    senseRuleHtml(g.v.tomato, g.v.kerosene, g.v.safety);
   $("resTitle").textContent = "いちばん得なグロウの動かし方（" + house + "・" + WX_LABEL[wx] + "）";
 }
 
@@ -994,10 +1029,11 @@ function renderResult(g, day, r) {
    濃度を少し上げたときの「増える果実の金額」と「逃げるCO₂の灯油代」がつり合うのは
      C² ＝ 150 × D ×（果実の金額 − 灯油代）÷ 灯油代 （どちらも吸ったCO₂ 1gあたり）
    C を外気の濃度にしたときの D より下がり幅が小さければ、上げても元がとれない。
-   光の強さ・換気回数が消えて、単価だけで決まる（計算の全体と照らして、季節・天気によらず合うことを確かめた） */
-function senseRuleHtml(tomato, kerosene) {
+   光の強さ・換気回数が消えて、単価だけで決まる（計算の全体と照らして、季節・天気によらず合うことを確かめた）。
+   果実の金額は安全率の分だけ割り引く（動かし方を選ぶときと同じ） */
+function senseRuleHtml(tomato, kerosene, safety) {
   const fuelYenPerG = kerosene / (FIX.glowCo2GPerH / FIX.glowFuelLPerH);   // CO₂ 1g を出す灯油代 [円/g]
-  const fruitYenPerG = fruitKgFromCo2G(1) * tomato;                           // 吸ったCO₂ 1g が生む果実の金額 [円/g]
+  const fruitYenPerG = fruitKgFromCo2G(1) * tomato * (1 - safety / 100);      // 吸ったCO₂ 1g が生む果実の金額（安全率を引く）[円/g]
   const head = '<div class="sep">センサーで決めるときの目安</div>';
   if (fruitYenPerG <= fuelYenPerG) return head + '<p class="hint">この単価では、どんな日も施用で元がとれません。</p>';
   const ratio = FIX.co2RuleK * (fruitYenPerG - fuelYenPerG) / fuelYenPerG;   // C² ＝ ratio × D
@@ -1008,7 +1044,7 @@ function senseRuleHtml(tomato, kerosene) {
     "<b>" + Math.round(FIX.outsidePpm - dMin) + " ppm 以上</b>（外気 " + FIX.outsidePpm + " との差 " + Math.round(dMin) + " ppm 以内）で止まっていれば、" +
     "換気が大きく、その日は施用しても元がとれません。それより下がるなら施用します。目標の濃度の目安：</p>" +
     '<ul class="hint">' + rows + "</ul>" +
-    '<p class="hint">トマト ' + yen(tomato) + " 円/kg・灯油 " + yen(kerosene) + " 円/L で計算。換気回数が大きいほど早く落ち着きます（6回/時なら約10分で6割、30分でほぼ落ち着く）。" +
+    '<p class="hint">トマト ' + yen(tomato) + " 円/kg・灯油 " + yen(kerosene) + " 円/L・安全率 " + fx(safety, 0) + "% で計算。換気回数が大きいほど早く落ち着きます（6回/時なら約10分で6割、30分でほぼ落ち着く）。" +
     "下がり続けて止まらないなら換気が小さいので、施用する日です。センサーの誤差（数十ppm）があるので、天窓が全開で暗い時間の値（＝外気）と比べると確かです。</p>";
 }
 
@@ -1021,8 +1057,13 @@ function renderDetail(g, r, m) {
     kv("増える果実の金額<small>" + fx(v.gainKg, 1) + " kg 増える（増収率 " + fx(r.base.uptakeG > 0 ? v.gainG / r.base.uptakeG * 100 : 0, 0) + "%" +
        (v.capped ? "・上限 " + fx(g.v.cap, 0) + "% で頭打ち" : "") + "）</small>", yen(v.gainKg * g.v.tomato) + "<small> 円</small>") +
     kv("灯油代<small>" + fx(m.sim.fuelL, 1) + " L</small>", yen(cost) + "<small> 円</small>") +
-    kv("損益分岐のトマト単価<small>これより高ければ元がとれる</small>", (v.gainKg > 0 ? yen(cost / v.gainKg) : "―") + "<small> 円/kg</small>") +
-    kv("参考：Excel の数え方<small>吸ったCO₂を全部、施用の成果とした場合</small>", signedYen(m.excelYen) + "<small> 円</small>") +
+    kv("損益分岐のトマト単価<small>これより高ければ元がとれる（見込みどおりのとき" +
+       (g.v.safety > 0 && v.gainKg > 0 ? "。安全率を見込むと " + yen(cost / (v.gainKg * (1 - g.v.safety / 100))) + " 円/kg" : "") + "）</small>",
+       (v.gainKg > 0 ? yen(cost / v.gainKg) : "―") + "<small> 円/kg</small>") +
+    (g.v.safety > 0 ? kv("果実の増分が見込みより " + fx(g.v.safety, 0) + "% 少なかったら<small>動かし方は、この差がいちばん大きくなるものを選んでいます</small>",
+       signedYen(v.yenSafe) + "<small> 円</small>") : "") +
+    // 施用しない日は Excel の数え方（吸ったCO₂を全部成果とする）だと大きな黒字に見えて紛らわしいので出さない
+    (m.sim.fuelL ? kv("参考：Excel の数え方<small>吸ったCO₂を全部、施用の成果とした場合</small>", signedYen(m.excelYen) + "<small> 円</small>") : "") +
     "</div>";
 }
 
@@ -1141,6 +1182,7 @@ function renderSteps(g, day, r, m) {
     (r ? row("光合成（施用なし・1日）", yen(r.base.uptakeG) + " g CO₂") : "") +
     (r ? row("光合成（施用あり・1日）", yen(m.sim.uptakeG) + " g CO₂", (m.kind === "timer" ? "タイマー" : "目標ppm") + "・増えた分 " + yen(m.v.rawG) + " g（収量に数えるのは " + yen(r.capG) + " g まで）") : "") +
     row("増収率の上限", fx(g.v.cap === null ? FIX.capPct : g.v.cap, 0) + " %", g.from.cap) +
+    row("安全率", fx(g.v.safety === null ? FIX.safetyPct : g.v.safety, 0) + " %", g.from.safety) +
     head("ハウスとグロウ") +
     row("容積", yen(volumeM3()) + " m³", "床面積 " + fx(FIX.floorM2, 1) + " m²") +
     row("CO₂ 1 ppm ぶん", fx(houseGPerPpm(), 1) + " g") +
@@ -1160,7 +1202,7 @@ function render() {
   const day = dayOf(g.v.achOpen === null ? g.achMonth : g.v.achOpen);
   const ready = !Object.keys(g.errors).length && g.v.tomato !== null && g.v.kerosene !== null;
   const cond = { dawn: g.v.dawn, openAt: g.openAt, nightOpen: g.nightNow === "open",
-                 tomato: g.v.tomato, kerosene: g.v.kerosene, cap: g.v.cap };
+                 tomato: g.v.tomato, kerosene: g.v.kerosene, cap: g.v.cap, safety: g.v.safety };
   const r = ready ? optimize(day, cond) : null;
   // グラフと表で見る方式。ボタンで選んでいなければ、得なほう
   const m = r ? (view === "timer" ? r.timer : view === "target" ? r.target : r.better) : null;
