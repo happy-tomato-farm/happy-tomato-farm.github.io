@@ -372,12 +372,13 @@ footer a{color:var(--muted)}
   <summary>計算の考え方と前提</summary>
   <div class="doc">
     <h3>何を求めているか</h3>
-    <p>グロウの動かし方を2つの方式で探し、その日いちばん得になる設定を出します。どちらも、天窓が閉まっている間（①）と開いてから（②）で別々に決めます。①と②の切りかえは、天窓が開く時刻にいちばん近い15分区切りです。</p>
+    <p>グロウの動かし方を2つの方式で探し、その日いちばん得になる設定を出します。どちらも、天窓が閉まっている間（①）・開いてから（②）・止める前に減らす区間（③）で別々に決めます。①と②の切りかえは、天窓が開く時刻にいちばん近い15分区切りです。③は無いこともあります。</p>
     <div class="eq">得 ＝ 施用で増えた光合成から見積もった果実 × トマト単価 − 灯油代</div>
     <p>施用しなくても光合成は進むので、<b>施用した日と施用しなかった日の差</b>だけを得に数えます。</p>
     <ul>
       <li><b>タイマー</b>：毎時0分から 15・30・45・60 分動かす。動かし始めは日の出から30分きざみ、止める時刻は30分きざみ</li>
       <li><b>目標ppm</b>：センサーが目標を下回ったら動き、目標に戻ったら止まる。①は 450〜1,200 ppm、②は 420〜900 ppm から選び、②を切る時刻は1時間きざみ</li>
+      <li><b>③</b>：②より少ない分数（タイマー）か低い目標（目標ppm）で、最長3時間続けてから止める。午後は日射が落ちて光合成が減るので、急に止めるより少しずつ減らすほうが得な日があるためです。③は、①を「①②だけで探した答え」に決めてから探し、得なら①を選び直します（計算を軽くするため）</li>
       <li>全部の組み合わせを試し、得がいちばん大きいものを出します。CO₂が 1,500 ppm を超える組み合わせは外します</li>
       <li>目標ppmは、センサーを見て足りないときだけ動くので、曇りの日や夜明け前の高いCO₂のときは自然に止まります。天窓が開いてからの目標を外気に近くすると、換気で逃げる分がほとんどなくなります（ゼロ濃度差施用）</li>
     </ul>
@@ -520,6 +521,7 @@ const FIX = {
   dutyMin: [0, 15, 30, 45, 60], // 1時間に動かす分の候補（タイマーは15分きざみ）
   targetsClosed: [450, 500, 550, 600, 650, 700, 750, 800, 900, 1000, 1100, 1200],   // 目標ppmの候補：天窓が閉まっている間
   targetsOpen: [420, 440, 460, 480, 500, 550, 600, 650, 700, 800, 900],             // 目標ppmの候補：天窓が開いてから
+  taperMaxH: 3,               // ③（止める前に減らす区間）の長さの上限 [h]
   // 光：日射量予測と同じ快晴の式
   latDeg: 36.52327, lonDeg: 139.762022, altM: 150, stdMeridianDeg: 135, solarConstW: 1360,
   coverTau: 0.678, coverCos: -0.0390, coverSin: 0.0475,   // ハウスの透過率と季節変化（潅水アプリと同じ）
@@ -754,8 +756,10 @@ function simulate(day, dawnPpm, sched) {
 }
 
 /* いちばん得な動かし方を、タイマーと目標ppmの2つの方式それぞれで探す。
-   ①天窓が開くまで ②開いてから の2区間。区間の切りかえは、天窓が開く時刻にいちばん近い15分区切り
-   （タイマーも目標の切りかえも、実機では15分きざみでしか設定できないため） */
+   ①天窓が開くまで ②開いてから ③止める前に減らす の3区間（③は無いこともある）。
+   ①②の切りかえは、天窓が開く時刻にいちばん近い15分区切り
+   （タイマーも目標の切りかえも、実機では15分きざみでしか設定できないため）。
+   ③があるのは、午後は日射が落ちて光合成が減るので、急に止めるより少しずつ減らすほうが得な日があるため */
 function optimize(day, c) {
   const base = simulate(day, c.dawn, () => null);
   const rise = day.g.rise, set = day.g.set;
@@ -801,25 +805,47 @@ function optimize(day, c) {
         if (!best || v.yenSafe > best.v.yenSafe + 1 || (Math.abs(v.yenSafe - best.v.yenSafe) <= 1 && sim.fuelL < best.sim.fuelL)) best = { A, B, sim, v };
       }
     }
+    if (!best) return null;                                       // どの候補も 1,500 ppm を超えた（③の候補だけのときに起こりうる）
     best.excelYen = fruitKgFromCo2G(best.sim.uptakeG) * c.tomato - best.sim.fuelL * c.kerosene;
     return best;
   };
 
-  // タイマー：①は「始め〜切りかえ」、②は「切りかえ〜終わり」に、毎時0分から d 分
-  const tA = [{ a: null, d: 0 }], tB = [{ b: null, d: 0 }];
+  // ③（止める前に減らす区間）を足した形は、①を「①②だけで探した答え」に固定して探す（候補を減らして軽くするため）。
+  // そのほうが得なら、③を足した②③に合わせて①を選び直す
+
+  // タイマー：①は「始め〜切りかえ」、②は「切りかえ〜b」に、毎時0分から d 分。
+  // ③は「b〜e」に、毎時0分から d3 分（d3 は d より少ない。d3 が 0 なら③なし）
+  const timerSched = (A, B) => t =>
+    (A.d && t >= A.a && t < switchAt) ? { d: A.d }
+      : (B.d && t >= switchAt && t < B.b) ? { d: B.d }
+      : (B.d3 && t >= B.b && t < B.e) ? { d: B.d3 } : null;
+  const tA = [{ a: null, d: 0 }], tB = [{ b: null, d: 0, d3: 0 }];
   if (!c.nightOpen) for (const a of starts) for (const d of FIX.dutyMin) if (d > 0) tA.push({ a, d });
-  for (const b of ends) for (const d of FIX.dutyMin) if (d > 0) tB.push({ b, d });
-  const timer = pick(tA, tB, (A, B) => t =>
-    (A.d && t >= A.a && t < switchAt) ? { d: A.d } : (B.d && t >= switchAt && t < B.b) ? { d: B.d } : null);
+  for (const b of ends) for (const d of FIX.dutyMin) if (d > 0) tB.push({ b, d, d3: 0, e: b });
+  let timer = pick(tA, tB, timerSched);
+  const tC = [];
+  for (const b of ends) for (const e of ends) if (e > b + 1e-9 && e - b <= FIX.taperMaxH + 1e-9)
+    for (const d of FIX.dutyMin) for (const d3 of FIX.dutyMin) if (d3 > 0 && d3 < d) tC.push({ b, d, d3, e });
+  const timer3 = tC.length ? pick([timer.A], tC, timerSched) : null;
+  if (timer3 && timer3.v.yenSafe > timer.v.yenSafe + 1) timer = pick(tA, [timer3.B], timerSched);
   timer.kind = "timer";
 
-  // 目標ppm：①は日の出〜切りかえ、②は切りかえ〜終わり（1時間きざみ）に、それぞれの目標
-  const gA = [{ target: null }], gB = [{ target: null, b: null }];
+  // 目標ppm：①は日の出〜切りかえ、②は切りかえ〜b（1時間きざみ）に、それぞれの目標。
+  // ③は「b〜e」に、②より低い目標 t3（t3 が null なら③なし）
+  const targetSched = (A, B) => t =>
+    (A.target && t < switchAt) ? { target: A.target }
+      : (B.target && t >= switchAt && t < B.b) ? { target: B.target }
+      : (B.t3 && t >= B.b && t < B.e) ? { target: B.t3 } : null;
+  const gA = [{ target: null }], gB = [{ target: null, b: null, t3: null }];
   if (!c.nightOpen) for (const p of FIX.targetsClosed) gA.push({ target: p });
   const endsHour = ends.filter(b => Math.abs(b - Math.round(b)) < 1e-9 || b === ends[ends.length - 1]);
-  for (const b of endsHour) for (const p of FIX.targetsOpen) gB.push({ target: p, b });
-  const target = pick(gA, gB, (A, B) => t =>
-    (A.target && t < switchAt) ? { target: A.target } : (B.target && t >= switchAt && t < B.b) ? { target: B.target } : null);
+  for (const b of endsHour) for (const p of FIX.targetsOpen) gB.push({ target: p, b, t3: null, e: b });
+  let target = pick(gA, gB, targetSched);
+  const gC = [];
+  for (const b of endsHour) for (const e of endsHour) if (e > b + 1e-9 && e - b <= FIX.taperMaxH + 1e-9)
+    for (const p of FIX.targetsOpen) for (const p3 of FIX.targetsOpen) if (p3 < p) gC.push({ target: p, b, t3: p3, e });
+  const target3 = gC.length ? pick([target.A], gC, targetSched) : null;
+  if (target3 && target3.v.yenSafe > target.v.yenSafe + 1) target = pick(gA, [target3.B], targetSched);
   target.kind = "target";
 
   const better = target.v.yenSafe > timer.v.yenSafe + 1 ? target : timer;
@@ -990,6 +1016,8 @@ function renderResult(g, day, r) {
   timerItems.push(T.B.d
     ? { no: noB, when: clock(sw) + "〜" + clock(T.B.b), why: whereB + "・毎時0分から" + T.B.d + "分・" + ppmNote(tt, sw, T.B.b), big: T.B.d + "<small>分/時</small>" }
     : { no: noB, when: clock(sw) + "〜" + clock(r.set), why: whereB });
+  if (T.B.d3) timerItems.push({ no: "③", when: clock(T.B.b) + "〜" + clock(T.B.e),
+    why: "止める前に減らす・毎時0分から" + T.B.d3 + "分・" + ppmNote(tt, T.B.b, T.B.e), big: T.B.d3 + "<small>分/時</small>" });
   // 目標ppm方式の行
   const G = r.target, gt = G.sim.trace, targetItems = [];
   if (closed) targetItems.push(G.A.target
@@ -998,6 +1026,8 @@ function renderResult(g, day, r) {
   targetItems.push(G.B.target
     ? { no: noB, when: clock(sw) + "〜" + clock(G.B.b), why: whereB + "・動く時間 合計" + hm(onMin(gt, sw, G.B.b)) + "・" + ppmNote(gt, sw, G.B.b), big: G.B.target + "<small>ppm</small>" }
     : { no: noB, when: clock(sw) + "〜" + clock(r.set), why: whereB });
+  if (G.B.t3) targetItems.push({ no: "③", when: clock(G.B.b) + "〜" + clock(G.B.e),
+    why: "止める前に目標を下げる・動く時間 合計" + hm(onMin(gt, G.B.b, G.B.e)) + "・" + ppmNote(gt, G.B.b, G.B.e), big: G.B.t3 + "<small>ppm</small>" });
 
   // 動かし方は安全率を見込んで選んである。グロウを動かさない答えなら「施用しない」
   const best = r.better, none = !best.sim.fuelL, s = g.v.safety;
@@ -1018,7 +1048,8 @@ function renderResult(g, day, r) {
     block(T, "タイマーで動かす", timerItems) +
     block(G, "目標ppmで動かす", targetItems) +
     '<p class="hint">切りかえ ' + clock(sw) + " は、天窓が開く時刻（" + clock(r.openAt) + "）にいちばん近い15分区切りです。" +
-    "目標ppmは、センサーが目標を下回ったら動き、目標に戻ったら止まるとして計算しています。</p>" +
+    "目標ppmは、センサーが目標を下回ったら動き、目標に戻ったら止まるとして計算しています。" +
+    (T.B.d3 || G.B.t3 ? "③は止める前に減らす区間です。午後は日射が落ちて光合成が減るので、急に止めるより少しずつ減らすほうが得になります。" : "") + "</p>" +
     senseRuleHtml(g.v.tomato, g.v.kerosene, g.v.safety,
                   { ach: g.v.achOpen, lai: g.lai.value, tempC: tempAt(12.5, g.hours, g.temps) ?? 20, tau: day.tau });
   $("resTitle").textContent = "いちばん得なグロウの動かし方（" + house + "・" + WX_LABEL[wx] + "）";
@@ -1173,12 +1204,14 @@ const timerText = (r, closed) => {
   const A = r.timer.A, B = r.timer.B, parts = [];
   if (closed) parts.push("①" + (A.d ? clock(A.a) + "〜 " + A.d + "分" : "なし"));
   parts.push((closed ? "②" : "") + (B.d ? "〜" + clock(B.b) + " " + B.d + "分" : "なし"));
+  if (B.d3) parts.push("③〜" + clock(B.e) + " " + B.d3 + "分");
   return parts.join("<br>") + "<br><b>" + signedYen(r.timer.v.yen) + "</b>";
 };
 const targetText = (r, closed) => {
   const A = r.target.A, B = r.target.B, parts = [];
   if (closed) parts.push("①" + (A.target ? A.target + "ppm" : "なし"));
   parts.push((closed ? "②" : "") + (B.target ? B.target + "ppm 〜" + clock(B.b) : "なし"));
+  if (B.t3) parts.push("③" + B.t3 + "ppm 〜" + clock(B.e));
   return parts.join("<br>") + "<br><b>" + signedYen(r.target.v.yen) + "</b>";
 };
 function renderSens(g, r, sens) {
