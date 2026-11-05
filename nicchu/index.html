@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2A4A6B">
+<title>日中平均の計算｜ハッピートマトファーム</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23EE5340'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%234E9A5A' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   色の設定。夜温設定（yaon.html）と同じ色をそろえている。
+   :root にふつうの色、暗い画面のときの色を下の2か所で上書きする。
+   ============================================================ */
+:root{
+  --ground:#F2F6F0; --card:#FFFFFF; --card-sub:#F7FAF6;
+  --ink:#24291F; --muted:#6D7768; --line:#DFE7DB; --line-soft:#EDF2EA;
+  --tomato:#EE5340; --leaf:#4E9A5A; --night:#2A4A6B; --night-soft:#E6EDF5;
+  --sun:#B7791F; --sun-soft:#FBF1DE;
+  --warn:#B8461F; --warn-soft:#FBEAE2;
+  --shadow:0 1px 0 rgba(36,41,31,.04), 0 6px 18px -10px rgba(36,41,31,.28);
+  --r-card:22px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+    --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+    --tomato:#FF6E5B; --leaf:#6FBB7B; --night:#8FB4DE; --night-soft:#25303B;
+    --sun:#E8B860; --sun-soft:#36301F;
+    --warn:#FF9A73; --warn-soft:#3A2820;
+    --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+  --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+  --tomato:#FF6E5B; --leaf:#6FBB7B; --night:#8FB4DE; --night-soft:#25303B;
+  --sun:#E8B860; --sun-soft:#36301F;
+  --warn:#FF9A73; --warn-soft:#3A2820;
+  --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none !important}   /* display を指定した要素でも hidden で隠れるように */
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Zen Maru Gothic",
+              "Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px 70px}
+.num{font-variant-numeric:tabular-nums}
+
+header{padding:24px 0 6px;text-align:center}
+h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
+.farm{display:block;margin-top:4px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.1em}
+
+.card{
+  background:var(--card); border:2px solid var(--line); border-radius:var(--r-card);
+  padding:16px; margin-top:16px; box-shadow:var(--shadow);
+}
+.card h2{font-size:14px;font-weight:800;color:var(--muted);margin:0 0 10px;letter-spacing:.08em}
+
+/* ===== 入力欄 ===== */
+.field label{display:block;font-size:15px;font-weight:800;margin-bottom:6px}
+.row{display:flex;gap:8px;align-items:stretch}
+input{
+  flex:1; min-width:0; min-height:52px;
+  font:inherit; font-size:22px; font-weight:800; padding:6px 14px;
+  border:2px solid var(--line); border-radius:14px;
+  background:var(--card-sub); color:var(--ink);
+}
+input::placeholder{color:var(--muted);opacity:.6;font-size:16px}
+input:focus{outline:3px solid var(--night);outline-offset:1px;border-color:var(--night)}
+input.bad{border-color:var(--warn)}
+.btn{
+  flex:none; min-width:76px; min-height:52px; border-radius:14px; cursor:pointer;
+  border:2px solid var(--line); background:var(--card); color:var(--ink);
+  font:inherit; font-size:15px; font-weight:800;
+}
+.btn:active{transform:scale(.96)}
+.hint{font-size:13.5px;color:var(--muted);margin:6px 2px 0;line-height:1.6}
+.hint b{color:var(--ink)}
+.err{font-size:14px;color:var(--warn);font-weight:800;margin:8px 2px 0}
+
+/* ===== 方式の切りかえ ===== */
+.seg{display:flex;gap:8px;margin-top:16px}
+.seg button{
+  flex:1; min-height:58px; border-radius:16px; cursor:pointer; padding:4px 6px;
+  border:2px solid var(--line); background:var(--card); color:var(--muted);
+  font:inherit; font-size:15.5px; font-weight:800; line-height:1.3;
+}
+.seg button small{display:block;font-size:11.5px;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--night);border-color:var(--night);color:#fff}
+
+/* ===== 答え ===== */
+.answer{text-align:center;padding:6px 0 2px}
+.answer .k{font-size:14px;font-weight:800;color:var(--muted)}
+.answer .v{font-size:52px;font-weight:800;line-height:1.1;color:var(--night)}
+.answer .v small{font-size:22px}
+.answer .pm{font-size:15px;font-weight:800;color:var(--muted)}
+.status{font-size:14px;font-weight:700;color:var(--muted);text-align:center;margin:4px 0 0;line-height:1.6}
+.kvs{margin-top:12px;display:grid;gap:8px}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    background:var(--card-sub);border-radius:14px;padding:9px 14px}
+.kv .k{font-size:14px;color:var(--muted);font-weight:700;line-height:1.4}
+.kv .k small{display:block;font-size:12px}
+.kv .v{font-size:19px;font-weight:800;white-space:nowrap}
+.kv.stack{flex-direction:column;align-items:flex-start;gap:0}
+.kv.stack .v{font-size:15.5px;white-space:normal}
+.note{margin-top:12px;background:var(--warn-soft);color:var(--warn);border-radius:14px;padding:12px 14px;
+      font-weight:800;font-size:14.5px;line-height:1.6}
+.note small{display:block;font-weight:700;font-size:13px}
+.go{
+  display:block; text-align:center; text-decoration:none; margin-top:14px;
+  min-height:56px; line-height:52px; border-radius:16px;
+  border:2px solid var(--night); background:var(--night); color:#fff;
+  font-size:18px; font-weight:800;
+}
+:root[data-theme="dark"] .go{color:#191D18}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .go{color:#191D18} }
+.go:active{transform:scale(.98)}
+.retry{width:100%;margin-top:10px}
+
+/* ===== B：時刻ごとの入力 ===== */
+/* minmax(0,1fr)：入力欄のもとの幅に引っぱられて列がはみ出さないように */
+.hours{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin-top:6px}
+.hours .h{display:flex;align-items:center;gap:6px;min-width:0}
+.hours .h span{flex:none;width:40px;text-align:right;font-size:16px;font-weight:800;color:var(--muted)}
+.hours input{width:100%;min-height:50px;font-size:21px;padding:4px 10px}
+.clear{width:100%;margin-top:12px;min-height:46px;font-size:14px;color:var(--muted)}
+
+/* ===== 日の出・日の入 ===== */
+.sun{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.sun .kv{flex-direction:column;align-items:flex-start;gap:0;padding:7px 14px}
+.sun .kv .v{font-size:18px}
+
+details{margin-top:16px}
+summary{
+  cursor:pointer;list-style:none;font-weight:800;font-size:15px;
+  background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 16px;
+}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"＋ ";color:var(--muted)}
+details[open] summary::before{content:"− "}
+.doc{font-size:14px;line-height:1.8;padding:4px 6px}
+.doc h3{font-size:15px;margin:16px 0 4px}
+.doc p{margin:6px 0}
+.doc ul{margin:6px 0;padding-left:1.3em}
+.doc .eq{background:var(--card-sub);border-radius:12px;padding:10px 12px;font-weight:800;margin:8px 0}
+.mtbl{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+.mtbl th,.mtbl td{padding:5px 4px;text-align:right;border-bottom:1px solid var(--line-soft)}
+.mtbl th:first-child,.mtbl td:first-child{text-align:left}
+.mtbl th{font-size:12.5px;color:var(--muted)}
+footer{margin-top:26px;text-align:center;font-size:13px;color:var(--muted);display:grid;gap:10px}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>日中平均の計算</h1>
+  <span class="farm">ハッピートマトファーム</span>
+</header>
+
+<!-- ============ 日付と方式 ============ -->
+<section class="card" aria-label="条件">
+  <div class="field">
+    <label for="date">日付</label>
+    <div class="row">
+      <input id="date" type="date">
+      <button type="button" class="btn" id="today">今日</button>
+    </div>
+  </div>
+  <div class="sun" id="sun"></div>
+  <div class="seg" role="group" aria-label="計算のしかた">
+    <button type="button" data-tab="a">実況＋予報で<small>外の天気から見込む</small></button>
+    <button type="button" data-tab="b">数値を入れる<small>アグリネットの値から</small></button>
+  </div>
+</section>
+
+<!-- ============ A：実況＋予報 ============ -->
+<section class="card" id="panelA" aria-live="polite">
+  <h2>外の天気から見込む（ハウス内の日中平均）</h2>
+  <div id="resA"></div>
+</section>
+
+<!-- ============ B：数値を入れる ============ -->
+<section class="card" id="panelB" aria-live="polite">
+  <h2>アグリネットの値から計算する</h2>
+  <p class="hint" style="margin-top:0">ハウス内の気温を、分かる時刻だけ入れてください。空いた時刻は前後の値を直線でつないで計算します。</p>
+  <div class="hours" id="hours"></div>
+  <p class="err" id="hoursErr" hidden></p>
+  <div id="resB"></div>
+  <button type="button" class="btn clear" id="clearB">入れた値をすべて消す</button>
+</section>
+
+<details>
+  <summary>計算の考え方と、どれくらい当たるか</summary>
+  <div class="doc" id="doc">
+    <h3>「実況＋予報で」の式</h3>
+    <p>冬のハウス内の昼の気温は、暖房と換気の設定でほぼ決まり、そこに「晴れた分だけ上がる」「外が暖かい分だけ少し上がる」が足されます。これを月ごとの式にしました。</p>
+    <div class="eq">ハウス内の日中平均 ＝ a ＋ b × 外気の日中平均 ＋ c × 日照の割合</div>
+    <ul>
+      <li><b>a</b> … 曇りで外気0℃のときのハウス内（暖房・換気の設定で決まる分）</li>
+      <li><b>b</b> … 外が1℃暖かいと、ハウス内が何℃上がるか</li>
+      <li><b>c</b> … 一日じゅう晴れると、曇りの日より何℃上がるか</li>
+      <li><b>外気の日中平均</b> … 鹿沼アメダスの、日の出〜日の入りの気温の平均</li>
+      <li><b>日照の割合</b> … 鹿沼アメダスの日照時間 ÷ 昼の長さ（終日晴れで1、終日曇りで0）</li>
+    </ul>
+    <div id="docTable"></div>
+    <h3>いまの時刻より先は予報で埋める</h3>
+    <ul>
+      <li>日の出〜いままでは、気象庁アメダス（鹿沼）の10分ごとの実況を使います</li>
+      <li>いま〜日の入りは、気象庁の地域時系列予報（栃木県南部・宇都宮。夜温設定の⑤と同じ）を使います。気温は宇都宮の予報に「鹿沼 − 宇都宮 の昼の差」<span id="docOffset"></span>を足します</li>
+      <li>予報の天気は、日照の割合に直して使います<span id="docSunFrac"></span>（過去の観測から求めた値）</li>
+      <li>日の入りを過ぎて開けば、全部が実況で計算されます</li>
+    </ul>
+    <h3>前提と、当たりにくいとき</h3>
+    <ul>
+      <li>式は 2024〜2026年度の10〜4月、中央・東をあわせた日の記録から作りました（それより前は管理のしかたが違うため使っていません）</li>
+      <li>5〜9月は外の記録を取っていないので、式がありません</li>
+      <li><b>10月・4月はずれが大きめ</b>です。外が暖かい時期は、換気の開け方しだいでハウス内が大きく変わり、外の値だけでは読み切れません</li>
+      <li>換気・暖房の設定やカーテンの使い方を大きく変えた日は、過去の日と前提が違うので外れやすくなります</li>
+      <li>予報が外れれば、その分ずれます（上の表の「ずれ」は、日の入り後に実況だけで計算したときの値です）</li>
+      <li>アグリネットの値が見られるときは「数値を入れる」のほうが確かです</li>
+    </ul>
+    <h3>「数値を入れる」の計算</h3>
+    <p>入れた時刻の値を直線でつなぎ、日の出〜日の入りの時間で平均します。最初の値より前（日の出まで）と、最後の値より後（日の入りまで）は、その値のまま延ばします。</p>
+    <h3>出典</h3>
+    <p>気象データ：気象庁ホームページ（アメダス・地域時系列予報・過去の気象データ）を加工して作成。ハウス内の気温：4週記録表（ハウス内センサー）。</p>
+    <p id="docBuilt" class="hint"></p>
+  </div>
+</details>
+
+<footer>
+  <a href="../yaon/">夜温設定へもどる</a>
+  <a href="../">アプリ一覧へもどる</a>
+</footer>
+</div>
+
+<script src="nicchu_coef.js"></script>
+<script>
+"use strict";
+
+/* =========================================================================
+   1. 決まりごと（数値はすべてここに集める）
+   ========================================================================= */
+const COEF = typeof NICCHU_COEF === "object" ? NICCHU_COEF : null;
+const RULE = {
+  latDeg: 36.52327, lonDeg: 139.762022,   // 圃場（夜温設定と同じ）
+  stdMeridianDeg: 135,                     // 日本標準時の子午線
+  gridMin: 10,                             // 計算のきざみ（アメダスの10分ごとに合わせる）
+  amedasPoint: "41271",                    // 鹿沼アメダスの番号
+  amedasBase: "https://www.jma.go.jp/bosai/amedas/data/",
+  fcUrl: "https://www.jma.go.jp/bosai/jmatile/data/wdist/VPFD/090010.json",   // 地域時系列予報（栃木県南部）
+  fcPoint: "宇都宮",
+  fcCacheKey: "htf_nicchu_fc", fcCacheMin: 60,   // 読んだ予報を覚えておく時間（気象庁に負担をかけないため）
+  pastDays: 7,                             // 何日前まで選べるか（アメダスの実況は約10日分しか残らない）
+  bigErrC: 1.0,                            // この月のずれがこれ以上なら注意を出す
+  missingWarnMin: 30,                      // 実況の欠けがこれ以上なら注意を出す
+  bMinC: -5, bMaxC: 45,                    // 「数値を入れる」で受け付ける範囲
+  bGapWarnH: 3,                            // 入れた値の間がこれ以上空いたら注意を出す
+  tabKey: "htf_nicchu_tab", draftKey: "htf_nicchu_b",
+};
+const D2R = Math.PI / 180;
+const MIN_MS = 60000, HOUR_MS = 3600000, DAY_MS = 86400000;
+
+/* =========================================================================
+   2. 計算（入力を受け取って値を返すだけ。画面には触らない）
+   ========================================================================= */
+
+/* 文字の数字を読む。全角の「１８．５」も受け付ける。空欄は null、読めなければ NaN */
+function parseNum(text) {
+  const s = String(text || "").trim()
+    .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[．。､，]/g, ".").replace(/[－ー−]/g, "-");
+  if (s === "") return null;
+  return /^-?\d+(\.\d*)?$|^-?\.\d+$/.test(s) ? Number(s) : NaN;
+}
+
+const ymd = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const ymdCompact = d => ymd(d).replace(/-/g, "");
+const dayOfYear = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(d.getFullYear(), 0, 0)) / DAY_MS);
+const c1 = x => (Math.round(x * 10) / 10).toFixed(1);
+const hhmm = ms => { const d = new Date(ms); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* 日の出・日の入 [時]（夜温設定・日射量予測と同じ式。太陽の中心が地平線に来る時刻） */
+function sunTimes(date) {
+  const J = dayOfYear(date);
+  const LC = (RULE.lonDeg - RULE.stdMeridianDeg) / 15;                 // 経度補正 [h]
+  const f = (279.575 + 0.9856 * J) * D2R;
+  const ET = (-104.7 * Math.sin(f) + 596.2 * Math.sin(2 * f) + 4.3 * Math.sin(3 * f)
+             - 12.7 * Math.sin(4 * f) - 429.3 * Math.cos(f) - 2 * Math.cos(2 * f)
+             + 19.3 * Math.cos(3 * f)) / 3600;                          // 均時差 [h]
+  const t0 = 12 - LC - ET;                                              // 南中時刻 [h]
+  const sinDec = 0.39785 * Math.sin((278.97 + 0.9856 * J + 1.9165 * Math.sin((356.6 + 0.9856 * J) * D2R)) * D2R);
+  const dec = Math.asin(sinDec);                                        // 赤緯
+  const arg = -Math.tan(RULE.latDeg * D2R) * Math.tan(dec);
+  const half = Math.acos(Math.max(-1, Math.min(1, arg))) / D2R / 15;    // 昼の長さの半分 [h]
+  return { rise: t0 - half, set: t0 + half };
+}
+
+/* その日の日の出・日の入を、ミリ秒の時刻で */
+function dayWindow(date) {
+  const s = sunTimes(date), base = date.getTime();
+  return { riseMs: base + s.rise * HOUR_MS, setMs: base + s.set * HOUR_MS, lenH: s.set - s.rise };
+}
+
+/* 天気の文字 → 晴 / 曇 / 雨（nicchu_build.py の weather_class と同じ分け方） */
+function weatherClass(w) {
+  if (w.includes("晴")) return "晴";
+  if (["雨", "雪", "みぞれ", "雷"].some(x => w.includes(x))) return "雨";
+  return "曇";
+}
+
+/* ---- アメダス ---- */
+/* その日のうち、取りに行く3時間区切りのファイル名（日の出を含む区切り 〜 min(日の入, 最新の観測) を含む区切り） */
+function amedasFiles(date, win, latestMs) {
+  const endMs = Math.min(win.setMs + RULE.gridMin * MIN_MS, latestMs);
+  const out = [];
+  for (let h = Math.floor((win.riseMs - date.getTime()) / HOUR_MS / 3) * 3; h < 24; h += 3) {
+    if (date.getTime() + h * HOUR_MS > endMs) break;
+    out.push(ymdCompact(date) + "_" + String(h).padStart(2, "0") + ".json");
+  }
+  return out;
+}
+
+/* アメダスの JSON（3時間分ずつ）→ [{t, tempC, sunMin}]（時刻順）。値が無い欄は null */
+function parseAmedas(jsonList) {
+  const out = [];
+  for (const j of jsonList) {
+    if (!j || typeof j !== "object") throw new Error("アメダスのデータの形が想定と違います");
+    for (const [key, v] of Object.entries(j)) {
+      const m = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/.exec(key);
+      if (!m) throw new Error("アメダスの時刻「" + key + "」が読めません");
+      const t = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime();
+      const val = x => Array.isArray(x) && typeof x[0] === "number" ? x[0] : null;
+      out.push({ t, tempC: val(v.temp), sunMin: val(v.sun10m) });
+    }
+  }
+  return out.sort((a, b) => a.t - b.t);
+}
+
+/* ---- 予報 ---- */
+/* 気象庁の予報（JSON）→ { issued, temps:[{t, c}], weather:[{t0, t1, w}] }。形が違えばエラー（夜温設定と同じ読み方） */
+function parseForecast(json) {
+  const d = Array.isArray(json) ? json[0] : json;
+  const p = d && d.pointTimeSeries, a = d && d.areaTimeSeries;
+  if (!p || !Array.isArray(p.timeDefines) || !Array.isArray(p.temperature)) {
+    throw new Error("予報のデータの形が想定と違います（気温の欄が見つかりません）");
+  }
+  if (p.pointNameJP !== RULE.fcPoint) throw new Error("予報の地点が「" + RULE.fcPoint + "」ではありません（" + p.pointNameJP + "）");
+  const temps = p.timeDefines.map((t, i) => ({ t: Date.parse(t.dateTime), raw: p.temperature[i] }))
+    .filter(x => Number.isFinite(x.t) && x.raw !== "" && x.raw !== null && Number.isFinite(Number(x.raw)))
+    .map(x => ({ t: x.t, c: Number(x.raw) }));
+  if (temps.length < 2) throw new Error("予報に気温が2つ以上ありません");
+  const weather = a && Array.isArray(a.timeDefines) && Array.isArray(a.weather)
+    ? a.timeDefines.map((t, i) => ({ t0: Date.parse(t.dateTime), t1: Date.parse(t.dateTime) + 3 * HOUR_MS, w: String(a.weather[i] || "") }))
+    : [];
+  if (!weather.length) throw new Error("予報に天気の欄がありません");
+  return { issued: Date.parse(d.reportDateTime), temps, weather };
+}
+
+/* 直線でつなぐ。点の外なら null */
+function interp(points, ms) {
+  for (let i = 0; i < points.length - 1; i++) {
+    const p = points[i], q = points[i + 1];
+    if (p.t <= ms && ms <= q.t) return p.c + (q.c - p.c) * (ms - p.t) / (q.t - p.t);
+  }
+  return null;
+}
+
+/* 時刻 ms の予報の天気（その3時間に入る区切り。最初の区切りより前なら最初の区切り） */
+function weatherAt(fc, ms) {
+  const b = fc.weather.find(x => x.t0 <= ms && ms < x.t1) || (ms < fc.weather[0].t0 ? fc.weather[0] : null);
+  return b ? b.w : null;
+}
+
+/* ---- A：実況＋予報からハウス内の日中平均を見込む ----
+   入力：date（その日の0時）、obs（アメダス）、fc（予報。不要なら null でよい）、coef（係数）
+   戻り値：{ dayAvgC, outC, sunFrac, obsH, fcH, lastObsMs, missMin, month, m } か { error } */
+function computeA({ date, obs, fc, coef }) {
+  const month = date.getMonth() + 1;
+  const m = coef.months[String(month)];
+  if (!m) return { error: month + "月は式がありません（外の記録を10〜4月しか取っていないため）。夜温設定の平年値を使ってください。", noModel: true };
+  const win = dayWindow(date);
+  const step = RULE.gridMin * MIN_MS;
+
+  // 実況：気温が入っている最後の時刻まで
+  const withTemp = obs.filter(o => o.tempC !== null && o.t <= win.setMs + step);
+  const lastObs = withTemp.length ? withTemp[withTemp.length - 1] : null;
+  const lastObsMs = lastObs ? lastObs.t : -Infinity;
+  const obsMap = new Map(obs.map(o => [o.t, o]));
+
+  // 予報の気温を鹿沼に直し、最後の実況から予報の点へ直線でつなぐ（つなぎ目で段差が出ないように）
+  const offC = coef.dayOffset[String(month)];
+  const fcPts = fc ? fc.temps.filter(p => p.t > lastObsMs).map(p => ({ t: p.t, c: p.c + offC })) : [];
+  const pts = lastObs ? [{ t: lastObs.t, c: lastObs.tempC }, ...fcPts] : fcPts;
+
+  // 実況の気温が欠けた時刻は、前後の実況を直線でつないで補う（気象庁の側でデータが抜けている日がある）
+  const obsPts = withTemp.map(o => ({ t: o.t, c: o.tempC }));
+
+  // 日の出〜日の入を10分きざみでたどる
+  const temps = [];
+  let tempMissMin = 0, obsN = 0, fcN = 0, fcSunH = 0;
+  const first = Math.ceil(win.riseMs / step) * step;
+  for (let t = first; t <= win.setMs; t += step) {
+    if (t <= lastObsMs) {
+      const o = obsMap.get(t);
+      if (o && o.tempC !== null) { temps.push(o.tempC); obsN++; continue; }
+      const c = interp(obsPts, t);
+      tempMissMin += RULE.gridMin;
+      if (c !== null) { temps.push(c); obsN++; }
+    } else {
+      if (!fc) return { error: "予報がまだ読めていません" };
+      const c = interp(pts, t), w = weatherAt(fc, t);
+      if (c === null || w === null) return { error: hhmm(t) + " の予報がありません（予報の範囲の外です）" };
+      temps.push(c); fcN++;
+      fcSunH += coef.sunFrac[weatherClass(w)] * RULE.gridMin / 60;
+    }
+  }
+  if (!temps.length) return { error: "日中の気温がひとつもありません" };
+
+  // 日照：日の出〜（最後の実況 か 日の入）までの実況。10分値は「その時刻までの10分のうち照った分」[分]。
+  // データ自体が無い時刻も欠けとして数え、欠けた分は、照り方がほかの時刻の平均と同じだったとみなして補う
+  let sunKnownH = 0, sunKnownN = 0, sunMissN = 0;
+  const sunEnd = Math.min(lastObsMs, win.setMs + step);
+  for (let t = Math.floor(win.riseMs / step) * step + step; t <= sunEnd; t += step) {
+    const o = obsMap.get(t);
+    if (o && o.sunMin !== null) { sunKnownH += o.sunMin / 60; sunKnownN++; } else sunMissN++;
+  }
+  const sunFillH = sunKnownN ? sunKnownH / sunKnownN * sunMissN : 0;
+  const outC = temps.reduce((s, x) => s + x, 0) / temps.length;
+  const sunFrac = Math.min(1, (sunKnownH + sunFillH + fcSunH) / win.lenH);
+  return {
+    dayAvgC: m.a + m.b * outC + m.c * sunFrac,
+    outC, sunFrac, month, m, lastObsMs,
+    tempMissMin, sunMissMin: sunMissN * RULE.gridMin,
+    obsH: obsN * RULE.gridMin / 60, fcH: fcN * RULE.gridMin / 60,
+  };
+}
+
+/* ---- B：入れた値（時刻ごと）から日中平均 ----
+   entries：[{h: 時, c: ℃}]（時刻順）。直線でつなぎ、端はその値のまま延ばして、日の出〜日の入で平均する */
+function computeB(entries, date) {
+  if (!entries.length) return null;
+  const s = sunTimes(date);
+  const at = h => {
+    if (h <= entries[0].h) return entries[0].c;
+    const last = entries[entries.length - 1];
+    if (h >= last.h) return last.c;
+    for (let i = 0; i < entries.length - 1; i++) {
+      const p = entries[i], q = entries[i + 1];
+      if (p.h <= h && h <= q.h) return p.c + (q.c - p.c) * (h - p.h) / (q.h - p.h);
+    }
+    throw new Error("時刻 " + h + " の値を求められませんでした");
+  };
+  // 1分きざみで平均する（台形の面積を足すのと同じ）
+  let sum = 0, n = 0;
+  for (let h = s.rise; h <= s.set; h += 1 / 60) { sum += at(h); n++; }
+  let maxGapH = 0;
+  for (let i = 0; i < entries.length - 1; i++) maxGapH = Math.max(maxGapH, entries[i + 1].h - entries[i].h);
+  return {
+    avgC: sum / n, n: entries.length, firstH: entries[0].h, lastH: entries[entries.length - 1].h, maxGapH,
+    headH: entries[0].h - s.rise, tailH: s.set - entries[entries.length - 1].h,
+  };
+}
+
+/* B の入力欄に並べる時刻（日の出の次の正時 〜 日の入り前の正時） */
+function hoursOf(date) {
+  const s = sunTimes(date), out = [];
+  for (let h = Math.ceil(s.rise); h <= Math.floor(s.set); h++) out.push(h);
+  return out;
+}
+
+/* 夜温設定へのリンク（夜温設定はもともと ?d= と ?day= を受け取る） */
+const yaonLink = (date, dayAvgC) => "../yaon/?d=" + ymd(date) + "&day=" + c1(dayAvgC);
+
+/* =========================================================================
+   3. 画面（読み込み・表示）
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* 覚えられない端末では毎回はじめから */ } };
+
+const qs = new URLSearchParams(location.search);
+let tab = qs.get("tab") === "b" || qs.get("tab") === "a" ? qs.get("tab") : (lsGet(RULE.tabKey) === "b" ? "b" : "a");
+
+function todayDate() { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+$("date").value = /^\d{4}-\d{2}-\d{2}$/.test(qs.get("d") || "") ? qs.get("d") : ymd(todayDate());
+
+/* 日付欄 → Date（選べる範囲の外ならエラーの文） */
+function readDate() {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec($("date").value);
+  if (!m) return { error: "日付を入れてください" };
+  const d = new Date(+m[1], +m[2] - 1, +m[3]);
+  const diff = Math.round((d - todayDate()) / DAY_MS);
+  return { date: d, diff };
+}
+
+/* ---- データの読み込み（アメダスと予報）。日付が変わったら読み直す ---- */
+let AM = { state: "idle" };   // アメダス：idle → loading → ok / error
+let FC = { state: "idle" };   // 予報
+let loadSeq = 0;
+
+function loadForecast() {
+  try {
+    const c = JSON.parse(lsGet(RULE.fcCacheKey) || "null");
+    if (c && Date.now() - c.at < RULE.fcCacheMin * MIN_MS) { FC = { state: "ok", data: parseForecast(c.json) }; return Promise.resolve(); }
+  } catch (e) { /* 覚えた分が読めなければ、読み直す */ }
+  FC = { state: "loading" };
+  return fetch(RULE.fcUrl, { cache: "no-cache" })
+    .then(res => { if (!res.ok) throw new Error("気象庁の予報を読めませんでした（応答 " + res.status + "）"); return res.json(); })
+    .then(json => { FC = { state: "ok", data: parseForecast(json) }; lsSet(RULE.fcCacheKey, JSON.stringify({ at: Date.now(), json })); })
+    .catch(e => { FC = { state: "error", error: e.message || String(e) }; });
+}
+
+function loadAmedas(date) {
+  const seq = ++loadSeq;
+  AM = { state: "loading" };
+  const win = dayWindow(date);
+  return fetch(RULE.amedasBase + "latest_time.txt", { cache: "no-cache" })
+    .then(res => { if (!res.ok) throw new Error("アメダスの最新時刻を読めませんでした（応答 " + res.status + "）"); return res.text(); })
+    .then(txt => {
+      const latestMs = Date.parse(txt.trim());
+      if (!Number.isFinite(latestMs)) throw new Error("アメダスの最新時刻「" + txt.trim() + "」が読めません");
+      const files = amedasFiles(date, win, latestMs);
+      return Promise.all(files.map(f => fetch(RULE.amedasBase + "point/" + RULE.amedasPoint + "/" + f, { cache: "no-cache" })
+        .then(res => {
+          if (res.status === 404) throw new Error("この日のアメダス（" + f + "）は気象庁にもう残っていません。実況は約10日前までです。");
+          if (!res.ok) throw new Error("アメダスを読めませんでした（" + f + "、応答 " + res.status + "）");
+          return res.json();
+        })))
+        .then(list => ({ latestMs, obs: parseAmedas(list) }));
+    })
+    .then(r => { if (seq === loadSeq) AM = { state: "ok", ...r }; })
+    .catch(e => { if (seq === loadSeq) AM = { state: "error", error: e.message || String(e) }; });
+}
+
+function loadAll() {
+  const rd = readDate();
+  if (rd.error || rd.diff > 1 || rd.diff < -RULE.pastDays) { render(); return; }
+  const jobs = [loadForecast()];
+  if (rd.diff <= 0) jobs.push(loadAmedas(rd.date)); else AM = { state: "ok", obs: [], latestMs: -Infinity };
+  render();
+  Promise.all(jobs).then(render);
+}
+
+/* ---- 表示 ---- */
+function renderSun(rd) {
+  if (!rd.date) { $("sun").innerHTML = ""; return; }
+  const w = dayWindow(rd.date);
+  $("sun").innerHTML =
+    '<div class="kv"><span class="k">日の出</span><span class="v num">' + hhmm(w.riseMs) + "</span></div>" +
+    '<div class="kv"><span class="k">日の入</span><span class="v num">' + hhmm(w.setMs) + "</span></div>";
+}
+
+function renderA(rd) {
+  const box = $("resA");
+  if (!COEF) { box.innerHTML = '<p class="err">式のデータ（nicchu_coef.js）を読めませんでした。「数値を入れる」を使ってください。</p>'; return; }
+  if (rd.error) { box.innerHTML = '<p class="err">' + esc(rd.error) + "</p>"; return; }
+  const month = rd.date.getMonth() + 1;
+  if (!COEF.months[String(month)]) {
+    box.innerHTML = '<p class="err">' + month + "月は式がありません（外の記録を10〜4月しか取っていないため）。</p>" +
+      '<p class="hint">夜温設定の平年値を使うか、「数値を入れる」で計算してください。</p>' +
+      '<a class="go" href="../yaon/?d=' + ymd(rd.date) + '">夜温設定を開く →</a>';
+    return;
+  }
+  if (rd.diff > 1) { box.innerHTML = '<p class="err">見込めるのは明日までです（予報が届くのが明日まで）。</p>'; return; }
+  if (rd.diff < -RULE.pastDays) { box.innerHTML = '<p class="err">' + RULE.pastDays + "日より前は選べません（気象庁の実況は約10日分しか残らないため）。</p>"; return; }
+  if (AM.state === "loading" || FC.state === "loading" || AM.state === "idle") { box.innerHTML = '<p class="hint">気象庁のデータを読んでいます…</p>'; return; }
+  if (AM.state === "error") { box.innerHTML = '<p class="err">' + esc(AM.error) + '</p><button type="button" class="btn retry" data-retry>読み直す</button>'; return; }
+
+  const win = dayWindow(rd.date);
+  const lastObs = AM.obs.filter(o => o.tempC !== null).map(o => o.t).pop();
+  const needFc = !(lastObs >= win.setMs);
+  if (needFc && FC.state === "error") {
+    box.innerHTML = '<p class="err">' + esc(FC.error) + '</p><p class="hint">日の入り後なら実況だけで計算できます。</p><button type="button" class="btn retry" data-retry>読み直す</button>';
+    return;
+  }
+  const r = computeA({ date: rd.date, obs: AM.obs, fc: needFc ? FC.data : null, coef: COEF });
+  if (r.error) {
+    box.innerHTML = '<p class="err">' + esc(r.error) + "</p>" + (r.noModel ? '<a class="go" href="../yaon/?d=' + ymd(rd.date) + '">夜温設定を開く →</a>' : "");
+    return;
+  }
+
+  const status = r.fcH === 0
+    ? "日の出〜日の入りを、すべて実況で計算しました"
+    : r.obsH === 0
+      ? "すべて予報で見込んでいます（" + hhmm(FC.data.issued) + " 発表の予報）"
+      : hhmm(r.lastObsMs) + " までは実況、そこから日の入りまでは予報（" + hhmm(FC.data.issued) + " 発表）";
+  const notes = [];
+  if (r.m.rmse >= RULE.bigErrC) {
+    notes.push(r.month + "月は式のずれが大きい時期です（±" + c1(r.m.rmse) + "℃）。<small>外が暖かく、換気の開け方でハウス内が大きく変わるため。アグリネットの値が見られるなら「数値を入れる」のほうが確かです。</small>");
+  }
+  if (Math.max(r.tempMissMin, r.sunMissMin) >= RULE.missingWarnMin) {
+    notes.push("実況に欠けがあります（気温 " + r.tempMissMin + " 分・日照 " + r.sunMissMin + " 分）。" +
+      "<small>気象庁の側でデータが抜けています。気温は前後の実況を直線でつなぎ、日照はほかの時刻の照り方の平均で補っています。</small>");
+  }
+  if (r.fcH > 0) notes.push("予報が外れると、その分ずれます。<small>日の入り後に開き直すと、実況だけで計算し直します。</small>");
+
+  box.innerHTML =
+    '<div class="answer"><div class="k">ハウス内の日中平均（見込み）</div>' +
+    '<div class="v num">' + c1(r.dayAvgC) + "<small>℃</small></div>" +
+    '<div class="pm">ふだんのずれ ±' + c1(r.m.rmse) + "℃（" + r.month + "月）</div></div>" +
+    '<p class="status">' + esc(status) + "</p>" +
+    '<a class="go" href="' + yaonLink(rd.date, r.dayAvgC) + '">この値で夜温設定へ →</a>' +
+    '<div class="kvs">' +
+    '<div class="kv"><span class="k">外気の日中平均<small>鹿沼' +
+    (r.fcH === 0 ? "・実況" : r.obsH === 0 ? "・予報" : "・実況 " + c1(r.obsH) + "時間＋予報 " + c1(r.fcH) + "時間") + "</small></span>" +
+    '<span class="v num">' + c1(r.outC) + "℃</span></div>" +
+    '<div class="kv"><span class="k">日照の割合<small>日が照った時間 ÷ 昼の長さ ' + c1(win.lenH) + "時間</small></span>" +
+    '<span class="v num">' + Math.round(r.sunFrac * 100) + "%</span></div>" +
+    '<div class="kv stack"><span class="k">使った式（' + r.month + "月）</span>" +
+    '<span class="v num">' + r.m.a + " ＋ " + r.m.b + "×外気 ＋ " + r.m.c + "×日照</span></div>" +
+    "</div>" +
+    notes.map(n => '<div class="note">' + n + "</div>").join("");
+}
+
+/* ---- B ---- */
+let bHours = [];   // いま並べている時刻
+function draftLoad(dateStr) {
+  try { const d = JSON.parse(lsGet(RULE.draftKey) || "null"); return d && d.d === dateStr && d.v ? d.v : {}; } catch (e) { return {}; }
+}
+function draftSave(dateStr) {
+  const v = {};
+  for (const h of bHours) { const el = $("bh" + h); if (el && el.value.trim() !== "") v[h] = el.value; }
+  lsSet(RULE.draftKey, JSON.stringify({ d: dateStr, v }));
+}
+
+/* 時刻の欄を並べ直す（日付が変わったときだけ。打ちかけを消さないため） */
+function buildHours(rd) {
+  const key = rd.date ? ymd(rd.date) : "";
+  if ($("hours").dataset.key === key) return;
+  $("hours").dataset.key = key;
+  bHours = rd.date ? hoursOf(rd.date) : [];
+  const saved = draftLoad(key);
+  $("hours").innerHTML = bHours.map(h =>
+    '<label class="h" for="bh' + h + '"><span>' + h + "時</span>" +
+    '<input id="bh' + h + '" data-h="' + h + '" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="℃" value="' +
+    esc(saved[h] || "") + '"></label>').join("");
+}
+
+function readEntries() {
+  const entries = [], bad = [];
+  for (const h of bHours) {
+    const el = $("bh" + h), v = parseNum(el.value);
+    const ng = Number.isNaN(v) || (v !== null && (v < RULE.bMinC || v > RULE.bMaxC));
+    el.classList.toggle("bad", ng);
+    if (ng) bad.push(h + "時");
+    else if (v !== null) entries.push({ h, c: v });
+  }
+  return { entries, bad };
+}
+
+function renderB(rd) {
+  const box = $("resB");
+  if (rd.error) { box.innerHTML = ""; $("hoursErr").hidden = true; return; }
+  const { entries, bad } = readEntries();
+  $("hoursErr").hidden = !bad.length;
+  $("hoursErr").textContent = bad.length ? bad.join("・") + " が読めません（" + RULE.bMinC + "〜" + RULE.bMaxC + " の数字で入れてください）。その時刻は計算に入れていません。" : "";
+  const r = computeB(entries, rd.date);
+  if (!r) { box.innerHTML = '<p class="hint">値を1つ以上入れると、ここに日中平均が出ます。</p>'; return; }
+  const notes = [];
+  if (r.n === 1) notes.push("値が1つだけなので、その値をそのまま日中平均にしています。");
+  if (r.tailH > RULE.bGapWarnH) notes.push(r.lastH + "時より後の値がありません。<small>日の入りまで " + r.lastH + "時の値のまま延ばしています。</small>");
+  if (r.headH > RULE.bGapWarnH) notes.push(r.firstH + "時より前の値がありません。<small>日の出から " + r.firstH + "時の値のまま延ばしています。</small>");
+  if (r.maxGapH > RULE.bGapWarnH) notes.push("値の間が " + r.maxGapH + " 時間あいているところがあります。<small>その間は直線でつないでいます。</small>");
+  box.innerHTML =
+    '<div class="answer" style="margin-top:14px"><div class="k">ハウス内の日中平均（入れた値から）</div>' +
+    '<div class="v num">' + c1(r.avgC) + "<small>℃</small></div>" +
+    '<div class="pm">' + r.n + " 時刻ぶん（" + r.firstH + "〜" + r.lastH + "時）</div></div>" +
+    '<a class="go" href="' + yaonLink(rd.date, r.avgC) + '">この値で夜温設定へ →</a>' +
+    notes.map(n => '<div class="note">' + n + "</div>").join("");
+}
+
+/* ---- 説明欄（係数の表） ---- */
+function renderDoc() {
+  if (!COEF) return;
+  // 数字のキーは小さい順（1月から）に並んでしまうので、作の順（10月→4月）に並べ直す
+  const order = ms => Object.keys(ms).map(Number).sort((a, b) => (a < 8 ? a + 12 : a) - (b < 8 ? b + 12 : b)).map(String);
+  const rows = order(COEF.months).map(m => { const v = COEF.months[m];
+    return "<tr><td>" + m + "月</td><td>" + v.a + "</td><td>" + v.b + "</td><td>" + v.c + "</td><td>±" + c1(v.rmse) + "</td></tr>"; }).join("");
+  $("docTable").innerHTML =
+    '<table class="mtbl"><thead><tr><th>月</th><th>a</th><th>b</th><th>c</th><th>ずれ</th></tr></thead><tbody>' + rows + "</tbody></table>" +
+    '<p class="hint">ずれ＝年度を1つずつ抜いて式を作り、抜いた年度で確かめたときのずれの大きさ（RMSE、二乗平均平方根誤差。大きく外れた日ほど重く数える目安）。全体で ±' +
+    c1(COEF.overall.rmse) + "℃、1℃以上ずれた日は " + Math.round(COEF.overall.over1 * 100) +
+    "%。くらべると、夜温設定の「快晴」の平年値は ±1.8℃（1℃以上ずれた日 42%）、その日の天気のボタンを正しく選べても ±1.2℃（31%）でした（2026-11-05 の検証）。</p>";
+  $("docOffset").textContent = "（" + order(COEF.dayOffset).map(m => m + "月 " + COEF.dayOffset[m] + "℃").join("、") + "）";
+  $("docSunFrac").textContent = "（晴れ " + COEF.sunFrac["晴"] + "、くもり " + COEF.sunFrac["曇"] + "、雨・雪 " + COEF.sunFrac["雨"] + "）";
+  $("docBuilt").textContent = "式を作った日：" + COEF.built_at + "（" + COEF.seasons.join("・") + "年度、" + COEF.overall.days + "日）";
+}
+
+function render() {
+  const rd = readDate();
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
+  $("panelA").hidden = tab !== "a";
+  $("panelB").hidden = tab !== "b";
+  renderSun(rd);
+  if (tab === "a") renderA(rd);
+  else { buildHours(rd); renderB(rd); }
+}
+
+/* ---- 操作 ---- */
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  tab = b.dataset.tab; lsSet(RULE.tabKey, tab); render();
+}));
+$("date").addEventListener("change", loadAll);
+$("today").addEventListener("click", () => { $("date").value = ymd(todayDate()); loadAll(); });
+$("resA").addEventListener("click", e => { if (e.target.closest("[data-retry]")) { try { localStorage.removeItem(RULE.fcCacheKey); } catch (x) { /* 消せなくても読み直しは試す */ } loadAll(); } });
+$("hours").addEventListener("input", () => { const rd = readDate(); if (rd.date) draftSave(ymd(rd.date)); renderB(rd); });
+// 上下キー・Enter で欄を移動する（値は増減させない）
+$("hours").addEventListener("keydown", e => {
+  const el = e.target.closest("input[data-h]");
+  if (!el) return;
+  const i = bHours.indexOf(Number(el.dataset.h));
+  const to = e.key === "ArrowDown" || e.key === "Enter" ? i + 1 : e.key === "ArrowUp" ? i - 1 : null;
+  if (to === null) return;
+  e.preventDefault();
+  const next = $("bh" + bHours[to]);
+  if (next) next.focus(); else el.blur();
+});
+$("clearB").addEventListener("click", () => {
+  if (!confirm("この日に入れた値をすべて消します。よろしいですか？")) return;
+  for (const h of bHours) $("bh" + h).value = "";
+  const rd = readDate(); if (rd.date) draftSave(ymd(rd.date));
+  renderB(rd);
+});
+
+renderDoc();
+loadAll();
+</script>
+</body>
+</html>
