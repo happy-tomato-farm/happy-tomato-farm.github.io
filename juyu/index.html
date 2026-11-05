@@ -78,6 +78,7 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 .f .box:focus-within{border-color:var(--night)}
 .f input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);
   font:inherit;font-size:22px;font-weight:800;padding:8px 0;outline:none;font-variant-numeric:tabular-nums}
+.f input::placeholder{color:var(--muted);opacity:.75;font-size:16px;font-weight:700}
 .f .u{font-size:13px;color:var(--muted);font-weight:700;white-space:nowrap}
 .toggle{margin-top:12px;width:100%;min-height:46px;border-radius:14px;cursor:pointer;
   border:2px dashed var(--line);background:transparent;color:var(--muted);font:inherit;font-size:15px;font-weight:800}
@@ -205,6 +206,9 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 const API = "https://script.google.com/macros/s/AKfycbzYkVlVngoC6CXf9HKPlfnFbJHs5lrarw2J9dLjdqaqvdVQFIN15aMr5EyNSA8tj1UU/exec";
 const L_PER_CM = { "中央": 33.2, "東": 11.1 };   // タンクのメモリ1cmあたりの重油の量（L）
 const FIELDS = ["cm1", "cm2", "price", "hkH", "hkN", "glowH", "glowN"];
+// 単価はこのハウスにだけ入れればよい。ほかのハウスで空の週は、同じ週のこのハウスの単価を使う
+// （栽培記録アプリの config.FUEL_PRICE_FROM と同じ。ユーザー要望 2026-11-05）
+const PRICE_FROM = "中央";
 const $ = id => document.getElementById(id);
 
 /* ---- 日付の道具（端末の時刻で、時刻は使わず日付だけ扱う） ---- */
@@ -234,17 +238,24 @@ let form = { key: "", edited: false, sending: false, msg: "", ng: false, kyuyu: 
 
 const keyOf = () => ymd(week) + "|" + house;
 
-/* 単価の初期値：この端末で前に送ったもの → シートでいちばん新しい記録の単価 */
+/* 中央の単価の初期値：シートでいちばん新しい中央の記録の単価 */
 function lastPrice() {
-  const rows = Object.values(REC.rows).filter(r => String(r.price) !== "").sort((a, b) => Number(b.at) - Number(a.at));
+  const rows = Object.values(REC.rows).filter(r => r.house === PRICE_FROM && String(r.price ?? "") !== "")
+    .sort((a, b) => Number(b.at) - Number(a.at));
   return rows.length ? String(rows[0].price) : "";
+}
+
+/* 東などで単価が空のときに使う、同じ週の中央の単価（無ければ ""） */
+function sourcePrice(weekYmd) {
+  const r = REC.rows[weekYmd + "|" + PRICE_FROM];
+  return r && String(r.price ?? "") !== "" ? String(r.price) : "";
 }
 
 /* 入力欄に値を入れるのは、週かハウスが変わったときだけ（打ちかけを書き換えないため） */
 function fillForm() {
   const saved = REC.rows[keyOf()];
   FIELDS.forEach(f => { $(f).value = saved ? String(saved[f] ?? "") : ""; });
-  if (!saved) $("price").value = lastPrice();
+  if (!saved && house === PRICE_FROM) $("price").value = lastPrice();
   form = { key: keyOf(), edited: false, sending: false, msg: "", ng: false,
            kyuyu: !!(saved && String(saved.cm2 ?? "") !== "") };
 }
@@ -274,8 +285,11 @@ function render() {
   $("cm2Row").hidden = !form.kyuyu;
   $("cm1Label").textContent = form.kyuyu ? "① 給油の前までに下がった長さ" : "メモリが下がった長さ";
 
-  // 重油の量と金額
+  // 重油の量と金額。中央以外で単価が空なら、同じ週の中央の単価を使う
   const v = readForm(), per = L_PER_CM[house];
+  const borrowed = house !== PRICE_FROM && v.price === "" ? sourcePrice(ymd(week)) : "";
+  if (borrowed !== "") v.price = Number(borrowed);
+  $("price").placeholder = house === PRICE_FROM ? "" : borrowed !== "" ? "中央と同じ " + borrowed : "中央と同じ";
   const bad = FIELDS.filter(f => v[f] === null);
   const cm = (v.cm1 || 0) + (v.cm2 || 0);
   if (bad.length) {
@@ -292,7 +306,12 @@ function render() {
       " × " + per + " L" + (v.price !== "" ? " × " + v.price + " 円/L" : "");
   }
   const saved = REC.rows[keyOf()];
-  $("priceHint").textContent = !saved && $("price").value && !form.edited ? "前に入れた単価を入れてあります。変わったときだけ直してください。" : "";
+  $("priceHint").textContent = house !== PRICE_FROM
+    ? ($("price").value.trim() !== "" ? "東だけちがう単価のときに入れる欄です。空にすると中央の単価を使います。"
+      : borrowed !== "" ? "空欄のままで、この週の中央の単価（" + borrowed + " 円/L）を使います。"
+      : "空欄のままでよいです。この週の中央の単価を送ると、それを使います。")
+    : !saved && $("price").value && !form.edited ? "前に入れた単価を入れてあります。変わったときだけ直してください。東にも同じ単価が入ります。"
+    : "東にも同じ単価が入ります（東で別に入れた週を除く）。";
 
   // 送るボタンと知らせ
   $("send").disabled = form.sending || REC.state === "loading";
@@ -323,9 +342,10 @@ function renderHist() {
     const hasCm = n(r.cm1) !== null || n(r.cm2) !== null;
     const eq = (name, h, c) => (n(h) === null && n(c) === null) ? "" : "・" + name + " " + (n(h) ?? "—") + "h " + (n(c) ?? "—") + "回";
     const w = fromYmd(r.week);
+    const src = r.house !== PRICE_FROM && n(r.price) === null ? sourcePrice(r.week) : "";
+    const priceText = n(r.price) !== null ? "・" + r.price + " 円/L" : src !== "" ? "・" + src + " 円/L（中央）" : "";
     return '<li><button type="button" data-week="' + r.week + '"' + (r.week === ymd(week) ? ' aria-current="true"' : "") + '>' +
-      "<b>" + md(w) + "〜" + md(addDays(w, 6)) + "　" + (hasCm ? fmt(cm * per, 1) + " L" : "重油なし") +
-      (n(r.price) !== null ? "・" + r.price + " 円/L" : "") + "</b>" +
+      "<b>" + md(w) + "〜" + md(addDays(w, 6)) + "　" + (hasCm ? fmt(cm * per, 1) + " L" : "重油なし") + priceText + "</b>" +
       "<span>" + (hasCm ? (n(r.cm2) !== null ? r.cm1 + "＋" + r.cm2 : cm) + " cm" : "") + eq("加温機", r.hkH, r.hkN) + eq("グロウ", r.glowH, r.glowN) + "</span>" +
       "</button></li>";
   }).join("");
