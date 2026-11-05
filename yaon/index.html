@@ -142,6 +142,8 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 .hint{font-size:13.5px;color:var(--muted);margin:6px 2px 0;line-height:1.6}
 .hint b{color:var(--ink)}
 .err{font-size:14px;color:var(--warn);font-weight:800;margin:6px 2px 0}
+.calc{display:block;margin-top:10px;padding:12px 14px;border-radius:14px;border:2px dashed var(--line);
+      text-align:center;font-size:15px;font-weight:800;color:var(--night);text-decoration:none}
 
 /* ===== 結果：4段の設定 ===== */
 .stages{list-style:none;margin:0;padding:0}
@@ -264,6 +266,8 @@ footer a{color:var(--muted)}
     <div class="wx" id="wxBtns" role="group" aria-label="天気別の平年値"></div>
     <p class="hint" id="dayHint"></p>
     <p class="err" id="dayErr" hidden></p>
+    <!-- 日中平均の計算ページ（/nicchu/）へ。計算した値は ?day= で戻ってくる -->
+    <a class="calc" id="calcLink" href="../nicchu/">実況やアグリネットから計算する →</a>
   </div>
 </section>
 
@@ -972,6 +976,7 @@ function renderHints(g) {
       "の平年値</b>で計算します。上の値は" + esc(house) + "のハウス内、過去の同じ時期（前後7日）の天気別の平均です。";
   }
   $("dayavg").placeholder = hn && hn[wx].mean !== null ? c1(hn[wx].mean) : "";
+  $("calcLink").href = "../nicchu/" + (g.date ? "?d=" + ymd(g.date) : "");
 
   $("targetErr").hidden = !g.errors.target; $("targetErr").textContent = g.errors.target || "";
   $("dayErr").hidden = !g.errors.day; $("dayErr").textContent = g.errors.day || "";
