@@ -100,6 +100,13 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 }
 .rec-send:disabled{opacity:.5;cursor:default}
 .rec .rec-ng{color:var(--warn);font-weight:800}
+.rec-sub{margin:14px 0 6px;font-size:13px;font-weight:700;color:var(--muted)}
+.freq-q + .rec-sub{margin-top:0}
+
+/* ===== ⑤ 翌朝に開ける時刻 ===== */
+.morning{margin-top:16px;padding-top:14px;border-top:2px dashed var(--line)}
+.morning .ng{color:var(--warn);font-weight:800}
+.price{margin-top:12px}
 
 /* ===== 入力欄 ===== */
 .field{margin-top:16px}
@@ -278,13 +285,31 @@ footer a{color:var(--muted)}
 </section>
 
 <section class="card" aria-live="polite">
-  <h2>⑤ カーテンを閉める時刻の目安</h2>
+  <h2>⑤ カーテンを閉める・開ける時刻の目安</h2>
   <p class="freq-q">閉めたあと、暖房が少なくとも何分に1回動けばよいか</p>
   <div class="freq" id="freqBtns" role="group" aria-label="暖房が動く間隔"></div>
   <div id="curtain"></div>
-  <!-- 閉めた時刻の記録。スプレッドシートへ送る（同じ夜・同じハウスは、送り直すと上書き） -->
+  <!-- 翌朝に開ける時刻（晴れの朝の目安）。単価の欄は描き直さない（打っている途中で消えないように）ので、結果の欄と分けておく -->
+  <div class="morning" id="morningBox" hidden>
+    <p class="freq-q" id="morningTitle">翌朝にカーテンを開ける時刻（晴れの朝の目安）</p>
+    <div id="morning"></div>
+    <div class="rec-grid price">
+      <div class="field">
+        <label for="priceTomato">トマト手取り 円/kg</label>
+        <input id="priceTomato" type="text" inputmode="decimal" autocomplete="off" placeholder="空欄＝熱だけ">
+      </div>
+      <div class="field">
+        <label for="priceOil">重油 円/L</label>
+        <input id="priceOil" type="text" inputmode="decimal" autocomplete="off" placeholder="空欄＝熱だけ">
+      </div>
+    </div>
+    <p class="hint">単価はテンパの「光合成も入れた時刻」に使います。ページには書かず、このスマホにだけ覚えさせます。</p>
+  </div>
+  <!-- 閉めた・開けた時刻の記録。スプレッドシートへ送る（同じ夜・同じハウスは、送り直すと上書き）。
+       閉めた時刻と開けた時刻はボタンを分ける（朝に開けた時刻だけ送るとき、その夜の目安を閉めた時刻として送らないため） -->
   <div class="rec" id="recBox" hidden>
-    <p class="freq-q" id="recTitle">閉めた時刻を記録する</p>
+    <p class="freq-q" id="recTitle">閉めた・開けた時刻を記録する</p>
+    <p class="rec-sub" id="recCloseTitle">閉めた時刻</p>
     <div class="rec-grid">
       <div class="field">
         <label for="recLux">ラクソス</label>
@@ -298,6 +323,19 @@ footer a{color:var(--muted)}
     </div>
     <button type="button" class="rec-send" id="recSend">この時刻で記録する</button>
     <p class="hint" id="recMsg"></p>
+    <p class="rec-sub" id="recOpenTitle">開けた時刻</p>
+    <div class="rec-grid">
+      <div class="field">
+        <label for="recOpenTem">テンパ</label>
+        <input id="recOpenTem" type="text" inputmode="numeric" autocomplete="off" placeholder="例 0715">
+      </div>
+      <div class="field">
+        <label for="recOpenLux">ラクソス</label>
+        <input id="recOpenLux" type="text" inputmode="numeric" autocomplete="off" placeholder="例 0845">
+      </div>
+    </div>
+    <button type="button" class="rec-send" id="recOpenSend">開けた時刻を記録する</button>
+    <p class="hint" id="recOpenMsg"></p>
   </div>
 </section>
 
@@ -365,6 +403,23 @@ footer a{color:var(--muted)}
     </ul>
     <p>外気の予報は気象庁の地域時系列予報（気温は宇都宮の地点、天気・風は栃木県南部。3時間ごと）を使い、間を直線でつないでいます。予報があるのは今日と明日だけです。読んだ予報は1時間この端末に覚えさせ、その間は読み直しません。</p>
     <p>出典：気象庁ホームページ（地域時系列予報）のデータを加工して作成。</p>
+
+    <h3>翌朝にカーテンを開ける時刻（⑤の下）</h3>
+    <p>翌朝が晴れの予報（日の出から3時間がすべて「晴」）のときだけ出します。くもり・雨の朝は日射の見込みの幅が大きいためです。朝はテンパ → ラクソスの順に開けます。どちらもタイマーに合わせて15分単位に切り上げます。</p>
+    <ul>
+      <li><b>テンパ</b>：開けて増える日射の熱が、開けて増える逃げる熱を上回った時刻（熱の分かれ目）。単価を入れると、テンパを開けて増える光合成から見積もった果実の金額も足して、いちばん得な時刻を出します</li>
+      <li><b>ラクソス</b>：屋根を開けても、日射の熱が逃げる熱に届く（開けても暖房が点かない）最初の時刻。ラクソスを閉めたままだと設定＋2℃に届く時刻も出します（熱容量29 MJ/Kで室温の上がり方を追う）。15分にそろえて設定＋2℃を少し超えるときは、暖房が点かないほうを優先します</li>
+    </ul>
+    <div class="eq">開けて増える日射の熱 ＝ 0.55 × ハウスに入る日射 × ラクソスの透過率 × テンパがさえぎっていた分（0.5）× 床面積</div>
+    <ul>
+      <li>0.55 は、ハウスに入った日射のうち空気を温める割合です（残りは蒸散や地面・作物にたまる）。2025-26冬の朝、暖房が最後に点いた時刻の日射と逃げる熱から逆算しました（12月0.58・1月0.63・2月0.48）</li>
+      <li>ハウスに入る日射 ＝ 快晴の式（日射量予測と同じ）× 晴れの朝の実測の割合 × ハウスの透過率0.678（季節で少し変わる）。快晴の式は日の低い時間に低めに出るので、宇都宮の3冬の晴れの朝の毎時の日射から割合を求めて直しています（6〜8時1.22・8〜9時1.10・9〜10時1.05・10時〜1.02）。ハウスの日射計はカーテンより上にあります</li>
+      <li>逃げる熱は、夜と同じ資料どおりの式です（朝の設定は④の4段目、外気は鹿沼めやす）。鹿沼めやすは夜の差を使うので朝は少し低めに出て、開ける時刻は少し遅めの側に出ます</li>
+      <li>ラクソスLSの光の透過率は分からないので、0.85と仮に置いています。テンパはアルミ50%で0.5です</li>
+      <li>光合成は、CO₂アプリと同じ葉の式（光合成.xlsx）を群落20層に積み上げ、CO₂の効きは温室の実測則で掛けます。葉面積指数2.5・夜明けのCO₂ 600 ppm と仮に置いています（1.5〜3.5、420〜800 ppm に振っても、テンパの時刻はほとんど変わりませんでした）。果実 ＝ 増えたCO₂ ÷ 44 × 30 × 果実への分配0.5 ÷ 乾物率0.05</li>
+      <li>過去3冬の晴れの朝（263朝）では、テンパの熱の分かれ目は日の出の40〜50分後、光合成も入れると（トマト250円/kg・重油120円/L）20〜25分後でした。熱の分かれ目より30分早く開けると1朝1棟で重油が0.4〜0.9 L増えますが、果実が0.5〜0.85 kg増える計算です。ラクソスは85〜110分後で、閉めたままだとその10〜15分後に設定＋2℃に届きました。光合成を入れても、ラクソスをこれより早く開ける得はありませんでした（ラクソスの透過率が0.75ほどと低ければ、80分後ごろが得になります）</li>
+      <li>予報の天気が当たったとしても、晴れの朝で見込みが15分以内に当たったのはテンパ94%・ラクソス83%でした。ラクソスの見込みは、実際に暖房が最後に点いた時刻と中央値で8分の差でした（172朝）</li>
+    </ul>
 
     <h3>日の出・日の入</h3>
     <p>日射量予測と同じ式（北緯36.523°・東経139.762°、太陽の中心が地平線に来る時刻）で計算しています。暦の時刻より日の出は約4分遅く、日の入は約4分早くなります。</p>
@@ -494,8 +549,42 @@ const CURTAIN = {
              { hi: 8, p25: 9,  p50: 19, p75: 33 },   { hi: 10, p25: 5, p50: 10, p75: 27 },
              { hi: Infinity, p25: 4, p50: 12, p75: 27 }],
   },
+
+  // ---- 朝にカーテンを開ける時刻（2026-11-07 の検証。画面下「計算の考え方」）----
+  // 晴れの朝だけ出す。テンパ：開けて増える日射の熱（単価があれば光合成で増える果実の金額も）＞ 開けて増える逃げる熱。
+  // ラクソス：屋根を開けても日射の熱 ≧ 逃げる熱（開けても暖房が点かない）。閉めたままだと設定＋2℃に届く時刻も出す
+  morning: {
+    clearCheckH: 3,        // 日の出からこの時間の予報がすべて「晴」なら晴れの朝とみなす
+    scanH: 4,              // 日の出から何時間まで探すか
+    solarHeatFrac: 0.55,   // ハウスに入った日射のうち空気を温める割合。2025-26冬の朝に暖房が最後に点いた時刻から逆算（12月0.58・1月0.63・2月0.48）
+    tauLux: 0.85,          // ラクソスLSの光の透過率（仮。カタログの値が分かれば差し替える）
+    tauTempa: 0.5,         // テンパ（アルミ50%）の光の透過率
+    // ハウスの透過率と季節変化（CO₂アプリ・潅水アプリと同じ。日射計はカーテンより上）
+    coverTau: 0.678, coverCos: -0.0390, coverSin: 0.0475,
+    altM: 150, solarConstW: 1360,   // 快晴の日射の式（日射量予測と同じ）
+    // 晴れの朝の「実際の日射 ÷ 快晴の式」。宇都宮の3冬（11〜3月）の毎時の日射から、その時刻までの1時間ごと（8 は 7〜8時）。
+    // 日の低い時間は快晴の式が低めに出るので、その分を直す。7 は 6〜7時（測れた朝が少ないので 7〜8時と同じ）
+    clearK: { 7: 1.22, 8: 1.22, 9: 1.10, 10: 1.05, 11: 1.02 },
+    // 光合成（CO₂アプリと同じ葉の式・群落20層・CO₂の効きは温室の実測則）。仮の値（LAI 1.5〜3.5・CO₂ 420〜800 でも結論はほぼ同じ）
+    lai: 2.5, dawnCo2Ppm: 600, co2RuleK: 150,
+    fruitKgPerCo2G: 30 / 44 * 0.5 / 0.05 / 1000,   // 吸ったCO₂ 1g → 糖 30/44 g → 果実へ 0.5 → 乾物率 0.05 で生体重 [kg]
+    oilMJPerL: 39.1, heaterEff: 0.85,              // A重油の発熱量と暖房機の効率
+    priceKey: "htf_yaon_price",                    // 単価はページに書かず、この端末に覚えさせる
+  },
 };
 const D2R = Math.PI / 180;
+
+/* 光合成.xlsx の葉の式（潅水アプリ config.py・CO₂アプリ co2.html と同じ値） */
+const PS = {
+  stomata: { A: 0.000103333, B: 0.0345, C: 0.001035, max: 0.207, D: 0.00005, E: 0.01 },
+  stomataScale: 2.4,          // 気孔コンダクタンスの水準補正
+  ratioStomata: 0.66, ratioBoundary: 0.75,   // 水蒸気→CO₂ のコンダクタンス換算
+  windMs: 0.2, charLenM: 0.07 * 0.72,        // 風速・葉の特性長（葉幅7cm×0.72）
+  quantumYield: 0.060, theta: 0.80, pmaxMmol: 0.0450, parUmolPerJ: 4.57,
+  kcPpm: 250, tempA: 5, tempOpt: 28,
+  rpMax: 0.3, rpZeroPpm: 1200, rd20Mmol: 0.00148, q10: 2,
+  extinctionK: 0.7, layers: 20,
+};
 
 /* =========================================================================
    2. 計算（入力を受け取って値を返すだけ。画面には触らない）
@@ -514,8 +603,8 @@ const ymd = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const dayOfYear = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(d.getFullYear(), 0, 0)) / 86400000);
 
-/* 日の出・日の入 [時]（日射量予測.html と同じ式。太陽の中心が地平線に来る時刻） */
-function sunTimes(date) {
+/* 太陽の位置（日射量予測.html と同じ式）。J：1月1日からの日数、t0：南中時刻 [時]、dec：赤緯 [rad] */
+function sunGeometry(date) {
   const J = dayOfYear(date);
   const LC = (RULE.lonDeg - RULE.stdMeridianDeg) / 15;                 // 経度補正 [h]
   const f = (279.575 + 0.9856 * J) * D2R;
@@ -524,7 +613,12 @@ function sunTimes(date) {
              + 19.3 * Math.cos(3 * f)) / 3600;                          // 均時差 [h]
   const t0 = 12 - LC - ET;                                              // 南中時刻 [h]
   const sinDec = 0.39785 * Math.sin((278.97 + 0.9856 * J + 1.9165 * Math.sin((356.6 + 0.9856 * J) * D2R)) * D2R);
-  const dec = Math.asin(sinDec);                                        // 赤緯
+  return { J, t0, dec: Math.asin(sinDec) };                             // dec：赤緯
+}
+
+/* 日の出・日の入 [時]（日射量予測.html と同じ式。太陽の中心が地平線に来る時刻） */
+function sunTimes(date) {
+  const { t0, dec } = sunGeometry(date);
   const arg = -Math.tan(RULE.latDeg * D2R) * Math.tan(dec);
   const half = Math.acos(Math.max(-1, Math.min(1, arg))) / D2R / 15;    // 昼の長さの半分 [h]
   return { rise: t0 - half, set: t0 + half };
@@ -793,14 +887,19 @@ function eqShiftK(to, c, wind) {
   return hr / (ho + hr) * (to - tSky);
 }
 
-/* 物理の式：逃げる熱 [W] → 止まっている時間 [分]。熱が逃げない（暖房が要らない）ときは Infinity
+/* 物理の式：ハウスから逃げる熱 [W]（夜の「止まっている時間」と、朝の「開ける時刻」の両方で使う）
    vkey は式の2通りのどちらか（"doc" 資料どおり／"fuel" 床の熱を重油に合わせた式） */
-function offMinPhys(state, ti, to, c, wind, month, vkey) {
+function heatLossW(state, ti, to, c, wind, month, vkey) {
   const p = CURTAIN.phys, s = eqShiftK(to, c, wind);
-  const q = HOUSE.roof * p.hRoof * (1 - HOUSE.fr[state]) * (ti - (to - s))   // 屋根（空を全部見る）
-          + HOUSE.side * p.hSide * (ti - (to - 0.5 * s))                     // 側面（空を半分見る）
-          + HOUSE.total * p.hVent * (ti - to)                                // すき間
-          - p.floorM2 * floorWOf(vkey, month);                               // 床から出てくる熱
+  return HOUSE.roof * p.hRoof * (1 - HOUSE.fr[state]) * (ti - (to - s))   // 屋根（空を全部見る）
+       + HOUSE.side * p.hSide * (ti - (to - 0.5 * s))                     // 側面（空を半分見る）
+       + HOUSE.total * p.hVent * (ti - to)                                // すき間
+       - p.floorM2 * floorWOf(vkey, month);                               // 床から出てくる熱
+}
+
+/* 逃げる熱 → 止まっている時間 [分]。熱が逃げない（暖房が要らない）ときは Infinity */
+function offMinPhys(state, ti, to, c, wind, month, vkey) {
+  const q = heatLossW(state, ti, to, c, wind, month, vkey);
   return q > 0 ? heatCapOf(vkey) * CURTAIN.hystC / q / 60 : Infinity;
 }
 
@@ -893,6 +992,127 @@ function forecastRows(fc, date, r) {
     return { h: (x.t - date.getTime()) / 3600000, c: x.c, kanuma: x.c + kanumaOffsetOf(month, sky),
              w: b.w, windDir: b.windDir, windRange: b.windRange };
   });
+}
+
+/* ---- 朝にカーテンを開ける時刻（⑤の下。晴れの朝だけ）----
+   時刻は夜と同じく「選んだ日の0時からの時間 [h]」（翌朝なので24をこえる） */
+
+/* 快晴の日の、外の全天日射 [W/m²]（日射量予測・CO₂アプリと同じ式）。g は sunGeometry、t はその日の時刻 [時] */
+function clearSkyW(g, t) {
+  const M = CURTAIN.morning;
+  const cosPsi = Math.sin(RULE.latDeg * D2R) * Math.sin(g.dec)
+               + Math.cos(RULE.latDeg * D2R) * Math.cos(g.dec) * Math.cos(15 * (t - g.t0) * D2R);   // 太陽の高さの sin
+  if (cosPsi <= 0) return 0;
+  const tau = 0.70 + 0.10 * Math.cos(2 * Math.PI * g.J / 365);          // 大気の透過率（冬ほど高い）
+  const pa = 101.3 * Math.pow(1 - 2.25577e-5 * M.altM, 5.25588);        // 気圧 [kPa]
+  const tm = Math.pow(tau, pa / (101.3 * cosPsi));                       // 直達光が大気を通り抜ける割合
+  return M.solarConstW * tm * cosPsi + 0.3 * (1 - tm) * M.solarConstW * cosPsi;   // 直達 ＋ 散乱
+}
+
+/* ハウスの透過率（季節で少し変わる） */
+function coverTauOf(J) {
+  const M = CURTAIN.morning, a = 2 * Math.PI * J / 365;
+  return M.coverTau * Math.exp(M.coverCos * Math.cos(a) + M.coverSin * Math.sin(a));
+}
+
+/* 晴れの朝の「実際の日射 ÷ 快晴の式」。t はその日の時刻 [時]。表はその時刻までの1時間ごと（端は端の値） */
+function clearKAt(t) {
+  const K = CURTAIN.morning.clearK, keys = Object.keys(K).map(Number);
+  return K[Math.min(Math.max(Math.floor(t) + 1, Math.min(...keys)), Math.max(...keys))];
+}
+
+/* 光合成.xlsx の葉の式（CO₂アプリ co2.html の leafNetMmol をそのまま移したもの）
+   St：葉に当たる日射 [W/m²]、T：気温＝葉温 [℃]、ca：CO₂ [ppm] → 純光合成速度 [mmol CO₂/(m² 葉)/s] */
+const gvaWater = 0.147 * Math.sqrt(PS.windMs / PS.charLenM);   // 境界層コンダクタンス
+function leafNetMmol(St, T, ca) {
+  const s = PS.stomata, par = St / 2;                        // 光合成有効日射は全日射の半分
+  const light = Math.min(Math.max(s.A * par + s.B, s.C * par), s.max);   // 日射で気孔が開く
+  const close = Math.max(s.D * ca - s.E, 0);                 // CO₂ が濃いと気孔が閉じる
+  const gvs = Math.max((light - close) * PS.stomataScale, 0);
+  const a = gvs * PS.ratioStomata, b = gvaWater * PS.ratioBoundary;
+  const gc = a > 0 && b > 0 ? 1 / (1 / a + 1 / b) : 0;       // 気孔と境界層の直列
+  // 光の反応（非直角双曲線）
+  let lightMol = 0;
+  if (par > 0) {
+    const phiI = PS.quantumYield * par * PS.parUmolPerJ * 1e-6, pm = PS.pmaxMmol / 1000;
+    const tot = phiI + pm;
+    lightMol = (tot - Math.sqrt(Math.max(tot * tot - 4 * PS.theta * phiI * pm, 0))) / (2 * PS.theta);
+  }
+  // 温度の反応（最適温度で1）
+  const lt = (T + PS.tempA) ** 2, ot = (PS.tempOpt + PS.tempA) ** 2;
+  const h = Math.max((2 * lt * ot - lt * lt) / (ot * ot), 0);
+  const pmMol = lightMol * h;
+  // CO₂ の通り道と固定の速さを連立させた2次方程式の小さい解
+  let gross = 0;
+  if (gc > 0) {
+    const c = ca / 1e6, kc = PS.kcPpm / 1e6, ratio = pmMol / gc, bb = c + kc + ratio;
+    gross = gc * (bb - Math.sqrt(Math.max(bb * bb - 4 * c * ratio, 0))) / 2 * 1000;   // mmol
+  }
+  const rp = Math.max(PS.rpMax * (1 - ca / PS.rpZeroPpm), 0) * gross;   // 光呼吸
+  const rd = PS.rd20Mmol * Math.pow(PS.q10, (T - 20) / 10);             // 暗呼吸
+  return gross - rp - rd;
+}
+
+/* 群落（床1m²あたり）の純光合成 [g CO₂/(m² 床)/s]。20層に分け、上から光を弱めて足す。
+   葉の式は 400 ppm で出し、CO₂の効きは温室の群落の実測則（Nederhoff 1994）で掛ける（CO₂アプリと同じ） */
+function canopyGps(St, T) {
+  const M = CURTAIN.morning, dl = M.lai / PS.layers;
+  let sum = 0;
+  for (let i = 0; i < PS.layers; i++) sum += leafNetMmol(St * Math.exp(-PS.extinctionK * (i + 0.5) * dl), T, 400) * dl;
+  return sum * 44 / 1000 * Math.exp(M.co2RuleK * (1 / 400 - 1 / M.dawnCo2Ppm));
+}
+
+/* 翌朝に開ける時刻の目安。晴れの朝（日の出から clearCheckH 時間の予報がすべて「晴」）だけ出す。
+   price は { tomato 円/kg, oil 円/L }（無ければ null。そのときテンパは熱だけで決める）
+   戻り値 { rise, sp, to, price, tempa: { h, energyH, photo }, luxous: { h, t2H, over } }
+   出せないときは { why: "range"（予報が足りない）| "cloudy"（晴れの朝でない）, w } */
+function morningPlan(date, r, fc, price) {
+  const M = CURTAIN.morning, F = CURTAIN.phys.floorM2, step = CURTAIN.stepMin / 60;
+  const mDate = addDays(date, 1), month = mDate.getMonth() + 1, g = sunGeometry(mDate);
+  const rise = r.nextRise, a = M.solarHeatFrac;
+  const lastMs = fc.weather.length ? Math.max(...fc.weather.map(x => x.t1)) : -Infinity;
+  if (msAt(date, rise + M.clearCheckH) > lastMs) return { why: "range" };
+  const blocks = fc.weather.filter(x => x.t1 > msAt(date, rise) && x.t0 < msAt(date, rise + M.clearCheckH));
+  if (!blocks.length || !blocks.every(x => x.w.includes("晴"))) return { why: "cloudy", w: [...new Set(blocks.map(x => x.w))] };
+  const sp = r.temps[3];                                   // 朝の設定温度（④の4段目）
+  const tau = coverTauOf(g.J), C = heatCapOf("doc");
+  const yenPerJ = price ? price.oil / (M.oilMJPerL * 1e6 * M.heaterEff) : 0;   // 暖房の熱 1J ぶんの重油代 [円]
+  let tE = null, tP = null, t1 = null, t2 = null, Ti = null, to0 = null;
+  for (let h = rise; h <= rise + M.scanH + 1e-9; h += step) {
+    const ms = msAt(date, h), to = kanumaAt(fc, ms, month);
+    if (to === null) return { why: "range" };
+    if (to0 === null) to0 = to;
+    const b = fc.weather.find(x => x.t0 <= ms && ms < x.t1);
+    const c = cloudOf(b ? b.w : ""), wind = windOf(b && b.windRange);
+    const S = clearSkyW(g, h - 24) * clearKAt(h - 24) * tau;            // ハウスに入る日射（カーテンの上）[W/m²]
+    const Q = st => heatLossW(st, sp, to, c, wind, month, "doc");
+    // テンパ：開けて増える日射の熱 − 開けて増える逃げる熱（2層 → ラクソスだけ）[W]
+    const netT = a * S * M.tauLux * (1 - M.tauTempa) * F - (Q("lux") - Q("both"));
+    if (tE === null && netT >= 0) tE = h;
+    if (price && tP === null) {
+      // 光合成も入れる：増える果実の金額 ＋ 熱の差の重油代 が 0 以上になったら開けたほうが得 [円/s]
+      const dP = (canopyGps(S * M.tauLux, sp) - canopyGps(S * M.tauLux * M.tauTempa, sp)) * F;   // 増える光合成 [g CO₂/s]
+      if (dP * M.fruitKgPerCo2G * price.tomato + netT * yenPerJ >= 0) tP = h;
+    }
+    // ラクソス：屋根を開けても、日射の熱が逃げる熱に届く（開けても暖房が点かない）
+    if (t1 === null && a * S * F >= Q("open")) t1 = h;
+    // ラクソスを閉めたまま（テンパは開け）：日射の熱が逃げる熱に届いたら室温が上がり始める。設定＋2℃に届く時刻
+    if (t2 === null) {
+      const gain = a * S * M.tauLux * F;
+      if (Ti === null) { if (gain >= Q("lux")) Ti = sp; }
+      else {
+        Ti += (gain - heatLossW("lux", Ti, to, c, wind, month, "doc")) * step * 3600 / C;
+        if (Ti >= sp + 2) t2 = h;
+      }
+    }
+  }
+  // タイマーは15分単位：テンパは切り上げ、ラクソスは「開けても暖房が点かない」最初の15分（テンパより先にはしない）
+  const tem = tP !== null ? ceil15(tP) : tE !== null ? ceil15(tE) : null;
+  let lux = t1 !== null ? ceil15(t1) : null;
+  if (lux !== null && tem !== null && lux < tem) lux = tem;
+  return { rise, sp, to: to0, price: !!price,
+           tempa: { h: tem, energyH: tE !== null ? ceil15(tE) : null, photo: tP !== null },
+           luxous: { h: lux, t2H: t2, over: lux !== null && t2 !== null && lux > t2 } };
 }
 
 /* =========================================================================
@@ -1150,11 +1370,70 @@ function renderCurtain(g, r) {
   return p;
 }
 
+/* ---- 翌朝に開ける時刻（晴れの朝の目安） ---- */
+
+/* 単価の欄 → { tomato, oil }。両方空欄なら null、読めない・範囲外なら { bad: true } */
+function readPrice() {
+  const t = parseNum($("priceTomato").value), o = parseNum($("priceOil").value);
+  if (t === null && o === null) return null;
+  const ok = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
+  return ok(t, 1, 5000) && ok(o, 1, 1000) ? { tomato: t, oil: o } : { bad: true };
+}
+
+/* 開ける時刻を描く。予報が読めていて、④の設定が出ているときだけ。戻り値は morningPlan の結果（出さないときは null） */
+function renderMorning(g, r) {
+  const box = $("morningBox"), out = $("morning");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const near = g.date && (ymd(g.date) === ymd(today) || ymd(g.date) === ymd(addDays(today, 1)));
+  if (!r || !near || FC.state !== "ok") { box.hidden = true; return null; }
+  box.hidden = false;
+  const md = addDays(g.date, 1);
+  $("morningTitle").textContent = "翌朝（" + (md.getMonth() + 1) + "/" + md.getDate() + "）にカーテンを開ける時刻（晴れの朝の目安）";
+  const pr = readPrice();
+  const m = morningPlan(g.date, r, FC.data, pr && !pr.bad ? pr : null);
+  if (m.why === "range") {
+    out.innerHTML = '<p class="hint">翌朝の予報がまだありません（予報は約2日先まで）。予報が更新されたら（5時・11時・17時）開き直してください。</p>';
+    return m;
+  }
+  if (m.why === "cloudy") {
+    out.innerHTML = '<p class="hint">翌朝（日の出から' + CURTAIN.morning.clearCheckH + "時間）は晴れの予報ではありません（" + esc(m.w.join("・") || "予報なし") +
+      "）。くもり・雨の朝は日射の見込みの幅が大きいので、目安は出していません。</p>";
+    return m;
+  }
+  const kv = (k, v) => '<div class="kv"><span class="k">' + k + '</span><span class="v num">' + v + "</span></div>";
+  const t = h => h !== null ? '<span class="time num">' + hhmm(h) + "</span>" : '<span class="time none">出せません</span>';
+  const after = h => "日の出の" + Math.round((h - m.rise) * 60) + "分後";
+  const subT = m.tempa.h === null ? "日の出から" + CURTAIN.morning.scanH + "時間のうちに、開けて得になる日射に届かない見込み"
+    : m.tempa.photo
+    ? "光合成も入れて、いちばん得な時刻（" + after(m.tempa.h) + "）。熱だけで見ると " + (m.tempa.energyH !== null ? hhmm(m.tempa.energyH) : "届かない")
+    : "熱の分かれ目：開けて増える日射の熱が、開けて増える逃げる熱を上回る（" + after(m.tempa.h) + "）";
+  const subL = m.luxous.h === null ? "日の出から" + CURTAIN.morning.scanH + "時間のうちに、開けても暖房が点かない日射に届かない見込み"
+    : "開けても暖房が点かない見込みの最初の時刻（" + after(m.luxous.h) + "）。" +
+      (m.luxous.t2H !== null ? "閉めたままだと " + hhmm(m.luxous.t2H) + " ごろ設定＋2℃（" + c1(m.sp + 2) + "℃）に届く見込み" +
+        (m.luxous.over ? "（15分にそろえたので少し超える見込み。暖房が点かないほうを優先）" : "") : "");
+  out.innerHTML =
+    '<div class="summary">' +
+      kv("翌朝の日の出", hhmm(m.rise)) + kv("朝の設定（④の4段目）", c1(m.sp) + "℃") + kv("日の出の外気（鹿沼めやす）", c1(m.to) + "℃") +
+    "</div>" +
+    '<ul class="ct">' +
+      '<li><span><span class="name">先に 2層目 テンパ</span><span class="sub">' + esc(subT) + "</span></span>" + t(m.tempa.h) + "</li>" +
+      '<li><span><span class="name">次に 1層目 ラクソス</span><span class="sub">' + esc(subL) + "</span></span>" + t(m.luxous.h) + "</li>" +
+    "</ul>" +
+    (pr && pr.bad ? '<p class="hint ng">単価が読めません（トマト1〜5000円/kg・重油1〜1000円/L）。テンパは熱だけで出しています。</p>'
+      : !pr ? '<p class="hint">テンパは熱だけで出しています。光合成も入れると、過去の晴れの朝ではこれより20〜30分早いほうが得でした。下に単価を入れると計算します。</p>' : "") +
+    '<p class="hint">晴れの朝の目安です（日射は快晴の式に、宇都宮の晴れの朝の実測の割合を掛けたもの）。タイマーに合わせて15分単位に切り上げています。</p>';
+  return m;
+}
+
 /* ---- 閉めた時刻の記録（スプレッドシート。収量・液肥・ノートと同じ Apps Script） ---- */
 const REC_API = "https://script.google.com/macros/s/AKfycbzYkVlVngoC6CXf9HKPlfnFbJHs5lrarw2J9dLjdqaqvdVQFIN15aMr5EyNSA8tj1UU/exec";
-let REC = { state: "idle", rows: {}, error: "" };   // idle → loading → ok / error。rows は「日付|ハウス」→ 記録
-// 記録欄の状態。key は「日付|ハウス」。edited は打ちかけ（画面を描き直しても書き換えない）、sug はアプリの目安の控え
-let recForm = { key: "", edited: false, sending: false, msg: "", ng: false, sug: {} };
+// idle → loading → ok / error。rows は「日付|ハウス」→ 記録。
+// merge は Apps Script が「送った欄だけ書き換える」新しい版か（古い版に開けた時刻だけ送ると、閉めた時刻が消えるため）
+let REC = { state: "idle", rows: {}, error: "", merge: false };
+// 記録欄の状態。key は「日付|ハウス」。edited は打ちかけ（画面を描き直しても書き換えない）、sug はアプリの目安の控え。
+// o で始まるものは「開けた時刻」の欄（前の夜の行に入れる）
+const REC_FORM0 = { edited: false, sending: false, msg: "", ng: false, sug: {}, oEdited: false, oSending: false, oMsg: "", oNg: false };
+let recForm = { key: "", ...REC_FORM0 };
 
 /* 打った時刻 → "17:30"。空は ""（閉めなかった）、読めなければ null。
    スマホの数字キーには「:」が無いことが多いので、1730・930 のような形も受け付ける */
@@ -1175,36 +1454,53 @@ function loadRecords() {
       if (!j.ok || !Array.isArray(j.curtain)) {
         throw new Error("記録を読めませんでした（" + (j.error || "スプレッドシート側の Apps Script がまだ新しくなっていないようです") + "）");
       }
-      REC = { state: "ok", rows: Object.fromEntries(j.curtain.map(x => [x.id, x])), error: "" };
+      REC = { state: "ok", rows: Object.fromEntries(j.curtain.map(x => [x.id, x])), error: "", merge: j.curtainMerge === true };
     })
-    .catch(e => { REC = { state: "error", rows: {}, error: e.message || String(e) }; })
+    .catch(e => { REC = { state: "error", rows: {}, error: e.message || String(e), merge: false }; })
     .then(render);
 }
 
 const recWhen = at => { const d = new Date(at); return (d.getMonth() + 1) + "/" + d.getDate() + " " + hhmm(d.getHours() + d.getMinutes() / 60); };
 const recShow = x => "ラクソス " + (x.luxous || "閉めなかった") + "・テンパ " + (x.tempa || "閉めなかった");
+const recShowOpen = x => "テンパ " + (x.openTempa || "―") + "・ラクソス " + (x.openLuxous || "―");
+const hasOpen = x => !!(x && (x.openTempa || x.openLuxous));
 
-/* 記録欄を描く。p は⑤の計算結果（無いときは null）。記録があればその時刻、無ければ⑤の目安の時刻を入れておく */
-function renderRec(g, r, p) {
+/* 記録欄を描く。p は⑤の閉める時刻、m は翌朝に開ける時刻の計算結果（無いときは null）。
+   閉めた時刻：記録があればその時刻、無ければ⑤の目安の時刻を入れておく。
+   開けた時刻：この日の朝に開けた分（＝前の夜の行）。目安は入れない（開ける前に送って、目安が実際の時刻として残らないように） */
+function renderRec(g, r, p, m) {
   const box = $("recBox");
   if (!g.date) { box.hidden = true; return; }
   box.hidden = false;
   if (REC.state === "idle") loadRecords();
-  const key = ymd(g.date) + "|" + house;
-  const saved = REC.rows[key];
-  if (recForm.key !== key) recForm = { key, edited: false, sending: false, msg: "", ng: false, sug: {} };
+  const key = ymd(g.date) + "|" + house, prevDay = addDays(g.date, -1);
+  const saved = REC.rows[key], prev = REC.rows[ymd(prevDay) + "|" + house];
+  if (recForm.key !== key) recForm = { key, ...REC_FORM0 };
   const sugText = x => !x ? "" : x.h !== null ? hhmm(x.h) : x.why === "range" ? "まだ出せない" : "閉めない";
-  // 送るときに一緒に残す、アプリの目安（あとで「目安どおりに閉めた夜か」を見分けるため）
+  const sugOpen = x => !m ? "" : m.why === "cloudy" ? "晴れの朝でない" : m.why ? "まだ出せない" : x.h !== null ? hhmm(x.h) : "出せない";
+  // 送るときに一緒に残す、アプリの目安（あとで「目安どおりに閉めた・開けた夜か」を見分けるため）。開ける目安はこの夜のあとの朝の分
   recForm = { ...recForm, sug: {
     sugLuxous: p ? sugText(p.luxous) : "", sugTempa: p ? sugText(p.tempa) : "", freq,
     stages: r ? r.starts.map((s, i) => hhmm(s) + " " + r.temps[i]).join(" / ") : "",
+    sugOpenTempa: sugOpen(m && m.tempa), sugOpenLuxous: sugOpen(m && m.luxous),
   } };
   if (!recForm.edited) {   // 打ちかけの時刻は書き換えない
     const pick = x => (x && x.h !== null ? hhmm(x.h) : "");
     $("recLux").value = saved ? saved.luxous : pick(p && p.luxous);
     $("recTem").value = saved ? saved.tempa : pick(p && p.tempa);
   }
-  $("recTitle").textContent = "閉めた時刻を記録する（" + (g.date.getMonth() + 1) + "/" + g.date.getDate() + " の夜・" + house + "）";
+  if (!recForm.oEdited) {
+    $("recOpenTem").value = prev && prev.openTempa ? prev.openTempa : "";
+    $("recOpenLux").value = prev && prev.openLuxous ? prev.openLuxous : "";
+  }
+  // 前の夜に控えた「翌朝の目安」があれば、欄の見本に出す
+  const isTime = s => /^\d{2}:\d{2}$/.test(s || "");
+  $("recOpenTem").placeholder = prev && isTime(prev.sugOpenTempa) ? "目安 " + prev.sugOpenTempa : "例 0715";
+  $("recOpenLux").placeholder = prev && isTime(prev.sugOpenLuxous) ? "目安 " + prev.sugOpenLuxous : "例 0845";
+  const md = d => (d.getMonth() + 1) + "/" + d.getDate();
+  $("recTitle").textContent = "閉めた・開けた時刻を記録する（" + house + "）";
+  $("recCloseTitle").textContent = md(g.date) + " の夜に閉めた時刻";
+  $("recOpenTitle").textContent = md(g.date) + " の朝に開けた時刻（" + md(prevDay) + " の夜の分）";
   $("recSend").disabled = recForm.sending;
   $("recSend").textContent = recForm.sending ? "送っています…" : saved ? "この時刻で記録し直す" : "この時刻で記録する";
   const status = REC.state === "loading" ? "記録を読んでいます…"
@@ -1213,9 +1509,57 @@ function renderRec(g, r, p) {
     : "まだ記録していません。時刻は⑤の目安を入れてあるので、実際に閉めた時刻に直して送ってください。空欄は「閉めなかった」、0時を過ぎた時刻もこの夜の分です。";
   $("recMsg").textContent = recForm.msg || status;
   $("recMsg").className = "hint" + ((recForm.msg ? recForm.ng : REC.state === "error") ? " rec-ng" : "");
+  // 開けた時刻
+  $("recOpenSend").disabled = recForm.oSending || !(REC.state === "ok" && REC.merge);
+  $("recOpenSend").textContent = recForm.oSending ? "送っています…" : hasOpen(prev) ? "開けた時刻を記録し直す" : "開けた時刻を記録する";
+  const oStatus = REC.state === "loading" ? "記録を読んでいます…"
+    : REC.state === "error" ? REC.error
+    : !REC.merge ? "スプレッドシート側の Apps Script を新しくすると、開けた時刻も記録できます（いまの版に送ると前の夜の閉めた時刻が消えてしまうので、止めています）。"
+    : hasOpen(prev) ? "記録済み：" + recShowOpen(prev) + "（" + recWhen(prev.at) + " に記録）。直して送ると上書きします。"
+    : "まだ記録していません。開けたら時刻を入れて送ってください（空欄は「記録しない」）。";
+  $("recOpenMsg").textContent = recForm.oMsg || oStatus;
+  $("recOpenMsg").className = "hint" + ((recForm.oMsg ? recForm.oNg : REC.state === "error") ? " rec-ng" : "");
 }
 
-/* 記録を送る。同じ夜・同じハウスは上書きなので、つながらなかったときに1回だけ送り直しても二重にならない */
+/* 1行を送る。同じ夜・同じハウスは上書きなので、つながらなかったときに1回だけ送り直しても二重にならない */
+function postCurtain(item) {
+  const once = () => fetch(REC_API, {
+      method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "saveCurtain", item }),
+    })
+    .then(res => { if (!res.ok) throw new Error("応答 " + res.status); return res.json(); })
+    .then(j => { if (!j.ok || !j.item) throw new Error(j.error || "保存できませんでした"); return j.item; });
+  return once().catch(() => new Promise(res => setTimeout(res, 2500)).then(once));
+}
+
+/* 開けた時刻を送る。入れる先は前の夜の行（その夜に閉めたカーテンを、この朝に開けた）。
+   送るのは開けた時刻の欄だけ（新しい Apps Script は送られてきた欄だけ書き換えるので、閉めた時刻は残る） */
+function sendOpenRecord() {
+  if (!REC.merge) return;   // 古い Apps Script は行ごと書き換えるので送らない（ボタンも押せなくしてある）
+  const openTempa = normTime($("recOpenTem").value), openLuxous = normTime($("recOpenLux").value);
+  if (openTempa === null || openLuxous === null) {
+    recForm = { ...recForm, oMsg: "時刻は 7:15 か 715 の形で入れてください（空欄は「記録しない」）。", oNg: true };
+    render();
+    return;
+  }
+  const key = recForm.key, [date, h] = key.split("|");
+  const [y, mo, d] = date.split("-").map(Number);
+  recForm = { ...recForm, oSending: true, oMsg: "", oNg: false };
+  render();
+  postCurtain({ date: ymd(new Date(y, mo - 1, d - 1)), house: h, openTempa, openLuxous })
+    .then(saved => {
+      REC = { ...REC, rows: { ...REC.rows, [saved.id]: saved } };
+      if (recForm.key === key) recForm = { ...recForm, oSending: false, oEdited: false, oNg: false,
+        oMsg: "記録しました：" + recShowOpen(saved) + "。直して送ると上書きします。" };
+    })
+    .catch(e => {
+      if (recForm.key === key) recForm = { ...recForm, oSending: false, oNg: true,
+        oMsg: "記録できませんでした（" + (e.message || e) + "）。入れた時刻はそのまま残っています。少し待ってからもう一度押してください。" };
+    })
+    .then(render);
+}
+
+/* 閉めた時刻を送る（開けた時刻の欄は送らない。新しい Apps Script では、記録してある開けた時刻はそのまま残る） */
 function sendRecord() {
   const luxous = normTime($("recLux").value), tempa = normTime($("recTem").value);
   if (luxous === null || tempa === null) {
@@ -1224,17 +1568,9 @@ function sendRecord() {
     return;
   }
   const key = recForm.key, [date, h] = key.split("|");
-  const item = { date, house: h, luxous, tempa, ...recForm.sug };
   recForm = { ...recForm, sending: true, msg: "", ng: false };
   render();
-  const once = () => fetch(REC_API, {
-      method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "saveCurtain", item }),
-    })
-    .then(res => { if (!res.ok) throw new Error("応答 " + res.status); return res.json(); })
-    .then(j => { if (!j.ok || !j.item) throw new Error(j.error || "保存できませんでした"); return j.item; });
-  once()
-    .catch(() => new Promise(res => setTimeout(res, 2500)).then(once))
+  postCurtain({ date, house: h, luxous, tempa, ...recForm.sug })
     .then(saved => {
       REC = { ...REC, rows: { ...REC.rows, [saved.id]: saved } };
       if (recForm.key === key) recForm = { ...recForm, sending: false, edited: false, ng: false,
@@ -1273,7 +1609,8 @@ function render() {
   renderHints(g);
   const r = renderResult(g);
   const p = renderCurtain(g, r);
-  renderRec(g, r, p);
+  const m = renderMorning(g, r);
+  renderRec(g, r, p, m);
   renderSun(g);
   renderYears(g);
 }
@@ -1297,7 +1634,22 @@ $("today").addEventListener("click", () => { $("date").value = ymd(new Date()); 
   $(id).addEventListener("input", () => { recForm = { ...recForm, edited: true, msg: "" }; });
   $(id).addEventListener("blur", () => { const v = normTime($(id).value); if (v) $(id).value = v; });
 });
+["recOpenTem", "recOpenLux"].forEach(id => {
+  $(id).addEventListener("input", () => { recForm = { ...recForm, oEdited: true, oMsg: "" }; });
+  $(id).addEventListener("blur", () => { const v = normTime($(id).value); if (v) $(id).value = v; });
+});
 $("recSend").addEventListener("click", sendRecord);
+$("recOpenSend").addEventListener("click", sendOpenRecord);
+/* 単価：打ったらこの端末に覚えさせて計算し直す（欄そのものは描き直さないので、打っている途中で消えない） */
+try {
+  const sp = JSON.parse(localStorage.getItem(CURTAIN.morning.priceKey) || "null");
+  if (sp) { $("priceTomato").value = sp.tomato || ""; $("priceOil").value = sp.oil || ""; }
+} catch (e) { /* 覚えられない端末では毎回空欄から */ }
+["priceTomato", "priceOil"].forEach(id => $(id).addEventListener("input", () => {
+  try { localStorage.setItem(CURTAIN.morning.priceKey, JSON.stringify({ tomato: $("priceTomato").value, oil: $("priceOil").value })); }
+  catch (e) { /* 覚えられなくても計算はできる */ }
+  render();
+}));
 /* 天気別の平年値を押したら、入力欄を空にしてその値で計算する（書き換えるのは押したときだけ） */
 $("wxBtns").addEventListener("click", e => {
   const b = e.target.closest("button[data-wx]");
