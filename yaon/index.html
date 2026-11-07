@@ -348,7 +348,7 @@ footer a{color:var(--muted)}
 
     <h3>カーテンを閉める時刻（⑤）</h3>
     <p>決まりは2つです：①カーテンは暖房機が動き出してから閉める、②閉めたあとも少なくとも決めた間隔（30分・1時間・1時間半から選ぶ。既定は30分）に1回は暖房が動く。既定を30分にしているのは、間隔を延ばして減る重油（過去3冬で5〜8%）の8割以上が、葉の結露が長く病気の出やすい10〜11月と3〜4月に出るためです。千葉県・岐阜県の試験でも、疫病や灰色かび病を抑えたのは、葉がぬれている間20〜45分おきに暖房を燃やすやり方でした。①は、下の「暖房が動き出す見込み」の遅め（同じ条件の夜の4夜に3夜は、それより前に動き出した時刻）より前には閉めないことで守ります。止まっている時間の見込みは暖房が入り切りしている状態が前提なので、昼の熱が残る日没直後には使えないためです。暖房がほとんど動かない見込みの夜は閉めません。</p>
-    <p>そこで、予報の5分ごとに「そのカーテンを閉めた状態で、暖房が消えてから次に点くまでの時間（止まっている時間）」を見込み、<b>閉めてから日の出の1時間前まで、ずっと見込みの上限以内</b>になる最初の時刻を出しています。ラクソスは「ラクソスだけ閉めた状態」、テンパは「2層とも閉めた状態」で確かめます。どの時刻からでも朝までに外れる夜は「閉めない」と出します。</p>
+    <p>そこで、予報の5分ごとに「そのカーテンを閉めた状態で、暖房が消えてから次に点くまでの時間（止まっている時間）」を見込み、<b>閉めてから日の出の1時間前まで、ずっと見込みの上限以内</b>になる最初の時刻を出しています。ラクソスは「ラクソスだけ閉めた状態」、テンパは「2層とも閉めた状態」で確かめます。どの時刻からでも朝までに外れる夜は「閉めない」と出します。タイマーは15分単位なので、出した時刻をラクソスは15分単位に切り上げ（遅め＝暖房が動く側）、テンパは切り捨て（早め）にそろえます（テンパがラクソスより前になるときはラクソスと同じ時刻）。</p>
     <p>見込みの上限は、選んだ間隔の3分の2（30分に1回 → 20分、1時間に1回 → 40分、1時間半に1回 → 60分）です。式の値の不確かさのぶん、余裕を持たせています。</p>
     <div class="eq">止まっている時間 ＝ ハウスの熱容量 × 2℃ ÷ ハウスから逃げる熱</div>
     <ul>
@@ -732,6 +732,18 @@ function crossTime(fc, date, r, k, fromH = r.sunset) {
 }
 
 const ceil5 = h => Math.ceil(h * 12 - 1e-9) / 12;   // 5分単位に切り上げ（タイマー用）
+const ceil15 = h => Math.ceil(h * 4 - 1e-9) / 4;     // 15分単位に切り上げ
+const floor15 = h => Math.floor(h * 4 + 1e-9) / 4;   // 15分単位に切り捨て
+
+/* カーテンのタイマーは15分単位なので、閉める時刻を15分にそろえる（2026-11-07 ユーザー決定）。
+   ラクソスは切り上げ（遅め＝暖房が動く側、厳しめ）、テンパは切り捨て（早め＝甘め）。
+   ただしテンパがラクソスより前になるときは、ラクソスと同じ時刻にする（1層目より先には閉められない） */
+function timer15({ luxous, tempa }) {
+  const lux = luxous.h !== null ? { ...luxous, h: ceil15(luxous.h) } : luxous;
+  if (tempa.h === null) return { luxous: lux, tempa };
+  const t = floor15(tempa.h);
+  return { luxous: lux, tempa: { ...tempa, h: lux.h !== null && t < lux.h ? lux.h : t } };
+}
 
 /* ---- 閉めたあとに暖房が止まっている時間の見込み ----
    state は "open"（開けたまま）/ "lux"（ラクソスだけ）/ "both"（2層とも） */
@@ -853,8 +865,8 @@ function curtainPlan(date, r, fc, wxClear, predMin) {
     return x.h < startT ? { ...x, h: startT, waited: true } : x;
   };
   // 既定の式（資料どおり）で出す時刻と、参考の式（床の熱を重油に合わせた）で出す時刻
-  const plan = vkey => ({ luxous: afterStart(closeTime(fc, date, r, "lux", predMin, vkey, fromH)),
-                          tempa: afterStart(closeTime(fc, date, r, "both", predMin, vkey, fromH)) });
+  const plan = vkey => timer15({ luxous: afterStart(closeTime(fc, date, r, "lux", predMin, vkey, fromH)),
+                                 tempa: afterStart(closeTime(fc, date, r, "both", predMin, vkey, fromH)) });
   const { luxous, tempa } = plan(CURTAIN.variantMain);
   const ref = plan(CURTAIN.variantRef);
   const c5 = crossTime(fc, date, r, CURTAIN.luxousK, fromH);
