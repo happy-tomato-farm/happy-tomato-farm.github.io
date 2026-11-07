@@ -1207,7 +1207,7 @@ function render(){
   $("#needu").innerHTML = (r.hyo && has(d.needLink))
     ? `L/㎡　めやすアプリの <b>${fmt(num(d.needLink),2)}</b> に対して`
       + ` <b>${fmt(r.hairitsu*100,0)}％</b> で使う`
-      + (Math.abs(r.hairitsu-1) < 1e-9 ? "（受け取ったまま）" : "（手で絞った）")
+      + (Math.abs(r.hairitsu-1) < 1e-9 ? "（受け取ったまま）" : "（絞った）")
     : `L/㎡（実質日射 10MJ/㎡ に対して）`;
 
   setVal("#i-fert",fg.fert); setVal("#i-bags",fg.bags); setVal("#i-made",fg.made);
@@ -1482,10 +1482,20 @@ function drawRecs(){
      leach   塩を流すための上乗せ [%]
      curve   日射ごとの蒸散量の表 [L/㎡]  ← 日中の立て直しに使う
      coef / film  めやすアプリ側の設定（ずれていないかの照合用）
+     pct_中央 / pct_東    そのハウスの潅水を何％にするか（2026-11-07 追加）
+     nday_中央 / nday_東  そのハウスの1日のN量 [kg/10a]（同上）
 
    ★中央と東の**両方**に入れる。どれも面積あたりの値なので、
      ハウスが違っても同じ数字でよい。URL の house はどちらのタブを
      開くかを決めるだけ。片方だけ入ると、もう片方を手で直すことになる。
+
+   ★ハウス別の割合（pct_ / nday_）は、めやすアプリで 100% 以外を選んだ
+     ハウスにだけ付いてくる。付いていないハウスは今までどおり共通の値。
+     水は「10MJあたり潅水量 ＝ 受け取った値 × 割合」として入れ、
+     受け取った値は基準（needLink）のまま控える。すると VdayNo の絞りの比が
+     ちょうど割合になり、表の量 × (1+上乗せ) × 割合 の水が出る。
+     （基準まで割合を掛けると比が 1 に戻り、水が減らないので注意）
+     N量はめやすアプリ側でECの帯を見直した値が来るので、そのまま入れる。
 
    ★すでに記録してある日は勝手に上書きしない。
      記録を書きかえるのは取り返しがつかないので、押したときだけ入れる。
@@ -1509,7 +1519,26 @@ function paramsWoYomu(){
   }
   const house = q.get("house");
   const date  = q.get("date") || "";
+  /* ハウス別の割合とN量。付いていないハウスは null（共通の値を使う）。
+     割合（0 より大きく 200 以下）とN量は2つ1組で使う。
+     片方だけ・範囲外のときは使わずに、受け取りの欄で知らせる
+     （N量はその割合の水でECの帯を見直した値なので、ばらして使うとずれる）。 */
+  const per = {};
+  const hen = [];
+  for(const h of HOUSES){
+    const ari  = q.has("pct_" + h) || q.has("nday_" + h);
+    const pct  = toNum("pct_" + h);
+    const nday = toNum("nday_" + h);
+    const yoi  = pct !== null && pct > 0 && pct <= 200 && nday !== null && nday >= 0;
+    if(ari && !yoi){
+      hen.push(`${h}（割合「${q.get("pct_" + h) ?? "なし"}」・`
+             + `N量「${q.get("nday_" + h) ?? "なし"}」）`);
+    }
+    per[h] = yoi ? { pct: pct, nday: nday } : null;
+  }
   return {
+    per: per,
+    hen: hen,
     house: HOUSES.includes(house) ? house : null,
     date:  /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
     need:  toNum("need"),  eday: toNum("eday"), leach: toNum("leach"),
@@ -1530,12 +1559,21 @@ function atehameru(p){
   linkPayload = p;
 
   // ★どれも面積あたりの値なので、両ハウスに同じものを入れる
+  //   ただしハウス別の割合が来たハウスは、水とN量だけそのハウスの値にする
   for(const h of HOUSES){
     const c = state.set[h];
     const d = dayOf(h, date, true);
+    const hb = (p.per && p.per[h]) || null;   // ハウス別の割合とN量（無ければ null）
     // 10MJあたり潅水量は、そのまま入れると同時に「基準」としても控えておく。
     // あとで手で絞ったとき、この基準との比が表に掛かる（VdayNo を見ること）。
-    if(p.need  !== null){ c.need = p.need; d.needLink = p.need; }
+    // ハウス別の割合があるときは、欄に「受け取った値 × 割合」を入れ、基準は
+    // 受け取った値のまま。比がちょうど割合になる。
+    // need は小数3桁・割合は整数％なので、積は小数5桁で割り切れる。
+    // 5桁で丸めて、浮動小数の端数（1.4067000000000001 など）を欄に出さない。
+    if(p.need  !== null){
+      c.need = hb ? Math.round(p.need * hb.pct * 1000) / 100000 : p.need;
+      d.needLink = p.need;
+    }
     if(p.eday  !== null) d.eday  = p.eday;
     if(p.leach !== null) d.leach = p.leach;
     if(p.curve){ d.curve = p.curve; d.curveDate = date; }
@@ -1547,25 +1585,45 @@ function atehameru(p){
        ★古いリンク（nday が無い）では何も触らないので、
          前日からの引き継ぎ値がそのまま残る。 */
     if(p.nweek !== null){ d.nweek = p.nweek; d.nweekFixed = true; }
-    if(p.nday  !== null){ d.nday = p.nday; d.master = p.master || "n"; }
+    const nday = hb ? hb.nday : p.nday;
+    if(nday  !== null){ d.nday = nday; d.master = p.master || "n"; }
   }
 
   document.querySelectorAll(".tab").forEach(x=>
     x.setAttribute("aria-pressed", String(x.dataset.house===state.house)));
   save(); render();
 
+  /* ハウス別の割合が来ていれば、どのハウスに何を入れたかを1行ずつ書く。
+     黙って値を変えないため。来ていなければ今までどおりの文面。 */
+  const betsu = HOUSES.some(h => p.per && p.per[h]);
+  const betsuGyo = !betsu ? "" : HOUSES.map(h => {
+    const hb = p.per[h];
+    return hb
+      ? `${h}：潅水 <b>${fmt(hb.pct,0)}</b>％`
+        + `（10MJあたり <b>${fmt(num(state.set[h].need),2)}</b>）`
+        + `・1日のN量 <b>${fmt(hb.nday,3)}</b>`
+      : `${h}：潅水 <b>100</b>％（共通の値のまま）`;
+  }).join("<br>") + "<br>";
+  const hen = (p.hen && p.hen.length)
+    ? `<br><b>ハウス別の数字が読めなかったので、共通の値を入れました</b>：${p.hen.join("、")}`
+    : "";
+
   const u = $("#uketori");
   u.classList.remove("hide");
   u.innerHTML =
       `<b>めやすアプリから受け取りました</b>`
-    + `（${HOUSES.join("・")}の両方・${date}）<br>`
-    + `10MJあたり潅水量 <b>${fmt(num(p.need),2)}</b> L/㎡　／　`
+    + (betsu ? `（ハウス別・${date}）<br>` + betsuGyo
+             : `（${HOUSES.join("・")}の両方・${date}）<br>`)
+    + `10MJあたり潅水量${betsu ? "（100％のとき）" : ""}`
+    + ` <b>${fmt(num(p.need),2)}</b> L/㎡　／　`
     + `日射予測 <b>${fmt(num(p.eday),1)}</b> MJ/㎡`
     + (p.leach !== null ? `　／　上乗せ <b>${fmt(p.leach,0)}</b>％` : "")
-    + (p.nday  !== null ? `<br>1日のN量 <b>${fmt(p.nday,3)}</b> kg/10a` : "")
+    + (p.nday  !== null ? `<br>1日のN量${betsu ? "（100％のとき）" : ""}`
+                        + ` <b>${fmt(p.nday,3)}</b> kg/10a` : "")
     + (p.nweek !== null ? `　／　1週間のN量 <b>${fmt(p.nweek,3)}</b> kg/10a`
                         + `（快晴が7日つづいた場合）` : "")
-    + (p.curve ? `　／　立て直し用の表 <b>${p.curve.length}</b> 点` : "");
+    + (p.curve ? `　／　立て直し用の表 <b>${p.curve.length}</b> 点` : "")
+    + hen;
 
   /* 設定のずれを知らせる。
      日射センサーの係数とフィルム劣化は、分子（潅水量）と分母（実質日射）で
