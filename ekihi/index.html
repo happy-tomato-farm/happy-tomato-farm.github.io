@@ -12,6 +12,7 @@
   --ground:#EFF4F5; --card:#FFFFFF; --sunk:#F4F8F9;
   --ink:#1B242A; --muted:#5D6B72; --line:#D6E1E4; --line-soft:#E7EEF0;
   --aqua:#1E7F9B; --leaf:#3E8F58; --amber:#C97A0C; --red:#D2402C;
+  --plum:#7A52A1;
   --in-bg:#FFFBE6; --in-line:#E8C84A;
   --shadow:0 1px 0 rgba(27,36,42,.04), 0 8px 22px -14px rgba(27,36,42,.45);
   --r:16px;
@@ -21,6 +22,7 @@
     --ground:#151A1C; --card:#1F2629; --sunk:#1A2123;
     --ink:#E8EEF0; --muted:#9AA8AE; --line:#2F3A3E; --line-soft:#273134;
     --aqua:#5FBDD4; --leaf:#6FBB7B; --amber:#EBB454; --red:#FF7B66;
+  --plum:#B892E0;
     --in-bg:#2C2A1B; --in-line:#8A7A25;
     --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 22px -14px rgba(0,0,0,.8);
   }
@@ -29,6 +31,7 @@
   --ground:#151A1C; --card:#1F2629; --sunk:#1A2123;
   --ink:#E8EEF0; --muted:#9AA8AE; --line:#2F3A3E; --line-soft:#273134;
   --aqua:#5FBDD4; --leaf:#6FBB7B; --amber:#EBB454; --red:#FF7B66;
+  --plum:#B892E0;
   --in-bg:#2C2A1B; --in-line:#8A7A25;
   --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 22px -14px rgba(0,0,0,.8);
 }
@@ -81,6 +84,12 @@ section{background:var(--card);border:2px solid var(--line);border-radius:var(--
 .sec-head h2{font-size:15.5px;font-weight:800;margin:0}
 .sec-head .hint{margin-left:auto;font-size:12px;color:var(--muted);font-weight:700}
 .sec-body{padding:14px 15px 16px}
+/* きろくの枠は紫。読むだけの控えなので、打ち込む欄と色で分ける */
+section.kiroku{border-color:color-mix(in srgb,var(--plum) 55%,var(--line))}
+section.kiroku .sec-head{background:color-mix(in srgb,var(--plum) 12%,var(--card));
+    border-bottom-color:color-mix(in srgb,var(--plum) 30%,var(--line-soft))}
+section.kiroku .sec-head h2,
+section.kiroku .sec-head .hint{color:var(--plum)}
 details.fold > summary{list-style:none;cursor:pointer}
 details.fold > summary::-webkit-details-marker{display:none}
 details.fold > summary .hint::after{content:"　▼"}
@@ -145,8 +154,13 @@ details.fold[open] > summary .hint::after{content:"　▲"}
 .tate.ng .shiki{color:var(--red)}
 
 /* 1回ごと */
-.kai{border:1.5px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--card)}
+/* 枠は緑。回ごとに打ち替える場所だと、ひと目で分かるようにしてある */
+.kai{border:1.5px solid color-mix(in srgb,var(--leaf) 50%,var(--line));border-radius:12px;
+     margin-bottom:8px;background:color-mix(in srgb,var(--leaf) 7%,var(--card))}
+.kai > summary b{color:var(--leaf)}
+/* 打ち替えた回は橙。緑より目立たせる */
 .kai.edited{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 6%,var(--card))}
+.kai.edited > summary b{color:var(--amber)}
 .kai > summary{
   list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
   padding:10px 13px;flex-wrap:wrap;
@@ -155,7 +169,8 @@ details.fold[open] > summary .hint::after{content:"　▲"}
 .kai > summary b{font-size:14.5px;font-weight:800;flex:none;width:52px}
 .kai > summary .m{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
 .kai > summary .m em{font-style:normal;font-size:11px;color:var(--muted);margin-left:2px}
-.kai > summary .tag{margin-left:auto;font-size:11px;font-weight:800;color:var(--amber)}
+.kai > summary .tag{margin-left:auto;font-size:11px;font-weight:800;color:var(--leaf)}
+.kai.edited > summary .tag{color:var(--amber)}
 .kai > summary .tag::after{content:"　▼"}
 .kai[open] > summary .tag::after{content:"　▲"}
 .kai .kb{padding:2px 13px 13px;border-top:1px dashed var(--line-soft)}
@@ -184,6 +199,9 @@ details.fold[open] > summary .hint::after{content:"　▲"}
 .btn.ghost{background:none;color:var(--aqua)}
 .btn:disabled{opacity:.45;cursor:default}
 .btn:focus-visible{outline:3px solid var(--aqua);outline-offset:2px}
+/* 消すボタン。戻せないので赤にしておく */
+.btn.danger{border-color:var(--red);background:none;color:var(--red)}
+.btn.danger:focus-visible{outline-color:var(--red)}
 .mini{font-family:inherit;font-size:11.5px;font-weight:800;color:var(--aqua);
       background:none;border:none;border-bottom:1.5px solid currentColor;cursor:pointer;padding:0}
 
@@ -201,6 +219,14 @@ details.fold[open] > summary .hint::after{content:"　▲"}
 .rec.now{border-color:var(--aqua);background:var(--sunk)}
 
 .foot{font-size:12.5px;color:var(--muted);font-weight:700;line-height:1.8;margin-top:8px}
+/* 長い説明書きはたたんでおく。読みたいときだけ開く */
+.foldnote{margin-top:8px}
+.foldnote > summary{list-style:none;cursor:pointer;font-size:12px;font-weight:800;
+    color:var(--muted);padding:3px 0}
+.foldnote > summary::-webkit-details-marker{display:none}
+.foldnote > summary::after{content:"　▼"}
+.foldnote[open] > summary::after{content:"　▲"}
+.foldnote > .foot{margin-top:4px}
 .bar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:50;
      background:var(--ink);color:var(--ground);border-radius:999px;padding:9px 18px;
      font-size:13px;font-weight:800;box-shadow:var(--shadow);opacity:0;pointer-events:none;
@@ -252,6 +278,13 @@ details.fold[open] > summary .hint::after{content:"　▲"}
       <span class="hint">天気予報から</span>
     </div>
     <div class="sec-body">
+      <!-- 答えを先に出す。ここだけ見れば混入機をセットできる -->
+      <div class="big" style="margin-top:0;margin-bottom:14px">
+        <div class="bai"><span class="k">設定倍率（混入機のダイヤル）</span>
+          <span class="v" id="v-bai">—</span></div>
+        <div class="jikan"><span class="k">1回の灌水時間</span>
+          <span class="v" id="v-jikan">—</span></div>
+      </div>
       <div class="grid">
         <div class="f">
           <label for="i-eday">1日の日射予測</label>
@@ -287,19 +320,21 @@ details.fold[open] > summary .hint::after{content:"　▲"}
 
       <div style="margin-top:12px">
         <button class="btn ghost" id="maemodosu" type="button">前回の実績を入れる</button>
-        <p class="foot" id="maenote" style="margin-top:6px"></p>
+        <details class="foldnote">
+          <summary>前回の実績について</summary>
+          <p class="foot" id="maenote"></p>
+        </details>
+      </div>
+
+      <!-- 記録のボタン。打ち込む欄のすぐ下に置く（きょうの記録の欄から移した） -->
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="save">この日を記録する（中央・東）</button>
+        <button class="btn danger" id="del">この日の記録を消す</button>
       </div>
 
       <div class="nissha">
         <div class="outs" id="nissha-out"></div>
         <div class="shiki" id="nissha-shiki"></div>
-      </div>
-
-      <div class="big">
-        <div class="bai"><span class="k">設定倍率（混入機のダイヤル）</span>
-          <span class="v" id="v-bai">—</span></div>
-        <div class="jikan"><span class="k">1回の灌水時間</span>
-          <span class="v" id="v-jikan">—</span></div>
       </div>
 
       <div class="gauge" id="gauge">
@@ -318,12 +353,11 @@ details.fold[open] > summary .hint::after{content:"　▲"}
     </div>
     <div class="sec-body">
       <div class="outs" id="today-out" style="border-top:none;padding-top:0;margin-top:0"></div>
-      <p class="foot" id="usenote"></p>
-      <p class="foot" id="nweeknote"></p>
-      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn" id="save">この日を記録する（中央・東）</button>
-        <button class="btn ghost" id="del">この日の記録を消す</button>
-      </div>
+      <details class="foldnote">
+        <summary>この数字の出どころ・1週間のN量</summary>
+        <p class="foot" id="usenote"></p>
+        <p class="foot" id="nweeknote"></p>
+      </details>
     </div>
   </section>
 
@@ -391,7 +425,7 @@ details.fold[open] > summary .hint::after{content:"　▲"}
   </section>
 
   <!-- ===== きろく ===== -->
-  <section>
+  <section class="kiroku">
     <details class="fold">
       <summary class="sec-head"><h2>きろく</h2><span class="hint" id="recsum"></span></summary>
       <div class="sec-body"><div class="reclist" id="recs"></div></div>
@@ -1318,6 +1352,7 @@ function render(){
         r.nokoriKai>0 ? fmt(r.perV,2) : "—", "L/㎡",
         r.dashisugi ? "sa" : "hi")
     + `</div>`
+    + `<details class="foldnote"><summary>計算の出どころ・配り方</summary>`
     + `<div class="shiki">${hyoMoto}。`
     + (r.hyo && r.Vchokusen>0
         ? `表なら ${fmt(r.Vday,2)}、直線なら ${fmt(r.Vchokusen,2)} L/㎡`
@@ -1337,7 +1372,7 @@ function render(){
     + (r.dashisugi
         ? `<br><b>もう必要量に足りています。この回は出さないでください。</b>`
         : "")
-    + `</div>`;
+    + `</div></details>`;
 
   // ---- 1回ごと ----
   for(let i=0;i<MAXKAI;i++){
