@@ -1768,11 +1768,13 @@ function renderRec(g, r, p, m) {
   // テンパの夜中の開け閉め（区間が2つあるとき・1つ目が朝までないとき）
   const per = p && p.tempa.h !== null ? p.tempa.periods : [];
   const temOpenH = per[0] && per[0].open !== null ? per[0].open : null, tem2H = per[1] ? per[1].close : null;
+  // 閉め直したあと夜中に開けて朝になる夜（2つ目の区間が夜中に終わる）は、その時刻を「テンパを開けた」の目安にする
+  const temLastOpenH = per[1] && per[1].open !== null ? per[1].open : null;
   // 送るときに一緒に残す、アプリの目安（あとで「目安どおりに閉めた・開けた夜か」を見分けるため）。開ける目安はこの夜のあとの朝の分
   recForm = { ...recForm, sug: {
     sugLuxous: p ? sugText(p.luxous) : "", sugTempa: p ? sugText(p.tempa) : "", freq,
     stages: r ? r.starts.map((s, i) => hhmm(s) + " " + r.temps[i]).join(" / ") : "",
-    sugOpenTempa: sugOpen(m && m.tempa), sugOpenLuxous: sugOpen(m && m.luxous),
+    sugOpenTempa: temLastOpenH !== null ? hhmm(temLastOpenH) : sugOpen(m && m.tempa), sugOpenLuxous: sugOpen(m && m.luxous),
     sugTempaOpen: temOpenH !== null ? hhmm(temOpenH) : "", sugTempa2: tem2H !== null ? hhmm(tem2H) : "",
   } };
   if (!recForm.edited) {   // 打ちかけの時刻は書き換えない
