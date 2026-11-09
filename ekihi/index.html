@@ -154,12 +154,14 @@ details.fold[open] > summary .hint::after{content:"　▲"}
 .tate.ng .shiki{color:var(--red)}
 
 /* 1回ごと */
-/* 枠は緑。回ごとに打ち替える場所だと、ひと目で分かるようにしてある */
-.kai{border:1.5px solid color-mix(in srgb,var(--leaf) 50%,var(--line));border-radius:12px;
-     margin-bottom:8px;background:color-mix(in srgb,var(--leaf) 7%,var(--card))}
-.kai > summary b{color:var(--leaf)}
-/* 打ち替えた回は橙。緑より目立たせる */
-.kai.edited{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 6%,var(--card))}
+/* 枠は橙。回ごとに打ち替える場所だと、ひと目で分かるようにしてある。
+   打ち替えた回も橙なので、こちらは薄め・向こうは濃いめにして段差をつける */
+.kai{border:1.5px solid color-mix(in srgb,var(--amber) 55%,var(--line));border-radius:12px;
+     margin-bottom:8px;background:color-mix(in srgb,var(--amber) 10%,var(--card))}
+.kai > summary b{color:var(--amber)}
+/* 打ち替えた回。線を太く地を濃くして、素の回より前に出す */
+.kai.edited{border:2px solid var(--amber);
+            background:color-mix(in srgb,var(--amber) 24%,var(--card))}
 .kai.edited > summary b{color:var(--amber)}
 .kai > summary{
   list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
@@ -169,8 +171,8 @@ details.fold[open] > summary .hint::after{content:"　▲"}
 .kai > summary b{font-size:14.5px;font-weight:800;flex:none;width:52px}
 .kai > summary .m{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
 .kai > summary .m em{font-style:normal;font-size:11px;color:var(--muted);margin-left:2px}
-.kai > summary .tag{margin-left:auto;font-size:11px;font-weight:800;color:var(--leaf)}
-.kai.edited > summary .tag{color:var(--amber)}
+.kai > summary .tag{margin-left:auto;font-size:11px;font-weight:800;color:var(--amber)}
+.kai.edited > summary .tag{color:var(--red)}
 .kai > summary .tag::after{content:"　▼"}
 .kai[open] > summary .tag::after{content:"　▲"}
 .kai .kb{padding:2px 13px 13px;border-top:1px dashed var(--line-soft)}
