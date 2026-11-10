@@ -316,34 +316,32 @@ footer a{color:var(--muted)}
     </div>
     <p class="hint">単価はテンパの「光合成も入れた時刻」に使います。ページには書かず、このスマホにだけ覚えさせます。</p>
   </div>
-  <!-- 閉めた・開けた時刻の記録。スプレッドシートへ送る（同じ夜・同じハウスは、送り直すと上書き）。
-       閉めた時刻と開けた時刻はボタンを分ける（朝に開けた時刻だけ送るとき、その夜の目安を閉めた時刻として送らないため） -->
+  <!-- タイマーに入れた時刻の記録。夕方にその夜に閉める時刻と翌朝に開ける時刻をまとめて入れ、1回で送る（2026-11-10 から）。
+       スプレッドシートの その夜の行（日付|ハウス）へ入る。同じ夜・同じハウスは、送り直すと上書き -->
   <div class="rec" id="recBox" hidden>
-    <p class="freq-q" id="recTitle">閉めた・開けた時刻を記録する</p>
-    <p class="rec-sub" id="recCloseTitle">閉めた時刻</p>
+    <p class="freq-q" id="recTitle">タイマーに入れた時刻を記録する</p>
+    <p class="rec-sub" id="recCloseTitle">夜に閉める</p>
     <div class="rec-grid">
       <div class="field">
         <label for="recLux">ラクソス</label>
         <!-- 数字の欄でも type="number" は使わない。スマホの数字キーには「:」が無いので 1730 でも受け付ける -->
-        <input id="recLux" type="text" inputmode="numeric" autocomplete="off" placeholder="例 1730">
+        <input id="recLux" type="text" inputmode="numeric" autocomplete="off" placeholder="空＝閉めない">
       </div>
       <div class="field">
         <label for="recTem">テンパ</label>
         <input id="recTem" type="text" inputmode="numeric" autocomplete="off" placeholder="空＝閉めない">
       </div>
-      <!-- テンパを夜中に開けて閉め直した時刻（2026-11-09 から。テンパは閉める区間を2つまで） -->
+      <!-- テンパを夜中に開けて閉め直す時刻（テンパは閉める区間を2つまで） -->
       <div class="field">
-        <label for="recTemOpen">テンパ 夜中に開けた</label>
+        <label for="recTemOpen">テンパ 夜中に開ける</label>
         <input id="recTemOpen" type="text" inputmode="numeric" autocomplete="off" placeholder="空＝開けない">
       </div>
       <div class="field">
-        <label for="recTem2">テンパ 閉め直した</label>
+        <label for="recTem2">テンパ 閉め直す</label>
         <input id="recTem2" type="text" inputmode="numeric" autocomplete="off" placeholder="空＝閉め直さない">
       </div>
     </div>
-    <button type="button" class="rec-send" id="recSend">この時刻で記録する</button>
-    <p class="hint" id="recMsg"></p>
-    <p class="rec-sub" id="recOpenTitle">開けた時刻</p>
+    <p class="rec-sub" id="recOpenTitle">翌朝に開ける</p>
     <div class="rec-grid">
       <div class="field">
         <label for="recOpenTem">テンパ</label>
@@ -354,8 +352,8 @@ footer a{color:var(--muted)}
         <input id="recOpenLux" type="text" inputmode="numeric" autocomplete="off" placeholder="例 0845">
       </div>
     </div>
-    <button type="button" class="rec-send" id="recOpenSend">開けた時刻を記録する</button>
-    <p class="hint" id="recOpenMsg"></p>
+    <button type="button" class="rec-send" id="recSend">この時刻で記録する</button>
+    <p class="hint" id="recMsg"></p>
   </div>
 </section>
 
@@ -406,14 +404,14 @@ footer a{color:var(--muted)}
 
     <h3>カーテンを閉める時刻（⑤）</h3>
     <p>決まりは2つです：①カーテンは暖房機が動き出してから閉める、②閉めたあとも少なくとも決めた間隔（30分・1時間・1時間半から選ぶ。既定は30分）に1回は暖房が動く。既定を30分にしているのは、間隔を延ばして減る重油（過去3冬で5〜8%）の8割以上が、葉の結露が長く病気の出やすい10〜11月と3〜4月に出るためです。千葉県・岐阜県の試験でも、疫病や灰色かび病を抑えたのは、葉がぬれている間20〜45分おきに暖房を燃やすやり方でした。①は、下の「暖房が動き出す見込み」の遅め（同じ条件の夜の4夜に3夜は、それより前に動き出した時刻）より前には閉めないことで守ります。止まっている時間の見込みは暖房が入り切りしている状態が前提なので、昼の熱が残る日没直後には使えないためです。暖房がほとんど動かない見込みの夜は閉めません。</p>
-    <p>そこで、予報の5分ごとに「そのカーテンを閉めた状態で、暖房が消えてから次に点くまでの時間（止まっている時間）」を見込みます。暖房の設定の段を下げた直後は、室温が「前の設定＋1℃」から「新しい設定−1℃」まで下がるあいだ暖房が止まり続けるので、この<b>下げた直後の止まり</b>も、同じ式で室温を1分ずつ追って見込みます。過去2冬（2024〜2026年度、中央・東）に夜中に設定を下げた422回では、下げた直後の止まりは「下げた後のふだんの止まり ×（下げ幅＋2℃）÷ 2℃」とよく合いました（実際÷見込みの中央値0.97）。止まりの中央値は45分で、2時間を超えたのは18回でした。</p>
+    <p>そこで、予報の5分ごとに「そのカーテンを閉めた状態で、暖房が消えてから次に点くまでの時間（止まっている時間）」を見込みます。暖房の設定の段を下げた直後は、室温が「前の設定＋1℃」から「新しい設定−1℃」まで下がるあいだ暖房が止まり続けるので、この<b>下げた直後の止まり</b>も、同じ式で室温を1分ずつ追って見込みます。過去2冬（2024〜2026年度、中央・東）に夜中に設定を下げた422回では、下げた直後の止まりは「下げた後のふだんの止まり ×（下げ幅＋2℃）÷ 2℃」とよく合いました（実際÷見込みの中央値0.97）。止まりの中央値は45分、90%は90分以内でした（1時間を超えることは珍しくありません）。</p>
     <ul>
-      <li><b>ラクソス</b>：一度閉めたら朝まで開けません（開けるとカーテンの上の冷気が下りてくるため）。ラクソスだけ閉めた状態で、<b>閉めてから日の出の1時間前まで、ずっと条件を満たす</b>最初の時刻を出します。条件は、ふだんは選んだ間隔に1回、<b>一番低い段（1段目より下げた段のうち、いちばん低い温度の段）の間と、段を下げた直後の1回は2時間に1回</b>暖房が動くことです。どの時刻から閉めても朝までに外れる夜は「閉めない」と出します</li>
-      <li>一番低い段で2時間を超えて止まる見込みの夜は、時刻を赤くして注意を出します。閉めない場合の止まり、何時より後に閉めれば収まるか、その段を何℃に上げれば収まるかを出し、ボタンを押すと④の設定をその温度にして計算し直します（夜の平均・日平均の見込みも上がります。④の「元の設定にもどす」で取り消せます）。一番低い段で選んだ間隔を外れる夜は、何℃なら選んだ間隔も満たすかを出します。上げられるのは前の段の温度まで（4段目との差は2℃まで）です</li>
-      <li><b>テンパ</b>：閉める区間を2つまで（夕方に閉める → 夜中に開ける → 閉め直す → 朝に開ける）とします。ラクソスを閉めたあとで、2層とも閉めた状態の止まりが選んだ間隔以内（段を下げた直後の1回は2時間以内）の時間帯から、テンパを閉めて減る熱がいちばん大きい組み合わせを選びます。閉める区間も、夜中に開けている間も1時間以上にします（短い開け閉めはしない）。下げた直後の止まりが2時間を超える見込みなら、その止まりが終わるまでテンパは開けておきます</li>
+      <li><b>ラクソス</b>：一度閉めたら朝まで開けません（開けるとカーテンの上の冷気が下りてくるため）。ラクソスだけ閉めた状態で、<b>閉めてから日の出の1時間前まで、ずっと条件を満たす</b>最初の時刻を出します。条件は、ふだんは選んだ間隔に1回、<b>一番低い段（1段目より下げた段のうち、いちばん低い温度の段）の間と、段を下げた直後の1回は1時間に1回</b>暖房が動くことです（選んだ間隔のほうが長いときは選んだ間隔）。どの時刻から閉めても朝までに外れる夜は「閉めない」と出します</li>
+      <li>一番低い段で1時間を超えて止まる見込みの夜は、時刻を赤くして注意を出します。閉めない場合の止まり、何時より後に閉めれば収まるか、その段を何℃に上げれば収まるかを出し、ボタンを押すと④の設定をその温度にして計算し直します（夜の平均・日平均の見込みも上がります。④の「元の設定にもどす」で取り消せます）。一番低い段で選んだ間隔を外れる夜は、何℃なら選んだ間隔も満たすかを出します。上げられるのは前の段の温度まで（4段目との差は2℃まで）です</li>
+      <li><b>テンパ</b>：閉める区間を2つまで（夕方に閉める → 夜中に開ける → 閉め直す → 朝に開ける）とします。ラクソスを閉めたあとで、2層とも閉めた状態の止まりが選んだ間隔以内（段を下げた直後の1回は1時間以内）の時間帯から、テンパを閉めて減る熱がいちばん大きい組み合わせを選びます。閉める区間も、夜中に開けている間も1時間以上にします（短い開け閉めはしない）。下げた直後の止まりが1時間を超える見込みなら、その止まりが終わるまでテンパは開けておきます</li>
     </ul>
     <p>タイマーは15分単位なので、ラクソスは15分単位に切り上げ（遅め＝暖房が動く側）、テンパは閉める時刻を切り捨て・開ける時刻を切り上げ（閉めている時間が長くなる側）にそろえます（テンパがラクソスより前になるときはラクソスと同じ時刻）。</p>
-    <p>見込みの上限は、選んだ間隔の3分の2（30分に1回 → 20分、1時間に1回 → 40分、1時間半に1回 → 60分、2時間に1回 → 80分）です。式の値の不確かさのぶん、余裕を持たせています。</p>
+    <p>見込みの上限は、選んだ間隔の3分の2（30分に1回 → 20分、1時間に1回 → 40分、1時間半に1回 → 60分）です。式の値の不確かさのぶん、余裕を持たせています。</p>
     <div class="eq">止まっている時間 ＝ ハウスの熱容量 × 2℃ ÷ ハウスから逃げる熱</div>
     <ul>
       <li>2℃は、暖房機が設定−1℃で点き、設定＋1℃で消える幅です</li>
@@ -521,16 +519,17 @@ const CURTAIN = {
   // カーテンは「閉めてから朝まで、暖房が止まっている時間の見込みがずっと predMin 分以内」になったら閉める。
   // 何分に1回動けばよいか（maxOffMin）は画面で選ぶ。predMin は間隔の3分の2（式の不確かさのぶん余裕を持たせる）
   freqs: [
-    { key: "30", label: "30分に1回", maxOffMin: 30, predMin: 20 },
-    { key: "60", label: "1時間に1回", maxOffMin: 60, predMin: 40 },
-    { key: "90", label: "1時間半に1回", maxOffMin: 90, predMin: 60 },
+    { key: "30", label: "30分に1回", span: "30分", maxOffMin: 30, predMin: 20 },
+    { key: "60", label: "1時間に1回", span: "1時間", maxOffMin: 60, predMin: 40 },
+    { key: "90", label: "1時間半に1回", span: "1時間半", maxOffMin: 90, predMin: 60 },
   ],
   freqDefault: "30", freqKey: "htf_yaon_freq",   // 既定は30分に1回（2026-11-04 ユーザー決定）。選んだものはこの端末に覚えさせる
   checkUntilBeforeRiseH: 1,                // 日の出の1時間前まで確かめる
   hystC: 2,                                // 暖房機は 設定−1℃で点き、設定＋1℃で消える
-  // 2026-11-09 ユーザー決定：一番低い段（1段目より下げた段のうち最も低い段）の間と、段を下げた直後の1回の止まりは
-  // 「2時間に1回」動けばよい。見込みは選んだ間隔と同じく3分の2（80分）で判定する
-  longGap: { label: "2時間", maxOffMin: 120, predMin: 80 },
+  // 一番低い段（1段目より下げた段のうち最も低い段）の間と、段を下げた直後の1回の止まりは「1時間に1回」動けばよい
+  // （2026-11-09 に2時間で決め、2026-11-10 にユーザーが「甘すぎる」として1時間に変更）。見込みは選んだ間隔と同じく3分の2（40分）。
+  // 選んだ間隔のほうが長い（1時間半に1回）ときは、選んだ間隔で見る
+  longGap: { label: "1時間", maxOffMin: 60, predMin: 40 },
   tempaMinRunH: 1,                         // テンパを閉める区間（2つまで）は1時間以上。短い開け閉めはしない
   // 物理の式（狩野 敦「温室の熱収支」の資料）：止まっている時間 ＝ 熱容量 × hystC ÷ 逃げる熱
   phys: {
@@ -960,8 +959,8 @@ function offMinAt(fc, date, r, state, h, vkey) {
 
 /* ---- 夜じゅうの止まり時間の見込みと、閉める・開ける時刻（2026-11-09 から）----
    ・ラクソスは一度閉めたら朝まで開けない（開けるとカーテンの上の冷気が下りてくる）。一番低い段の間と、段を下げた直後の1回は
-     2時間（見込み80分）以内に暖房が動けばよい。それを超える夜は注意を出し、閉めない／その段を上げる、で調整する
-   ・テンパは閉める区間を2つまで（夕方に閉める → 夜中に開ける → 閉め直す → 朝に開ける）。止まりは選んだ間隔で見る（段を下げた直後だけ2時間）
+     1時間（見込み40分）以内に暖房が動けばよい（2026-11-10 に2時間から変更）。それを超える夜は注意を出し、閉めない／その段を上げる、で調整する
+   ・テンパは閉める区間を2つまで（夕方に閉める → 夜中に開ける → 閉め直す → 朝に開ける）。止まりは選んだ間隔で見る（段を下げた直後だけ1時間）
    ・止まり時間は2種類：①入り切りが落ち着いた状態（offMinAt）②段を下げた直後（dropGapMin） */
 
 /* 一番低い段の時間帯 [{ i（段の番号0〜3）, t, a, b }]。1段目より下げた段のうち、いちばん低い温度の段（同じ温度が続けばどちらも）。
@@ -994,7 +993,7 @@ function dropGapMin(fc, date, r, state, d, fromC, vkey) {
 
 /* 夜の見込みの表。5分ごとの点 { h, m:{ open, lux, both }（入り切りが落ち着いた止まり時間）, low（一番低い段か）} と、
    段を下げる時刻ごとの { d, stage, gap:{ open, lux, both }（下げた直後の止まり時間）, low }。
-   low は「2時間でよい段」の時間帯（設定を上げて試すときも、元の段で決めた時間帯を渡す）。予報が途中で切れたら { range, lastH } */
+   low は「1時間でよい段」の時間帯（設定を上げて試すときも、元の段で決めた時間帯を渡す）。予報が途中で切れたら { range, lastH } */
 function nightTable(fc, date, r, vkey, fromH, low = lowWindow(r)) {
   const step = CURTAIN.stepMin / 60, endH = r.nextRise - CURTAIN.checkUntilBeforeRiseH, states = ["open", "lux", "both"];
   const pts = [];
@@ -1024,18 +1023,18 @@ function badAt(tab, p, own, prev, okDrop, okSteady) {
   return on.length ? on.some(x => !okDrop(x)) : !okSteady(p);
 }
 
-/* ラクソスを閉めた状態で、点 p が外れるか。full=false は「一番低い段の2時間」を問わない（注意を出す夜を見分けるため）。
-   一番低い段は2時間（predLong）、ほかは選んだ間隔（predMin）。段を下げた直後の1回は、どの段も2時間 */
+/* ラクソスを閉めた状態で、点 p が外れるか。full=false は「一番低い段の1時間」を問わない（注意を出す夜を見分けるため）。
+   一番低い段は1時間（predLong）、ほかは選んだ間隔（predMin）。段を下げた直後の1回は、どの段も1時間 */
 function luxBad(tab, p, predMin, predLong, full) {
   return badAt(tab, p, "lux", "open",
     x => (x.low && !full) || x.gap.lux <= predLong,
     q => (q.low && !full) || q.m.lux <= (q.low ? predLong : predMin));
 }
-/* 2層とも閉めた状態で、点 p が外れるか。止まりは選んだ間隔（段を下げた直後の1回だけ2時間） */
+/* 2層とも閉めた状態で、点 p が外れるか。止まりは選んだ間隔（段を下げた直後の1回だけ1時間） */
 const tempaBad = (tab, p, predMin, predLong) => badAt(tab, p, "both", "lux", x => x.gap.both <= predLong, q => q.m.both <= predMin);
 
 /* ラクソスを閉める時刻（一度閉めたら朝まで）。minH より前にはしない（暖房が動き出す見込みの遅め）。
-   { h, waited, worst（ふだんの止まりの最長）, low（一番低い段の最長）, drops, caution（2時間を超える見込み）, safeH, notClose }／
+   { h, waited, worst（ふだんの止まりの最長）, low（一番低い段の最長）, drops, caution（1時間を超える見込み）, safeH, notClose }／
    どの時刻から閉めても朝までに外れる { h: null, why: "never", worst, worstH, allOff } */
 function luxousPlan(tab, predMin, predLong, minH) {
   const P = tab.pts;
@@ -1050,7 +1049,7 @@ function luxousPlan(tab, predMin, predLong, minH) {
   const steady = R.filter(p => !dropsOn(tab, p, x => x.gap.lux).length);
   const normal = maxOf(steady.filter(p => !p.low), p => p.m.lux), lowPt = maxOf(steady.filter(p => p.low), p => p.m.lux);
   const drops = tab.drops.filter(x => x.d + x.gap.open / 60 > R[0].h + 1e-9).map(x => ({ ...x, min: x.gap.lux }));
-  // 2時間を超える見込み（一番低い段の間、または一番低い段へ下げた直後）。いちばん長いもの
+  // 1時間を超える見込み（一番低い段の間、または一番低い段へ下げた直後）。いちばん長いもの
   const longs = [...(lowPt ? [{ min: lowPt.m.lux, h: lowPt.h, kind: "steady" }] : []),
                  ...drops.filter(x => x.low).map(x => ({ min: x.min, h: x.d, kind: "drop" }))];
   const caution = R.some(p => luxBad(tab, p, predMin, predLong, true)) ? maxOf(longs, x => x.min) : null;
@@ -1062,7 +1061,7 @@ function luxousPlan(tab, predMin, predLong, minH) {
            safeH: caution && iFull < P.length ? P[iFull].h : null, notClose: caution ? lowOpen : null };
 }
 
-/* テンパ（2層）を閉める区間。ラクソスを閉めた時刻 luxH より後で、2層の止まりが選んだ間隔以内（段を下げた直後は2時間以内）の
+/* テンパ（2層）を閉める区間。ラクソスを閉めた時刻 luxH より後で、2層の止まりが選んだ間隔以内（段を下げた直後は1時間以内）の
    時間帯から、区間2つまで・閉める区間も開けている間も1時間以上で、テンパを閉めて減る熱がいちばん大きい組み合わせを選ぶ
    （減る熱は「ラクソスだけ」と「2層」の逃げる熱の差。止まり時間の逆数の差に比例する）。夜中に開けるときは、その理由も返す。
    { h（最初に閉める時刻）, periods:[{ close, open（朝まで閉めるなら null）, worst, drop, why（開ける理由）}] }／
@@ -1131,7 +1130,7 @@ function withStageTemps(r, temps) {
 }
 
 /* 一番低い段（2・3段目のうち）を何℃にすれば収まるか。luxH はラクソスを閉める時刻（変えない）。
-   x：2時間（見込み80分）以内に収まる温度、y：選んだ間隔（見込み predMin）も満たす温度。上げられるのは前の段の温度まで、
+   x：1時間（見込み40分）以内に収まる温度、y：選んだ間隔（見込み predMin）も満たす温度。上げられるのは前の段の温度まで、
    4段目との差2℃まで、16℃まで。届かなければ null。{ idx（上げる段 0〜3）, from, x, y, cap } */
 function raiseOptions(fc, date, r, vkey, fromH, luxH, predMin, predLong) {
   const low = lowWindow(r), idx = low.map(x => x.i).filter(i => i === 1 || i === 2);
@@ -1180,7 +1179,7 @@ function curtainPlan(date, r, fc, wxClear, predMin) {
   const startT = start ? ceil5(start.p75 !== null ? start.p75 : start.p50) : null;
   const noStart = late || start ? null
     : startWhy.why === "range" ? { h: null, why: "range", lastH: startWhy.lastH } : { h: null, why: "noheat" };
-  const predLong = CURTAIN.longGap.predMin;
+  const predLong = Math.max(CURTAIN.longGap.predMin, predMin);   // 一番低い段・下げた直後の上限（選んだ間隔より短くはしない）
   // 既定の式（床の熱を実測に合わせた）で出す時刻と、参考の式（資料どおり）で出す時刻
   const plan = vkey => {
     if (noStart) return { luxous: noStart, tempa: noStart };
@@ -1193,7 +1192,7 @@ function curtainPlan(date, r, fc, wxClear, predMin) {
   };
   const { luxous, tempa } = plan(CURTAIN.variantMain);
   const ref = plan(CURTAIN.variantRef);
-  // 一番低い段を何℃にすれば収まるか：2時間を超える注意を出す夜と、一番低い段で選んだ間隔を外れる夜だけ
+  // 一番低い段を何℃にすれば収まるか：1時間を超える注意を出す夜と、一番低い段で選んだ間隔を外れる夜だけ
   const raise = luxous.h !== null && (luxous.caution || (luxous.low && luxous.low.min > predMin))
     ? raiseOptions(fc, date, r, CURTAIN.variantMain, fromH, luxous.rawH, predMin, predLong) : null;
   const c5 = crossTime(fc, date, r, CURTAIN.luxousK, fromH);
@@ -1535,7 +1534,8 @@ function renderCurtain(g, r) {
   if (p.noForecast) { box.innerHTML = '<p class="hint">この夜の予報がまだありません（予報は約2日先まで）。</p>'; return null; }
 
   const skyName = p.sky === "clear" ? "晴れ" : "くもり・雨";
-  const L = CURTAIN.longGap;
+  // 一番低い段・段を下げた直後の上限（1時間。選んだ間隔のほうが長ければ選んだ間隔）。curtainPlan の predLong と同じ決め方
+  const L = F.predMin > CURTAIN.longGap.predMin ? { label: F.span, predMin: F.predMin } : CURTAIN.longGap;
   const t = (x, ng) => x.h !== null ? '<span class="time num' + (ng ? " ng" : "") + '">' + hhmm(x.h) + "</span>"
     : '<span class="time none">' + (x.why === "range" ? "まだ出せません" : "閉めない") + "</span>";
   const min = v => (v === Infinity ? "朝まで" : Math.round(v) + "分");
@@ -1634,8 +1634,10 @@ function renderCurtain(g, r) {
     "</ul>" +
     cautionBox + strictBox +
     '<p class="hint">閉めたあとも暖房が' + F.label + "は動く（" + CURTAIN.variants[CURTAIN.variantMain].label + "で、止まっている時間の見込みが" +
-      F.predMin + "分以内）と見込める、いちばん早い時刻です。ラクソスは閉めたら朝まで開けません。一番低い段（" + (lowStages || "この夜は無し") +
-      "）の間と、段を下げた直後の1回は、" + L.label + "（見込み" + L.predMin + "分）以内に動けばよいとしています。" +
+      F.predMin + "分以内）と見込める、いちばん早い時刻です。ラクソスは閉めたら朝まで開けません。" +
+      (L.predMin > F.predMin
+        ? "一番低い段（" + (lowStages || "この夜は無し") + "）の間と、段を下げた直後の1回は、" + L.label + "（見込み" + L.predMin + "分）以内に動けばよいとしています。"
+        : "一番低い段の間と段を下げた直後も、同じ間隔で見ています。") +
       "テンパは閉める区間を2つまで（夜中に開けて閉め直す）として出しています。</p>" +
     // 参考の式（資料どおり）。晴れの夜は既定と同じ式なので、答えが同じなら短く書く
     (refTime(p.ref.luxous) + refTem(p.ref.tempa) === refTime(p.luxous) + refTem(p.tempa)
@@ -1730,9 +1732,8 @@ const REC_API = "https://script.google.com/macros/s/AKfycbzYkVlVngoC6CXf9HKPlfnF
 // merge は Apps Script が「送った欄だけ書き換える」新しい版か（古い版に開けた時刻だけ送ると、閉めた時刻が消えるため）。
 // t2 はテンパを夜中に開けた・閉め直した時刻の列がある版か（2026-11-09。無い版に送っても残らない）
 let REC = { state: "idle", rows: {}, error: "", merge: false, t2: false };
-// 記録欄の状態。key は「日付|ハウス」。edited は打ちかけ（画面を描き直しても書き換えない）、sug はアプリの目安の控え。
-// o で始まるものは「開けた時刻」の欄（前の夜の行に入れる）
-const REC_FORM0 = { edited: false, sending: false, msg: "", ng: false, sug: {}, oEdited: false, oSending: false, oMsg: "", oNg: false };
+// 記録欄の状態。key は「日付|ハウス」。edited は打ちかけ（画面を描き直しても書き換えない）、sug はアプリの目安の控え
+const REC_FORM0 = { edited: false, sending: false, msg: "", ng: false, sug: {} };
 let recForm = { key: "", ...REC_FORM0 };
 
 /* 打った時刻 → "17:30"。空は ""（閉めなかった）、読めなければ null。
@@ -1762,21 +1763,20 @@ function loadRecords() {
 }
 
 const recWhen = at => { const d = new Date(at); return (d.getMonth() + 1) + "/" + d.getDate() + " " + hhmm(d.getHours() + d.getMinutes() / 60); };
-const recShow = x => "ラクソス " + (x.luxous || "閉めなかった") + "・テンパ " + (x.tempa || "閉めなかった") +
-  (x.tempaOpen || x.tempa2 ? "（夜中に " + (x.tempaOpen || "―") + " 開け・" + (x.tempa2 || "―") + " 閉め直し）" : "");
-const recShowOpen = x => "テンパ " + (x.openTempa || "―") + "・ラクソス " + (x.openLuxous || "―");
-const hasOpen = x => !!(x && (x.openTempa || x.openLuxous));
+const recShow = x => "ラクソス " + (x.luxous || "閉めない") + "・テンパ " + (x.tempa || "閉めない") +
+  (x.tempaOpen || x.tempa2 ? "（夜中に " + (x.tempaOpen || "―") + " 開け・" + (x.tempa2 || "―") + " 閉め直し）" : "") +
+  (x.openTempa || x.openLuxous ? "、翌朝 テンパ " + (x.openTempa || "―") + "・ラクソス " + (x.openLuxous || "―") + " に開ける" : "");
 
 /* 記録欄を描く。p は⑤の閉める時刻、m は翌朝に開ける時刻の計算結果（無いときは null）。
-   閉めた時刻：記録があればその時刻、無ければ⑤の目安の時刻を入れておく。
-   開けた時刻：この日の朝に開けた分（＝前の夜の行）。目安は入れない（開ける前に送って、目安が実際の時刻として残らないように） */
+   夕方にタイマーへ入れる時刻（その夜に閉める・夜中に開け閉めする・翌朝に開ける）をまとめて1行に入れる（2026-11-10 から）。
+   記録があればその時刻、無ければ⑤の目安を入れておく（翌朝の目安は晴れの朝だけ。くもりの朝は空欄なので、タイマーに入れた時刻を打つ） */
 function renderRec(g, r, p, m) {
   const box = $("recBox");
   if (!g.date) { box.hidden = true; return; }
   box.hidden = false;
   if (REC.state === "idle") loadRecords();
-  const key = ymd(g.date) + "|" + house, prevDay = addDays(g.date, -1);
-  const saved = REC.rows[key], prev = REC.rows[ymd(prevDay) + "|" + house];
+  const key = ymd(g.date) + "|" + house, nextDay = addDays(g.date, 1);
+  const saved = REC.rows[key];
   if (recForm.key !== key) recForm = { key, ...REC_FORM0 };
   const sugText = x => !x ? "" : x.h !== null ? hhmm(x.h) : x.why === "range" ? "まだ出せない" : "閉めない";
   const sugOpen = x => !m ? "" : m.why === "cloudy" ? "晴れの朝でない" : m.why ? "まだ出せない" : x.h !== null ? hhmm(x.h) : "出せない";
@@ -1792,44 +1792,36 @@ function renderRec(g, r, p, m) {
     sugOpenTempa: temLastOpenH !== null ? hhmm(temLastOpenH) : sugOpen(m && m.tempa), sugOpenLuxous: sugOpen(m && m.luxous),
     sugTempaOpen: temOpenH !== null ? hhmm(temOpenH) : "", sugTempa2: tem2H !== null ? hhmm(tem2H) : "",
   } };
+  // 翌朝に開ける目安：ラクソスを閉めない夜は空。テンパは、夜中に開けたまま朝になる夜はその時刻（閉め直したあと夜中に開ける）か空
+  const hm2 = h => (h === null || h === undefined ? "" : hhmm(h));
+  const openTemSug = !p || p.tempa.h === null ? ""
+    : temLastOpenH !== null ? hhmm(temLastOpenH)
+    : temOpenH !== null && tem2H === null ? ""
+    : m && !m.why ? hm2(m.tempa.h) : "";
+  const openLuxSug = !p || p.luxous.h === null ? "" : m && !m.why ? hm2(m.luxous.h) : "";
   if (!recForm.edited) {   // 打ちかけの時刻は書き換えない
     const pick = x => (x && x.h !== null ? hhmm(x.h) : "");
     $("recLux").value = saved ? saved.luxous : pick(p && p.luxous);
     $("recTem").value = saved ? saved.tempa : pick(p && p.tempa);
     $("recTemOpen").value = saved ? saved.tempaOpen || "" : temOpenH !== null ? hhmm(temOpenH) : "";
     $("recTem2").value = saved ? saved.tempa2 || "" : tem2H !== null ? hhmm(tem2H) : "";
+    $("recOpenTem").value = saved ? saved.openTempa || "" : openTemSug;
+    $("recOpenLux").value = saved ? saved.openLuxous || "" : openLuxSug;
   }
-  if (!recForm.oEdited) {
-    $("recOpenTem").value = prev && prev.openTempa ? prev.openTempa : "";
-    $("recOpenLux").value = prev && prev.openLuxous ? prev.openLuxous : "";
-  }
-  // 前の夜に控えた「翌朝の目安」があれば、欄の見本に出す
-  const isTime = s => /^\d{2}:\d{2}$/.test(s || "");
-  $("recOpenTem").placeholder = prev && isTime(prev.sugOpenTempa) ? "目安 " + prev.sugOpenTempa : "例 0715";
-  $("recOpenLux").placeholder = prev && isTime(prev.sugOpenLuxous) ? "目安 " + prev.sugOpenLuxous : "例 0845";
   const md = d => (d.getMonth() + 1) + "/" + d.getDate();
-  $("recTitle").textContent = "閉めた・開けた時刻を記録する（" + house + "）";
-  $("recCloseTitle").textContent = md(g.date) + " の夜に閉めた時刻";
-  $("recOpenTitle").textContent = md(g.date) + " の朝に開けた時刻（" + md(prevDay) + " の夜の分）";
+  $("recTitle").textContent = "タイマーに入れた時刻を記録する（" + house + "）";
+  $("recCloseTitle").textContent = md(g.date) + " の夜に閉める";
+  $("recOpenTitle").textContent = "翌朝（" + md(nextDay) + "）に開ける";
   $("recSend").disabled = recForm.sending;
   $("recSend").textContent = recForm.sending ? "送っています…" : saved ? "この時刻で記録し直す" : "この時刻で記録する";
   const status = REC.state === "loading" ? "記録を読んでいます…"
     : REC.state === "error" ? REC.error
     : (saved ? "記録済み：" + recShow(saved) + "（" + recWhen(saved.at) + " に記録）。直して送ると上書きします。"
-       : "まだ記録していません。時刻は⑤の目安を入れてあるので、実際に閉めた時刻に直して送ってください。空欄は「閉めなかった」、0時を過ぎた時刻もこの夜の分です。") +
-      (REC.t2 ? "" : "（テンパを夜中に開けた・閉め直した時刻は、スプレッドシート側の Apps Script を新しくすると記録できます）");
+       : "まだ記録していません。⑤の目安を入れてあるので、タイマーに入れた時刻に直して送ってください。空欄は「しない」、0時を過ぎた時刻もこの夜の分です。翌朝の目安は晴れの朝だけ入ります。") +
+      "実際と違ったときは、①の日付をその夜の日付にして直して送ると上書きします。" +
+      (REC.t2 ? "" : "（テンパの夜中の開け閉めは、スプレッドシート側の Apps Script を新しくすると記録できます）");
   $("recMsg").textContent = recForm.msg || status;
   $("recMsg").className = "hint" + ((recForm.msg ? recForm.ng : REC.state === "error") ? " rec-ng" : "");
-  // 開けた時刻
-  $("recOpenSend").disabled = recForm.oSending || !(REC.state === "ok" && REC.merge);
-  $("recOpenSend").textContent = recForm.oSending ? "送っています…" : hasOpen(prev) ? "開けた時刻を記録し直す" : "開けた時刻を記録する";
-  const oStatus = REC.state === "loading" ? "記録を読んでいます…"
-    : REC.state === "error" ? REC.error
-    : !REC.merge ? "スプレッドシート側の Apps Script を新しくすると、開けた時刻も記録できます（いまの版に送ると前の夜の閉めた時刻が消えてしまうので、止めています）。"
-    : hasOpen(prev) ? "記録済み：" + recShowOpen(prev) + "（" + recWhen(prev.at) + " に記録）。直して送ると上書きします。"
-    : "まだ記録していません。開けたら時刻を入れて送ってください（空欄は「記録しない」）。";
-  $("recOpenMsg").textContent = recForm.oMsg || oStatus;
-  $("recOpenMsg").className = "hint" + ((recForm.oMsg ? recForm.oNg : REC.state === "error") ? " rec-ng" : "");
 }
 
 /* 1行を送る。同じ夜・同じハウスは上書きなので、つながらなかったときに1回だけ送り直しても二重にならない */
@@ -1843,47 +1835,22 @@ function postCurtain(item) {
   return once().catch(() => new Promise(res => setTimeout(res, 2500)).then(once));
 }
 
-/* 開けた時刻を送る。入れる先は前の夜の行（その夜に閉めたカーテンを、この朝に開けた）。
-   送るのは開けた時刻の欄だけ（新しい Apps Script は送られてきた欄だけ書き換えるので、閉めた時刻は残る） */
-function sendOpenRecord() {
-  if (!REC.merge) return;   // 古い Apps Script は行ごと書き換えるので送らない（ボタンも押せなくしてある）
-  const openTempa = normTime($("recOpenTem").value), openLuxous = normTime($("recOpenLux").value);
-  if (openTempa === null || openLuxous === null) {
-    recForm = { ...recForm, oMsg: "時刻は 7:15 か 715 の形で入れてください（空欄は「記録しない」）。", oNg: true };
-    render();
-    return;
-  }
-  const key = recForm.key, [date, h] = key.split("|");
-  const [y, mo, d] = date.split("-").map(Number);
-  recForm = { ...recForm, oSending: true, oMsg: "", oNg: false };
-  render();
-  postCurtain({ date: ymd(new Date(y, mo - 1, d - 1)), house: h, openTempa, openLuxous })
-    .then(saved => {
-      REC = { ...REC, rows: { ...REC.rows, [saved.id]: saved } };
-      if (recForm.key === key) recForm = { ...recForm, oSending: false, oEdited: false, oNg: false,
-        oMsg: "記録しました：" + recShowOpen(saved) + "。直して送ると上書きします。" };
-    })
-    .catch(e => {
-      if (recForm.key === key) recForm = { ...recForm, oSending: false, oNg: true,
-        oMsg: "記録できませんでした（" + (e.message || e) + "）。入れた時刻はそのまま残っています。少し待ってからもう一度押してください。" };
-    })
-    .then(render);
-}
-
-/* 閉めた時刻を送る（開けた時刻の欄は送らない。新しい Apps Script では、記録してある開けた時刻はそのまま残る） */
+/* タイマーに入れた時刻をまとめて送る（その夜に閉める・夜中に開け閉めする・翌朝に開ける。どれもその夜の行へ） */
 function sendRecord() {
   const luxous = normTime($("recLux").value), tempa = normTime($("recTem").value);
   const tempaOpen = normTime($("recTemOpen").value), tempa2 = normTime($("recTem2").value);
-  if (luxous === null || tempa === null || tempaOpen === null || tempa2 === null) {
-    recForm = { ...recForm, msg: "時刻は 17:30 か 1730 の形で入れてください（空欄は「閉めなかった」）。", ng: true };
+  const openTempa = normTime($("recOpenTem").value), openLuxous = normTime($("recOpenLux").value);
+  if ([luxous, tempa, tempaOpen, tempa2, openTempa, openLuxous].includes(null)) {
+    recForm = { ...recForm, msg: "時刻は 17:30 か 1730 の形で入れてください（空欄は「しない」）。", ng: true };
     render();
     return;
   }
   const key = recForm.key, [date, h] = key.split("|");
   recForm = { ...recForm, sending: true, msg: "", ng: false };
   render();
-  // 夜中のテンパの欄は、その列がある Apps Script のときだけ送る（無い版は黙って捨てるので、送ったつもりにならないように）
-  postCurtain({ date, house: h, luxous, tempa, ...(REC.t2 ? { tempaOpen, tempa2 } : {}), ...recForm.sug })
+  // 列が無い古い Apps Script は、知らない欄を黙って捨てる（送ったつもりにならないよう、列がある版のときだけ送る）
+  postCurtain({ date, house: h, luxous, tempa, ...(REC.t2 ? { tempaOpen, tempa2 } : {}),
+                ...(REC.merge ? { openTempa, openLuxous } : {}), ...recForm.sug })
     .then(saved => {
       REC = { ...REC, rows: { ...REC.rows, [saved.id]: saved } };
       if (recForm.key === key) recForm = { ...recForm, sending: false, edited: false, ng: false,
@@ -1957,16 +1924,11 @@ $("result").addEventListener("click", e => {
   render();
 });
 /* 記録欄：打ちはじめたら目安で書き換えない。欄を離れたら「1730」を「17:30」の形に直して見せる */
-["recLux", "recTem", "recTemOpen", "recTem2"].forEach(id => {
+["recLux", "recTem", "recTemOpen", "recTem2", "recOpenTem", "recOpenLux"].forEach(id => {
   $(id).addEventListener("input", () => { recForm = { ...recForm, edited: true, msg: "" }; });
   $(id).addEventListener("blur", () => { const v = normTime($(id).value); if (v) $(id).value = v; });
 });
-["recOpenTem", "recOpenLux"].forEach(id => {
-  $(id).addEventListener("input", () => { recForm = { ...recForm, oEdited: true, oMsg: "" }; });
-  $(id).addEventListener("blur", () => { const v = normTime($(id).value); if (v) $(id).value = v; });
-});
 $("recSend").addEventListener("click", sendRecord);
-$("recOpenSend").addEventListener("click", sendOpenRecord);
 /* 単価：打ったらこの端末に覚えさせて計算し直す（欄そのものは描き直さないので、打っている途中で消えない） */
 try {
   const sp = JSON.parse(localStorage.getItem(CURTAIN.morning.priceKey) || "null");
