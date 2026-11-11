@@ -433,7 +433,7 @@ footer a{color:var(--muted)}
     <p>翌朝が晴れの予報（日の出から3時間がすべて「晴」）のときだけ出します。くもり・雨の朝は日射の見込みの幅が大きいためです。朝はテンパ → ラクソスの順に開けます。どちらもタイマーに合わせて15分単位に切り上げます。</p>
     <ul>
       <li><b>テンパ</b>：開けて増える日射の熱が、開けて増える逃げる熱を上回った時刻（熱の分かれ目）。単価を入れると、テンパを開けて増える光合成から見積もった果実の金額も足して、いちばん得な時刻を出します</li>
-      <li><b>ラクソス</b>：屋根を開けても、日射の熱が逃げる熱に届く（開けても暖房が点かない）最初の時刻。ラクソスを閉めたままだと設定＋2℃に届く時刻も出します（熱容量29 MJ/Kで室温の上がり方を追う）。15分にそろえて設定＋2℃を少し超えるときは、暖房が点かないほうを優先します</li>
+      <li><b>ラクソス</b>：その時刻に開けても、日射の熱が逃げる熱に追いつくまでに、室温が設定−1℃（暖房が点く温度）を下回らない最初の15分。開けたときの室温は、ラクソスを閉めたままの見込み（日射の熱が逃げる熱に届くまでは暖房が入り切りしているので設定温度とし、そこから上がり方を追う）で、開けたあとは屋根を全部開けた状態で、熱容量29 MJ/Kで1分ずつ室温を追います。ラクソスを閉めたままだと設定＋1℃に届く時刻も出します。15分にそろえて設定＋1℃を少し超えるときは、暖房が点かないほうを優先します（2026-11-11 から。それまでは「設定温度のまま、屋根を開けても日射の熱が逃げる熱に届く時刻」と「設定＋2℃」で決めていて、晴れの朝に約20分待ちすぎていました）</li>
     </ul>
     <div class="eq">開けて増える日射の熱 ＝ 0.55 × ハウスに入る日射 × ラクソスの透過率 × テンパがさえぎっていた分（0.5）× 床面積</div>
     <ul>
@@ -442,8 +442,8 @@ footer a{color:var(--muted)}
       <li>逃げる熱は、資料どおりの式です（空と地面の放射は夜と同じ求め方。朝の設定は④の4段目、外気は鹿沼めやす）。空気を温める割合0.55をこの式で逆算したので、朝は床の熱も資料どおりのままにしています。鹿沼めやすは夜の差を使うので朝は少し低めに出て、開ける時刻は少し遅めの側に出ます</li>
       <li>ラクソスLSの光の透過率は分からないので、0.85と仮に置いています。テンパはアルミ50%で0.5です</li>
       <li>光合成は、CO₂アプリと同じ葉の式（光合成.xlsx）を群落20層に積み上げ、CO₂の効きは温室の実測則で掛けます。葉面積指数2.5・夜明けのCO₂ 600 ppm と仮に置いています（1.5〜3.5、420〜800 ppm に振っても、テンパの時刻はほとんど変わりませんでした）。果実 ＝ 増えたCO₂ ÷ 44 × 30 × 果実への分配0.5 ÷ 乾物率0.05</li>
-      <li>過去3冬の晴れの朝（263朝）では、テンパの熱の分かれ目は日の出の40〜50分後、光合成も入れると（トマト250円/kg・重油120円/L）20〜25分後でした。熱の分かれ目より30分早く開けると1朝1棟で重油が0.4〜0.9 L増えますが、果実が0.5〜0.85 kg増える計算です。ラクソスは85〜110分後で、閉めたままだとその10〜15分後に設定＋2℃に届きました。光合成を入れても、ラクソスをこれより早く開ける得はありませんでした（ラクソスの透過率が0.75ほどと低ければ、80分後ごろが得になります）</li>
-      <li>予報の天気が当たったとしても、晴れの朝で見込みが15分以内に当たったのはテンパ94%・ラクソス83%でした。ラクソスの見込みは、実際に暖房が最後に点いた時刻と中央値で8分の差でした（172朝）</li>
+      <li>過去3冬の晴れの朝（263朝）では、テンパの熱の分かれ目は日の出の40〜50分後、光合成も入れると（トマト250円/kg・重油120円/L）20〜25分後でした。熱の分かれ目より30分早く開けると1朝1棟で重油が0.4〜0.9 L増えますが、果実が0.5〜0.85 kg増える計算です。ラクソスは、いまの決め方では日の出の63〜90分後（月ごとの中央値。11月63分・12〜1月約90分）で、以前の決め方（85〜110分後）より約20分早くなります。タイマーの時刻では11月68分後・12〜2月93〜96分後・3月82分後（中央値）で、以前より15〜30分早くなります。開けたあとの室温の下がりは設定から0.1〜0.5℃ほど（中央値）で、閉めたままだと約20分後（18〜30分後）に設定＋1℃に届きました。以前の決め方では、タイマーの時刻までに閉めたまま設定＋2℃を超える朝が18%ありました</li>
+      <li>予報の天気が当たったとしても、晴れの朝で見込みが15分以内に当たったのはテンパ94%・ラクソス83%でした（ラクソスは以前の決め方で数えた値）。以前の決め方のラクソスの時刻は、実際に暖房が最後に点いた時刻と中央値で8分の差でした（172朝。空気を温める割合0.55の確かめ）</li>
     </ul>
 
     <h3>日の出・日の入</h3>
@@ -586,10 +586,13 @@ const CURTAIN = {
 
   // ---- 朝にカーテンを開ける時刻（2026-11-07 の検証。画面下「計算の考え方」）----
   // 晴れの朝だけ出す。テンパ：開けて増える日射の熱（単価があれば光合成で増える果実の金額も）＞ 開けて増える逃げる熱。
-  // ラクソス：屋根を開けても日射の熱 ≧ 逃げる熱（開けても暖房が点かない）。閉めたままだと設定＋2℃に届く時刻も出す
+  // ラクソス（2026-11-11 から）：開けても室温が設定−1℃（暖房が点く温度）を下回らない最初の時刻。閉めたままだと設定＋1℃に届く時刻も出す
+  //   （それまでは「設定温度のまま日射の熱 ≧ 逃げる熱」と「設定＋2℃」。晴れの朝に約20分待ちすぎ、ユーザーが手で早めに開けていた）
   morning: {
     clearCheckH: 3,        // 日の出からこの時間の予報がすべて「晴」なら晴れの朝とみなす
     scanH: 4,              // 日の出から何時間まで探すか
+    luxDropC: 1,           // ラクソスを開けたあと、設定温度からここまでは下がってよい [℃]（暖房は設定−1℃で点く）
+    luxRiseC: 1,           // ラクソスを閉めたまま、設定温度からここまで上がる前に開ける [℃]
     solarHeatFrac: 0.55,   // ハウスに入った日射のうち空気を温める割合。2025-26冬の朝に暖房が最後に点いた時刻から逆算（12月0.58・1月0.63・2月0.48）
     tauLux: 0.85,          // ラクソスLSの光の透過率（仮。カタログの値が分かれば差し替える）
     tauTempa: 0.5,         // テンパ（アルミ50%）の光の透過率
@@ -1289,9 +1292,37 @@ function canopyGps(St, T) {
   return sum * 44 / 1000 * Math.exp(M.co2RuleK * (1 / 400 - 1 / M.dawnCo2Ppm));
 }
 
+/* ラクソスを閉めたまま（テンパは開け）の朝の室温 [℃]。env は日の出から1分ごとの外の条件 { to, c, wind, S }。
+   日射の熱が逃げる熱に届くまでは暖房が入り切りしているので設定温度とみなし、そこから熱容量で上がり方を1分ずつ追う */
+function luxClosedTemps(env, sp, month) {
+  const M = CURTAIN.morning, F = CURTAIN.phys.floorM2, C = heatCapOf("doc");
+  let Ti = null;
+  return env.map(e => {
+    const gain = M.solarHeatFrac * e.S * M.tauLux * F;
+    if (Ti === null) { if (gain >= heatLossW("lux", sp, e.to, e.c, e.wind, month, "doc")) Ti = sp; }
+    else Ti += (gain - heatLossW("lux", Ti, e.to, e.c, e.wind, month, "doc")) * 60 / C;
+    return Ti === null ? sp : Ti;
+  });
+}
+
+/* k 分目（日の出から）にラクソスを開けたとき（屋根は全部開く）、室温 T0 から1分ずつ追って、
+   日射の熱が逃げる熱に追いつくまでの最低室温 [℃]。探す時間のうちに追いつかなければ null */
+function luxOpenDip(env, k, T0, month) {
+  const M = CURTAIN.morning, F = CURTAIN.phys.floorM2, C = heatCapOf("doc");
+  let Ti = T0, lo = T0;
+  for (let j = k; j < env.length; j++) {
+    const e = env[j], gain = M.solarHeatFrac * e.S * F, q = heatLossW("open", Ti, e.to, e.c, e.wind, month, "doc");
+    if (gain >= q) return lo;          // ここから室温は上がっていく
+    Ti += (gain - q) * 60 / C;
+    lo = Math.min(lo, Ti);
+  }
+  return null;
+}
+
 /* 翌朝に開ける時刻の目安。晴れの朝（日の出から clearCheckH 時間の予報がすべて「晴」）だけ出す。
    price は { tomato 円/kg, oil 円/L }（無ければ null。そのときテンパは熱だけで決める）
-   戻り値 { rise, sp, to, price, tempa: { h, energyH, photo }, luxous: { h, t2H, over } }
+   戻り値 { rise, sp, to, price, tempa: { h, energyH, photo },
+            luxous: { h, okH（開けても設定−1℃を下回らない最初の時刻）, riseH（閉めたまま設定＋1℃に届く時刻）, openC, minC, over } }
    出せないときは { why: "range"（予報が足りない）| "cloudy"（晴れの朝でない）, w } */
 function morningPlan(date, r, fc, price) {
   const M = CURTAIN.morning, F = CURTAIN.phys.floorM2, step = CURTAIN.stepMin / 60;
@@ -1302,44 +1333,52 @@ function morningPlan(date, r, fc, price) {
   const blocks = fc.weather.filter(x => x.t1 > msAt(date, rise) && x.t0 < msAt(date, rise + M.clearCheckH));
   if (!blocks.length || !blocks.every(x => x.w.includes("晴"))) return { why: "cloudy", w: [...new Set(blocks.map(x => x.w))] };
   const sp = r.temps[3];                                   // 朝の設定温度（④の4段目）
-  const tau = coverTauOf(g.J), C = heatCapOf("doc");
+  const tau = coverTauOf(g.J);
   const yenPerJ = price ? price.oil / (M.oilMJPerL * 1e6 * M.heaterEff) : 0;   // 暖房の熱 1J ぶんの重油代 [円]
-  let tE = null, tP = null, t1 = null, t2 = null, Ti = null, to0 = null;
-  for (let h = rise; h <= rise + M.scanH + 1e-9; h += step) {
+  // 時刻 h の外の条件 { to（鹿沼めやす）, c（雲量）, wind, S（ハウスに入る日射。カーテンの上 [W/m²]）}。予報が無ければ null
+  const envAt = h => {
     const ms = msAt(date, h), to = kanumaAt(fc, ms, month);
-    if (to === null) return { why: "range" };
-    if (to0 === null) to0 = to;
+    if (to === null) return null;
     const b = fc.weather.find(x => x.t0 <= ms && ms < x.t1);
-    const c = cloudOf(b ? b.w : ""), wind = windOf(b && b.windRange);
-    const S = clearSkyW(g, h - 24) * clearKAt(h - 24) * tau;            // ハウスに入る日射（カーテンの上）[W/m²]
-    const Q = st => heatLossW(st, sp, to, c, wind, month, "doc");
-    // テンパ：開けて増える日射の熱 − 開けて増える逃げる熱（2層 → ラクソスだけ）[W]
-    const netT = a * S * M.tauLux * (1 - M.tauTempa) * F - (Q("lux") - Q("both"));
+    return { to, c: cloudOf(b ? b.w : ""), wind: windOf(b && b.windRange), S: clearSkyW(g, h - 24) * clearKAt(h - 24) * tau };
+  };
+  // テンパ：5分ごと
+  let tE = null, tP = null;
+  for (let h = rise; h <= rise + M.scanH + 1e-9; h += step) {
+    const e = envAt(h);
+    if (e === null) return { why: "range" };
+    const Q = st => heatLossW(st, sp, e.to, e.c, e.wind, month, "doc");
+    // 開けて増える日射の熱 − 開けて増える逃げる熱（2層 → ラクソスだけ）[W]
+    const netT = a * e.S * M.tauLux * (1 - M.tauTempa) * F - (Q("lux") - Q("both"));
     if (tE === null && netT >= 0) tE = h;
     if (price && tP === null) {
       // 光合成も入れる：増える果実の金額 ＋ 熱の差の重油代 が 0 以上になったら開けたほうが得 [円/s]
-      const dP = (canopyGps(S * M.tauLux, sp) - canopyGps(S * M.tauLux * M.tauTempa, sp)) * F;   // 増える光合成 [g CO₂/s]
+      const dP = (canopyGps(e.S * M.tauLux, sp) - canopyGps(e.S * M.tauLux * M.tauTempa, sp)) * F;   // 増える光合成 [g CO₂/s]
       if (dP * M.fruitKgPerCo2G * price.tomato + netT * yenPerJ >= 0) tP = h;
     }
-    // ラクソス：屋根を開けても、日射の熱が逃げる熱に届く（開けても暖房が点かない）
-    if (t1 === null && a * S * F >= Q("open")) t1 = h;
-    // ラクソスを閉めたまま（テンパは開け）：日射の熱が逃げる熱に届いたら室温が上がり始める。設定＋2℃に届く時刻
-    if (t2 === null) {
-      const gain = a * S * M.tauLux * F;
-      if (Ti === null) { if (gain >= Q("lux")) Ti = sp; }
-      else {
-        Ti += (gain - heatLossW("lux", Ti, to, c, wind, month, "doc")) * step * 3600 / C;
-        if (Ti >= sp + 2) t2 = h;
-      }
-    }
   }
-  // タイマーは15分単位：テンパは切り上げ、ラクソスは「開けても暖房が点かない」最初の15分（テンパより先にはしない）
-  const tem = tP !== null ? ceil15(tP) : tE !== null ? ceil15(tE) : null;
-  let lux = t1 !== null ? ceil15(t1) : null;
-  if (lux !== null && tem !== null && lux < tem) lux = tem;
-  return { rise, sp, to: to0, price: !!price,
+  const tem = tP !== null ? ceil15(tP) : tE !== null ? ceil15(tE) : null;   // テンパのタイマー（15分に切り上げ）
+  // ラクソス：1分ごとに室温を追う。閉めたまま（テンパは開け）の室温から開けて、日射が追いつくまでに設定−1℃を下回らないか
+  const env = Array.from({ length: Math.round(M.scanH * 60) + 1 }, (_, k) => envAt(rise + k / 60));
+  if (env.includes(null)) return { why: "range" };
+  const Tc = luxClosedTemps(env, sp, month);
+  const minAt = k => luxOpenDip(env, k, Tc[k], month);
+  const okAt = k => { const lo = minAt(k); return lo !== null && lo > sp - M.luxDropC + 1e-9; };
+  const kOk = Tc.findIndex((_, k) => okAt(k));
+  const kRise = Tc.findIndex(T => T >= sp + M.luxRiseC - 1e-9);
+  const hOf = k => (k < 0 ? null : rise + k / 60);
+  // タイマーは15分単位：テンパより後の15分の区切りのうち、開けても設定−1℃を下回らない最初の時刻
+  const kOf = s => Math.ceil((s - rise) * 60 - 1e-9);      // 時刻 s を含む（その直後の）1分
+  const slots = Array.from({ length: Math.floor(M.scanH * 4) + 1 }, (_, i) => ceil15(Math.max(rise, tem !== null ? tem : rise)) + i / 4)
+    .filter(s => kOf(s) < env.length);
+  const lux = slots.find(s => okAt(kOf(s)));
+  const luxH = lux === undefined ? null : lux;
+  const riseH = hOf(kRise);
+  return { rise, sp, to: env[0].to, price: !!price,
            tempa: { h: tem, energyH: tE !== null ? ceil15(tE) : null, photo: tP !== null },
-           luxous: { h: lux, t2H: t2, over: lux !== null && t2 !== null && lux > t2 } };
+           luxous: { h: luxH, okH: hOf(kOk), riseH,
+                     openC: luxH !== null ? Tc[kOf(luxH)] : null, minC: luxH !== null ? minAt(kOf(luxH)) : null,
+                     over: luxH !== null && riseH !== null && luxH > riseH + 1e-9 } };
 }
 
 /* =========================================================================
@@ -1705,10 +1744,13 @@ function renderMorning(g, r, p) {
     : m.tempa.photo
     ? "光合成も入れて、いちばん得な時刻（" + after(m.tempa.h) + "）。熱だけで見ると " + (m.tempa.energyH !== null ? hhmm(m.tempa.energyH) : "届かない")
     : "熱の分かれ目：開けて増える日射の熱が、開けて増える逃げる熱を上回る（" + after(m.tempa.h) + "）";
-  const subL = m.luxous.h === null ? "日の出から" + CURTAIN.morning.scanH + "時間のうちに、開けても暖房が点かない日射に届かない見込み"
-    : "開けても暖房が点かない見込みの最初の時刻（" + after(m.luxous.h) + "）。" +
-      (m.luxous.t2H !== null ? "閉めたままだと " + hhmm(m.luxous.t2H) + " ごろ設定＋2℃（" + c1(m.sp + 2) + "℃）に届く見込み" +
-        (m.luxous.over ? "（15分にそろえたので少し超える見込み。暖房が点かないほうを優先）" : "") : "");
+  // ラクソス：開けても設定−1℃（暖房が点く温度）を下回らない最初の15分。閉めたままだと設定＋1℃に届く時刻も出す
+  const ML = CURTAIN.morning, lowC = m.sp - ML.luxDropC, L = m.luxous;
+  const subL = L.h === null ? "日の出から" + ML.scanH + "時間のうちに、開けても" + c1(lowC) + "℃（設定−" + ML.luxDropC + "℃）を下回らない日射に届かない見込み"
+    : "開けても室温が " + c1(lowC) + "℃（設定−" + ML.luxDropC + "℃、暖房が点く温度）を下回らない最初の時刻（" + after(L.h) + "）。" +
+      (L.minC !== null && L.minC < L.openC - 0.05 ? "開けると一時 " + c1(L.minC) + "℃ まで下がる見込み。" : "") +
+      (L.riseH !== null ? "閉めたままだと " + hhmm(L.riseH) + " ごろ設定＋" + ML.luxRiseC + "℃（" + c1(m.sp + ML.luxRiseC) + "℃）に届く見込み" +
+        (L.over ? "（15分にそろえたので少し超える見込み。暖房が点かないほうを優先）" : "") : "");
   out.innerHTML =
     '<div class="summary">' +
       kv("翌朝の日の出", hhmm(m.rise)) + kv("朝の設定（④の4段目）", c1(m.sp) + "℃") + kv("日の出の外気（鹿沼めやす）", c1(m.to) + "℃") +
