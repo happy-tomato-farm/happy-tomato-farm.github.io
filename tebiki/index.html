@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#4E9A5A">
+<title>マニュアル｜ハッピートマトファーム</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23EE5340'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%234E9A5A' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+/* 色や形の決まりは、みんなのページ・スライドのマニュアル（manual.html）と同じ。
+   別のページに飛んだ感じがしないようにそろえてある */
+:root{
+  --ground:#F2F6F0; --card:#FFFFFF; --card-sub:#F7FAF6;
+  --ink:#24291F; --muted:#6D7768; --line:#DFE7DB; --line-soft:#EDF2EA;
+  --tomato:#EE5340; --leaf:#4E9A5A; --sun:#D9960F; --teal:#2A8FA8;
+  --shadow:0 1px 0 rgba(36,41,31,.04), 0 6px 18px -10px rgba(36,41,31,.28);
+  --r-card:20px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+    --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+    --tomato:#FF6E5B; --leaf:#6FBB7B; --sun:#F0BC4E; --teal:#5FBDD4;
+    --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#191D18; --card:#232821; --card-sub:#1E231D;
+  --ink:#EDF1E9; --muted:#9BA694; --line:#343B31; --line-soft:#2B3128;
+  --tomato:#FF6E5B; --leaf:#6FBB7B; --sun:#F0BC4E; --teal:#5FBDD4;
+  --shadow:0 1px 0 rgba(0,0,0,.28), 0 6px 18px -10px rgba(0,0,0,.7);
+}
+/* hidden は display の指定に負けるので、ここで必ず消す */
+[hidden]{display:none !important}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Zen Maru Gothic",
+              "Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 60px}
+
+/* 上に貼りつく「戻る」。一覧ではアプリ一覧へ、手順書の中ではマニュアル一覧へ戻る */
+.back{
+  position:sticky;top:0;z-index:20;display:flex;align-items:center;
+  min-height:46px;padding:0 16px;text-decoration:none;
+  font-size:14.5px;font-weight:800;color:var(--teal);
+  background:color-mix(in srgb,var(--ground) 94%,transparent);
+  border-bottom:1px solid var(--line-soft);
+}
+
+header{padding:16px 0 4px;text-align:center}
+.logo{width:52px;height:52px;margin:0 auto 8px;display:block}
+h1{font-size:24px;font-weight:800;margin:0;letter-spacing:.02em}
+.farm{display:block;margin-top:4px;font-size:12.5px;color:var(--muted);font-weight:700;letter-spacing:.1em}
+.lead{margin:12px 0 18px;text-align:center;font-size:14.5px;color:var(--muted);font-weight:600}
+
+/* ===== 一覧 ===== */
+.shelf-h{font-size:13.5px;font-weight:800;color:var(--muted);margin:22px 4px 8px}
+.shelf-h small{font-weight:700;margin-left:6px}
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{
+  display:flex;gap:14px;align-items:center;padding:14px 16px;min-height:84px;
+  background:var(--card);border:2px solid var(--line);border-radius:var(--r-card);
+  box-shadow:var(--shadow);text-decoration:none;color:var(--ink);
+}
+.card:active{transform:scale(.99)}
+.card .ic{flex:none;width:52px;height:52px;border-radius:15px;display:grid;place-items:center;
+  font-size:27px;background:var(--bgc);border:2px solid var(--bdc)}
+.card .tx{flex:1;min-width:0}
+.card .tt{display:block;font-size:17px;font-weight:800;line-height:1.35}
+.card .sb{display:block;font-size:13.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.card .mt{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-top:5px}
+.card .go{flex:none;color:var(--muted);font-size:22px;font-weight:800}
+/* 手順書は緑、スライドの本は赤 */
+.k-tejun{--bgc:color-mix(in srgb,var(--leaf) 14%,var(--card));--bdc:color-mix(in srgb,var(--leaf) 45%,var(--line))}
+.k-slide{--bgc:color-mix(in srgb,var(--tomato) 12%,var(--card));--bdc:color-mix(in srgb,var(--tomato) 40%,var(--line))}
+
+/* ===== 手順書 ===== */
+.dt{font-size:22px;font-weight:800;margin:14px 0 2px;line-height:1.35}
+.upd{font-size:12.5px;color:var(--muted);font-weight:700}
+.why{background:var(--card);border-left:5px solid var(--leaf);border-radius:14px;
+  padding:13px 15px;margin:14px 0;font-size:15px;box-shadow:var(--shadow)}
+.prog{margin:12px 0 4px;font-size:13px;font-weight:800;color:var(--muted)}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;width:0;background:var(--leaf);transition:width .2s}
+.nosave{margin:8px 0;padding:9px 12px;border-radius:12px;font-size:13px;font-weight:700;
+  background:color-mix(in srgb,var(--sun) 14%,var(--card));color:var(--ink)}
+
+/* たたんである「まとまり」。作業する部分だけ開けばよい */
+details.part{background:var(--card);border:2px solid var(--line);border-radius:18px;
+  margin:10px 0;box-shadow:var(--shadow);overflow:hidden}
+details.part > summary{list-style:none;cursor:pointer;display:flex;align-items:center;
+  gap:11px;padding:12px 15px;min-height:60px}
+details.part > summary::-webkit-details-marker{display:none}
+.part .pk{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;
+  font-size:14.5px;font-weight:800;color:#fff;background:var(--teal)}
+.part.lst .pk{background:var(--muted)}
+.part.tip .pk{background:var(--sun)}
+.part .pt{flex:1;min-width:0}
+.part .pt b{display:block;font-size:16px;font-weight:800;line-height:1.35}
+.part .pt small{display:block;font-size:12.5px;color:var(--muted);font-weight:700}
+.part .pc{flex:none;font-size:12.5px;font-weight:800;color:var(--muted)}
+.part .pc.done{color:var(--leaf)}
+.part .pc::after{content:"　▼"}
+.part[open] .pc::after{content:"　▲"}
+.part .body{padding:2px 14px 12px;border-top:1px dashed var(--line-soft)}
+
+/* 1行ごと。行のどこを押してもチェックが入る（指の的を大きくする） */
+.step{display:flex;gap:11px;align-items:flex-start;padding:12px 2px;
+  border-bottom:1px solid var(--line-soft);cursor:pointer}
+.step:last-child{border-bottom:none}
+.step input{flex:none;width:26px;height:26px;margin:1px 0 0;accent-color:var(--leaf);cursor:pointer}
+.step .n{flex:none;min-width:1.3em;font-weight:800;color:var(--teal)}
+.step .st{flex:1;min-width:0;font-size:15.5px}
+.step .st .tx{display:block}
+.step .st .d{display:block;font-size:13.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.step.on .tx{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1.5px}
+.ok,.warn{display:block;margin-top:7px;padding:8px 11px;border-radius:10px;font-size:13.5px;font-weight:700}
+.ok{background:color-mix(in srgb,var(--leaf) 11%,var(--card))}
+.ok::before{content:"こうなれば成功　";color:var(--leaf);font-weight:800}
+.warn{background:color-mix(in srgb,var(--sun) 13%,var(--card))}
+.warn::before{content:"注意　";color:var(--sun);font-weight:800}
+
+.tips{margin:0;padding:6px 0 0 1.1em;font-size:14.5px}
+.tips li{margin:8px 0}
+.after{background:var(--card-sub);border:2px dashed var(--line);border-radius:16px;
+  padding:13px 15px;margin:16px 0;font-size:14.5px}
+.after h3{margin:0 0 4px;font-size:15px}
+.reset{display:block;width:100%;min-height:48px;margin-top:18px;font:inherit;font-size:15px;
+  font-weight:800;color:var(--tomato);background:none;border:2px solid var(--tomato);
+  border-radius:14px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<a class="back" id="back" href="../">‹ アプリ一覧</a>
+
+<div class="wrap">
+  <header>
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="38" r="22" fill="#EE5340"/>
+      <path d="M32 20 L22 10 M32 20 L42 10 M32 20 L32 6"
+            stroke="#4E9A5A" stroke-width="5" stroke-linecap="round" fill="none"/>
+    </svg>
+    <h1>マニュアル</h1>
+    <span class="farm">ハッピートマトファーム</span>
+  </header>
+
+  <main id="shelf" hidden>
+    <p class="lead">作業の手順とやり方をまとめています。</p>
+    <div id="cards"></div>
+  </main>
+
+  <main id="doc" hidden></main>
+</div>
+
+<script>
+/* =========================================================================
+   手順書の中身。
+   ★マニュアルを足すときは、この MANUALS に1冊ぶん書き足すだけでよい。
+
+   ・手順書（このページの中で読むもの）
+       { id, kind:"tejun", icon, title, sub, time, updated,
+         why,                      … なぜやるか（最初に見える）
+         need: [{t, d}],           … 用意するもの（チェックできる）
+         parts: [{key, label, title, when, steps:[{t, d?, ok?, w?}]}],
+                                   … 手順のまとまり。ok＝成功の目安、w＝注意
+         tips: ["..."],            … つまずきやすいところ
+         after }                   … 測った値・結果の行き先
+   ・別のページの本（リンクだけ）
+       { id, kind:"slide", icon, title, sub, meta, href }
+
+   id は URL の # に入る（#ec で直接開ける）。英小文字にする。
+   チェックした場所は端末に覚えさせる（id と項目の key で区別）。
+   一度出した手順書の key（a, b …）を付け替えると、チェックがずれるので注意。
+   ========================================================================= */
+const MANUALS = [
+  {
+    id: "ec", kind: "tejun", icon: "🧪",
+    title: "EC計の使い方",
+    sub: "原水・肥料・給液・土のECを測る",
+    time: "1回 5〜20分",
+    updated: "2026-11-11",
+    why: "潅水アプリと液肥レシピの計算には、<b>まだ測っていない仮の値が3つ</b>入っています"
+       + "（原水のEC・肥料のEC係数・月ごとの給液EC）。EC計で測ると実測に置き換わり、"
+       + "施肥のめやすやECの上限の判断が、仮定ではなく実測の上に乗ります。<br>"
+       + "まずは <b>A 校正 → B 原水 → C 肥料 → D 給液</b> の順に。E の土はあとでかまいません。",
+    need: [
+      { t: "EC計　HANNA DiST3（HI98303）",
+        d: "測定範囲 0〜1999 µS/cm・1 µS/cm 刻み・自動温度補正つき。"
+         + "<b>DiST4 は×</b>（範囲が10倍広いぶん誤差も10倍で、原水や土の液が読めない）" },
+      { t: "校正液　1413 µS/cm", d: "本体に付いていれば不要。開けると傷むので小分けの使い切りが便利" },
+      { t: "精製水　500 ml",
+        d: "ドラッグストアで100〜200円（車のバッテリー用・コンタクト用でよい）。"
+         + "<b>水道水・井戸水は代わりにならない</b>" },
+      { t: "コップ　3個", d: "洗って精製水ですすいでおく。透明だと泡が見えて便利" },
+      { t: "計量カップ", d: "50 ml が量れるもの" },
+      { t: "台所のはかり", d: "1 g 刻みでよい（肥料 10 g・土 10 g を量る）" },
+      { t: "目盛り付きのバケツ", d: "10 L が量れるもの（C で使う）" },
+      { t: "ペットボトル　500 ml（ふた付き）", d: "E で土を振る" },
+      { t: "ティッシュ・メモ", d: "メモはスマホでよい" },
+    ],
+    parts: [
+      { key: "a", label: "A", title: "校正する", when: "測る前に毎回・3分", steps: [
+        { t: "キャップを外し、電極を精製水ですすぐ。ティッシュで水気を軽く吸わせる（こすらない）。" },
+        { t: "校正液をコップに 2〜3 cm 入れ、電極を浸ける。2〜3回軽くゆすって泡を逃がす。",
+          w: "電極に泡がついていると低く出ます。" },
+        { t: "表示が落ち着くまで待つ（30秒〜1分）。" },
+        { t: "表示が <b>1413</b> になるよう合わせる。合わせ方は説明書のとおり"
+           + "（ねじで回すものとボタンで合わせるものがあります）。",
+          ok: "1413 で止まり、数字が揺れない。" },
+        { t: "電極を精製水ですすぐ。使った校正液は捨てる。",
+          w: "<b>瓶に戻さない</b>。汚れて次から狂います。" },
+      ]},
+      { key: "b", label: "B", title: "原水を測る", when: "最初に1回・その後は季節ごと・5分", steps: [
+        { t: "A の校正を済ませる。" },
+        { t: "液肥を混ぜる前の井戸水を、<b>混入機より手前の蛇口</b>からコップに汲む。"
+           + "10秒ほど出しっぱなしにしてから汲む。",
+          w: "管にたまっていた水を流すためです。" },
+        { t: "電極を浸け、軽くゆすって泡を逃がし、表示が落ち着くまで待つ。" },
+        { t: "値をメモする（日付と「原水」）。",
+          ok: "100〜300 くらい（日本の井戸水のふつうの幅）。いまの計算は <b>150</b> を仮に置いています。" },
+        { t: "電極を精製水ですすぐ。" },
+      ]},
+      { key: "c", label: "C", title: "肥料のEC係数を出す", when: "1回だけ（肥料を変えたらもう一度）・10分", steps: [
+        { t: "A の校正と、B の原水を先に済ませる。" },
+        { t: "いま使っている肥料（トケル養液配合1号）を、台所のはかりで <b>10 g</b> 量る。" },
+        { t: "バケツに原水を <b>10 L</b> 入れ、肥料を入れて溶け残りが無くなるまでかき混ぜる。",
+          w: "溶け残りがあると低く出ます。濁りが消えるまで。" },
+        { t: "コップに取って測る。値をメモする（日付と「肥料1 g/L」）。",
+          ok: "1300〜1600 くらい。" },
+        { t: "<b>この値 − 原水の値</b> が、肥料 1 g/L あたりのECです。1000 で割ると dS/m。",
+          ok: "いまの計算は <b>1.3 dS/m</b>（＝1300 µS/cm）を仮に置いています。" },
+        { t: "電極を精製水ですすぐ。" },
+      ]},
+      { key: "d", label: "D", title: "給液ECを測る", when: "月1回・潅水のついで・5分", steps: [
+        { t: "A の校正を済ませる。" },
+        { t: "潅水を始め、<b>弁を開けて3分ほど</b>待つ。",
+          w: "出はじめは前の水が管に残っていて薄いので使いません。" },
+        { t: "ハウスの真ん中あたりの点滴に、コップを当てて 50 ml ほど受ける。" },
+        { t: "測って値をメモする。<b>日付・ハウス・その日の設定倍率</b>もいっしょに書く。",
+          ok: "10月で 1200、12月で 1900 前後（いまは計算上の値。ここを実測に置き換えたい）。",
+          w: "設定倍率と並べると、計算が合っているかが分かります。" },
+        { t: "<b>1999 を超えて振り切れたら</b>：受けた液 50 ml に精製水 50 ml を足して測り直し、"
+           + "<b>読みを2倍</b>する。",
+          w: "冬の濃い時期に起きます。メモには「薄めて2倍した」と書く。" },
+        { t: "電極を精製水ですすぐ。" },
+      ]},
+      { key: "e", label: "E", title: "土のECを測る（1:5 水浸出）", when: "あとでよい・作業15分＋乾かす2〜3日", steps: [
+        { t: "点滴の近く（水がしみる範囲）、深さ 5〜15 cm の土を、"
+           + "ハウスの数か所からスプーン数杯ずつ取って混ぜる。" },
+        { t: "新聞紙に広げ、日陰で 2〜3 日、さらさらになるまで乾かす。石と根を取り除く。" },
+        { t: "乾いた土を <b>10 g</b> 量ってペットボトルに入れ、<b>精製水を 50 ml</b> 加える。",
+          w: "<b>水道水・井戸水は使わない</b>。原水のECが測りたい値と同じくらいあり、"
+           + "測った値のほとんどが水のECになってしまいます。" },
+        { t: "ふたをして 1分よく振る。30分おいてもう一度 1分振り、土が沈むまで置く（10〜30分）。" },
+        { t: "上澄みを静かにコップへ移して測る。値をメモする（日付・ハウス・「土」）。",
+          ok: "土壌診断と同じ測り方です。診断書の理想値は <b>200 以下</b>"
+            + "（診断書の表記では 0.2 mS/cm）。東は 2026年6月で 430 でした。" },
+        { t: "電極を精製水ですすぐ。" },
+      ]},
+      { key: "f", label: "F", title: "使い終わったら", when: "毎回・2分", steps: [
+        { t: "電極を精製水ですすぐ。" },
+        { t: "水気を軽く切ってキャップをする。" },
+        { t: "直射日光の当たる所や、夏の車の中に置かない。" },
+        { t: "しばらく使わないときは、説明書に従って電池を外す。" },
+      ]},
+    ],
+    tips: [
+      "<b>単位がそれぞれ違います。</b>EC計は µS/cm、土壌診断は mS/cm、アプリは dS/m。"
+        + "<br>1 mS/cm ＝ 1 dS/m ＝ 1000 µS/cm",
+      "<b>薄めるのも振るのも精製水で。</b>水道水・井戸水は 150 前後のECがあり、"
+        + "測りたい値と同じくらいの大きさです。",
+      "<b>泡がつくと低く出ます。</b>浸けたら2〜3回ゆすってから読む。",
+      "<b>落ち着く前に読まない。</b>30秒〜1分待つ。",
+      "<b>DiST3 は 1999 まで。</b>振り切れたら精製水で 1:1 に薄めて、読みを2倍。",
+      "<b>液の温度は気にしなくてよい。</b>自動温度補正がついています。"
+        + "ただし極端に熱い・冷たい液は落ち着くまで長くかかります。",
+    ],
+    after: "メモした値（<b>日付・ハウス・何を測ったか・値</b>。給液なら設定倍率も）を Claude に渡してください。"
+         + "<br>計算の仮の値を入れ替えて、施肥のめやすとECの上限がどう変わるかを出します。",
+  },
+  {
+    id: "handbook", kind: "slide", icon: "📕",
+    title: "スタッフハンドブック",
+    sub: "農園のこと・作業の基礎・勤務の決まり",
+    meta: "スライド23枚・パートさん向け",
+    href: "../manual/#handbook",
+  },
+  {
+    id: "tekka", kind: "slide", icon: "📕",
+    title: "摘果マニュアル",
+    sub: "摘果する果実の見分け方",
+    meta: "スライド9枚・パートさん向け",
+    href: "../manual/#tekka",
+  },
+];
+
+/* =========================================================================
+   チェックの保存（端末ごと）。
+   プライベートモードなどで保存できない端末では、その旨を画面に出す。
+   チェックはその場限りになるだけで、読むのには困らない。
+   ========================================================================= */
+const STORE = "htf_tebiki_v1";
+let canSave = true;
+
+function readChecks(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE) || "{}");
+    return (s && typeof s === "object") ? s : {};
+  }catch(e){
+    canSave = false;
+    return {};
+  }
+}
+function writeChecks(all){
+  try{
+    localStorage.setItem(STORE, JSON.stringify(all));
+  }catch(e){
+    canSave = false;
+    const n = document.getElementById("nosave");
+    if(n) n.hidden = false;
+  }
+}
+
+const $ = s => document.querySelector(s);
+
+/* ===== 一覧 ===== */
+function card(m){
+  const meta = m.kind === "tejun"
+    ? `${m.parts.length}つの手順・${m.time}・${m.updated} 更新`
+    : m.meta;
+  const href = m.kind === "tejun" ? `#${m.id}` : m.href;
+  return `<a class="card k-${m.kind}" href="${href}">
+      <span class="ic" aria-hidden="true">${m.icon}</span>
+      <span class="tx"><span class="tt">${m.title}</span>
+        <span class="sb">${m.sub}</span><span class="mt">${meta}</span></span>
+      <span class="go" aria-hidden="true">›</span></a>`;
+}
+function drawShelf(){
+  const tejun = MANUALS.filter(m => m.kind === "tejun");
+  const slide = MANUALS.filter(m => m.kind === "slide");
+  $("#cards").innerHTML =
+      `<h2 class="shelf-h">作業の手順</h2><div class="cards">${tejun.map(card).join("")}</div>`
+    + `<h2 class="shelf-h">スライドの本<small>みんなのページからも開けます</small></h2>`
+    + `<div class="cards">${slide.map(card).join("")}</div>`;
+}
+
+/* ===== 手順書 ===== */
+function stepRow(k, n, s){
+  return `<label class="step">
+      <input type="checkbox" data-k="${k}">
+      ${n ? `<span class="n">${n}</span>` : ""}
+      <span class="st"><span class="tx">${s.t}</span>
+        ${s.d ? `<span class="d">${s.d}</span>` : ""}
+        ${s.ok ? `<span class="ok">${s.ok}</span>` : ""}
+        ${s.w ? `<span class="warn">${s.w}</span>` : ""}</span></label>`;
+}
+function partBox(cls, label, title, when, keys, inner){
+  return `<details class="part ${cls}" data-keys="${keys.join(" ")}">
+      <summary><span class="pk">${label}</span>
+        <span class="pt"><b>${title}</b>${when ? `<small>${when}</small>` : ""}</span>
+        <span class="pc"></span></summary>
+      <div class="body">${inner}</div></details>`;
+}
+function drawDoc(m){
+  const needKeys = m.need.map((_, i) => `n${i}`);
+  let h = `<h2 class="dt">${m.icon} ${m.title}</h2>
+    <div class="upd">${m.updated} 更新・${m.time}</div>
+    <div class="why">${m.why}</div>
+    <div class="prog"><span id="progt"></span><div class="bar"><i id="progb"></i></div></div>
+    <div class="nosave" id="nosave" hidden>この端末ではチェックを覚えられません（プライベートモードなど）。読むのには困りません。</div>`;
+
+  h += partBox("lst", "✓", "用意するもの", "はじめに1回そろえる", needKeys,
+    m.need.map((s, i) => stepRow(`n${i}`, "", s)).join(""));
+
+  for(const p of m.parts){
+    const keys = p.steps.map((_, i) => `${p.key}${i}`);
+    h += partBox("", p.label, p.title, p.when, keys,
+      p.steps.map((s, i) => stepRow(`${p.key}${i}`, i + 1, s)).join(""));
+  }
+
+  h += `<details class="part tip"><summary><span class="pk">!</span>
+      <span class="pt"><b>つまずきやすいところ</b></span><span class="pc"></span></summary>
+      <div class="body"><ul class="tips">${m.tips.map(t => `<li>${t}</li>`).join("")}</ul></div></details>`;
+  h += `<div class="after"><h3>測った値の行き先</h3>${m.after}</div>`;
+  h += `<button class="reset" id="reset" type="button">チェックを全部消す</button>`;
+
+  $("#doc").innerHTML = h;
+  if(!canSave) $("#nosave").hidden = false;
+  applyChecks(m.id);
+
+  $("#doc").onchange = ev => {
+    const k = ev.target.dataset && ev.target.dataset.k;
+    if(!k) return;
+    const all = readChecks();
+    const set = new Set(all[m.id] || []);
+    if(ev.target.checked) set.add(k); else set.delete(k);
+    all[m.id] = [...set];
+    writeChecks(all);
+    applyChecks(m.id);
+  };
+  $("#reset").onclick = () => {
+    if(!confirm(`「${m.title}」のチェックを全部消します。よろしいですか？`)) return;
+    const all = readChecks();
+    delete all[m.id];
+    writeChecks(all);
+    applyChecks(m.id);
+  };
+}
+
+/* 保存してあるチェックを画面に反映し、まとまりごとの「済/全」と全体の進み具合を出す */
+function applyChecks(id){
+  const done = new Set(readChecks()[id] || []);
+  document.querySelectorAll("#doc input[data-k]").forEach(el => {
+    el.checked = done.has(el.dataset.k);
+    el.closest(".step").classList.toggle("on", el.checked);
+  });
+  let all = 0, got = 0;
+  document.querySelectorAll("#doc details.part[data-keys]").forEach(d => {
+    const keys = d.dataset.keys.split(" ").filter(Boolean);
+    const n = keys.filter(k => done.has(k)).length;
+    all += keys.length; got += n;
+    const pc = d.querySelector(".pc");
+    pc.textContent = `${n}/${keys.length}`;
+    pc.classList.toggle("done", n === keys.length);
+  });
+  $("#progt").textContent = `チェック ${got} / ${all}`;
+  $("#progb").style.width = all ? `${got / all * 100}%` : "0";
+}
+
+/* ===== 画面の切り替え。URL の # で決める（#ec なら EC計の手順書） ===== */
+function route(){
+  const id = decodeURIComponent(location.hash.slice(1));
+  const m = MANUALS.find(x => x.id === id && x.kind === "tejun");
+  const back = $("#back");
+  if(m){
+    drawDoc(m);
+    $("#shelf").hidden = true; $("#doc").hidden = false;
+    back.href = "#"; back.textContent = "‹ マニュアル一覧";
+    document.title = `${m.title}｜マニュアル`;
+  }else{
+    drawShelf();
+    $("#doc").hidden = true; $("#shelf").hidden = false;
+    back.href = "../"; back.textContent = "‹ アプリ一覧";
+    document.title = "マニュアル｜ハッピートマトファーム";
+  }
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
