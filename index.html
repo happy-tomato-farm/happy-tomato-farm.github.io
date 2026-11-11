@@ -110,6 +110,7 @@
   .c-hito  {--bg:#FDF0E3;--bd:#E6AE70}   /* 人・シフト：橙 */
   .c-kiroku{--bg:#FBE9E9;--bd:#E08C8C}   /* 記録：赤 */
   .c-settei{--bg:#EEF1EC;--bd:#B6C0B0}   /* 設定：灰 */
+  .c-yomu  {--bg:#EAF4EA;--bd:#8CC08F}   /* 読みもの：緑 */
 
   .status{
     background:var(--tint);
@@ -225,9 +226,11 @@
     <span class="t">CO₂収支</span>
   </a>
 
-  <a class="app" href="ondo/">
-    <span class="ic c-settei" aria-hidden="true">🌡️</span>
-    <span class="t">温度設定</span>
+  <!-- 温度設定（ondo/）は使っていないので 2026-11-11 に一覧から外した。
+       ページそのものは残してある。空いた場所にマニュアルを入れたので、ほかの並びは動いていない -->
+  <a class="app" href="tebiki/">
+    <span class="ic c-yomu" aria-hidden="true">📖</span>
+    <span class="t">マニュアル</span>
   </a>
 
   <a class="app" href="kogosei/">
