@@ -126,6 +126,40 @@ details.part > summary::-webkit-details-marker{display:none}
 .warn{background:color-mix(in srgb,var(--sun) 13%,var(--card))}
 .warn::before{content:"注意　";color:var(--sun);font-weight:800}
 
+/* コマンドなど、そのまま打つ文字 */
+code{font-family:Consolas,"Courier New",monospace;font-size:13.5px;background:var(--card-sub);
+  border:1px solid var(--line);border-radius:6px;padding:1px 5px;word-break:break-all}
+
+/* ===== 図（まとまりの頭に置く）=====
+   SVG の中の色もここで決める（暗い画面でも読めるように、色は変数から取る）。
+   クラス名は v- で始める（.part .pt などの既存の名前とぶつけないため） */
+.fig{margin:10px 0 6px;padding:10px 8px 8px;background:var(--card-sub);
+  border:1px solid var(--line);border-radius:14px}
+.fig svg{display:block;width:100%;height:auto;max-width:520px;margin:0 auto}
+.fig figcaption{margin-top:6px;font-size:13px;font-weight:700;color:var(--muted);text-align:center}
+.fig .v-b{fill:var(--card);stroke:var(--ink);stroke-width:1.5}
+.fig .v-g{fill:none;stroke:var(--muted);stroke-width:1.3;stroke-dasharray:5 4}
+.fig .v-t{fill:var(--ink);font-size:13px;font-weight:800}
+.fig .v-s{fill:var(--muted);font-size:11.5px;font-weight:700}
+.fig .v-pw{fill:none;stroke:var(--sun);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.fig .v-usb{fill:none;stroke:var(--muted);stroke-width:3;stroke-linejoin:round}
+.fig .v-ga{fill:none;stroke:#D9483B;stroke-width:3.5;stroke-linejoin:round}
+.fig .v-gc{fill:none;stroke:#2F7FD1;stroke-width:3.5;stroke-linejoin:round}
+.fig .v-rf{fill:none;stroke:var(--teal);stroke-width:2.5;stroke-dasharray:6 5}
+.fig .v-ln{fill:none;stroke:var(--ink);stroke-width:1.5}
+.fig .v-air{fill:none;stroke:var(--teal);stroke-width:2.5}
+.fig .v-ant{fill:none;stroke:var(--ink);stroke-width:3.5;stroke-linecap:round}
+.fig .v-bolt{stroke:var(--ink);stroke-width:3}
+.fig .v-win{stroke:var(--muted);stroke-width:6}
+.fig .v-gr{stroke:var(--leaf);stroke-width:3}
+.fig .v-ah{fill:var(--ink)}
+.fig .v-aht{fill:var(--teal)}
+.fig .v-pa{fill:#D9483B} .fig .v-pb{fill:#777} .fig .v-pc{fill:#2F7FD1}
+.fig .v-pl{fill:#fff;font-size:11px;font-weight:800}
+.fig .v-tube{fill:var(--card);stroke:var(--ink);stroke-width:1.5}
+.fig .v-tin{fill:var(--card-sub);stroke:var(--ink);stroke-width:1.2}
+.fig .v-sens{fill:#D9483B}
+
 .tips{margin:0;padding:6px 0 0 1.1em;font-size:14.5px}
 .tips li{margin:8px 0}
 .after{background:var(--card-sub);border:2px dashed var(--line);border-radius:16px;
@@ -168,10 +202,12 @@ details.part > summary::-webkit-details-marker{display:none}
        { id, kind:"tejun", icon, title, sub, time, updated,
          why,                      … なぜやるか（最初に見える）
          need: [{t, d}],           … 用意するもの（チェックできる）
-         parts: [{key, label, title, when, steps:[{t, d?, ok?, w?}]}],
+         parts: [{key, label, title, when, fig?, cap?, steps:[{t, d?, ok?, w?}]}],
                                    … 手順のまとまり。ok＝成功の目安、w＝注意
+                                     fig＝まとまりの頭に出す図（SVG の文字列）、cap＝図の下の説明
+                                     steps を空にすると「図だけ」のまとまりになる（チェック無し）
          tips: ["..."],            … つまずきやすいところ
-         after }                   … 測った値・結果の行き先
+         after, afterTitle? }      … 測った値・結果の行き先（見出しは既定で「測った値の行き先」）
    ・別のページの本（リンクだけ）
        { id, kind:"slide", icon, title, sub, meta, href }
 
@@ -286,6 +322,387 @@ const MANUALS = [
          + "<br>計算の仮の値を入れ替えて、施肥のめやすとECの上限がどう変わるかを出します。",
   },
   {
+    id: "gaiki", kind: "tejun", icon: "🌡️",
+    title: "外気温の観測器の設置",
+    sub: "通風筒と無線で、圃場の外気を10分ごとに記録",
+    time: "組み立てと設置で1〜2日",
+    updated: "2026-11-12",
+    why: "夜温設定・日中平均・カーテンの計算は、いま<b>鹿沼アメダス</b>の気温を圃場の外気の代わりにしています。"
+       + "圃場の外気を自分で測ってためると、その差が分かり、圃場の値で計算できるようになります。<br>"
+       + "測る器械は、日よけの筒に<b>ファンで外気を吸い込み</b>、センサーを空気と同じ温度に保つ形（アメダスと同じ方式）。"
+       + "ハウスには通信が無いので、<b>LoRa</b>（ローラ。少ないデータを数百m飛ばせる省電力の無線。免許も通信料も要らない）で"
+       + "自宅まで飛ばし、自宅のWi-Fiからスプレッドシートへ送ります。<br>"
+       + "<b>はんだ付けは要りません。</b>部品は差し込むだけでつながります。"
+       + "B〜G は机の上と電波の確認、H・I が屋外の作業です。",
+    need: [
+      { t: "ATOMS3 Lite　×2",
+        d: "スイッチサイエンス 8778。手のひらに乗る小さなコンピューター（マイコン）。ハウス側と自宅側に1台ずつ" },
+      { t: "ATOMIC PortABC Extension Base　×1",
+        d: "9198。差し込み口を A・B・C の3つに増やす台。ハウス側だけ" },
+      { t: "GROVE - 温湿度センサ（SHT41搭載）　×1", d: "8737。温度 ±0.2℃・湿度 ±1.8%" },
+      { t: "LoRaユニット JPバージョン アンテナ付　×2",
+        d: "9278。<b>技適は付属のアンテナとセット</b>で取られている" },
+      { t: "Groveケーブル 1m　×1", d: "センサーを通風筒の中まで延ばす" },
+      { t: "USBプラグ付きの5Vファン（60mm角）　×1",
+        d: "風量（m³/h）が書いてあるもの。予備がもう1つあると、止まったときにすぐ替えられる" },
+      { t: "USB充電器　2口（合計2A以上）×1・1口 ×1", d: "2口はハウス側、1口は自宅側" },
+      { t: "USB-Cケーブル 1m　×2", d: "1本はパソコンからの書き込みにも使う" },
+      { t: "ホームセンター：通風筒の材料（G で電波を確かめてから）",
+        d: "VU40 の管（35cm 使う）・VU75 の管（30cm 使う）・DV異径ソケット 50×40・"
+         + "ステンレスのボルト M4×30 とナット 各6・屋外用の白いスプレーかアルミテープ・"
+         + "雨よけの板（白いプラ板 15cm角くらい）・耐候性の結束バンド" },
+      { t: "ホームセンター：設置の材料",
+        d: "支柱（単管パイプなど 2m）・<b>プラスチック</b>の防水ボックス（内側の高さ 15cm 以上。アンテナが立つ大きさ）・"
+         + "ゴムブッシング・防雨型の延長コード・乾燥剤" },
+      { t: "道具", d: "塩ビ用のこぎり・電動ドリル（4.5mm と 8mm の刃）・スパナ・やすり" },
+      { t: "パソコンとスマホ", d: "書き込みはパソコン（夜）。届いたかの確認はスマホ" },
+    ],
+    parts: [
+      { key: "a", label: "A", title: "しくみを知る", when: "読むだけ", steps: [],
+        cap: "ハウスのそばで測り、電波で自宅へ、自宅のWi-Fiからスプレッドシートへ",
+        fig: `<svg viewBox="0 0 340 500" role="img" aria-label="データの流れの図">
+  <defs>
+    <marker id="f1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="v-ah"/></marker>
+    <marker id="f1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="v-aht"/></marker>
+  </defs>
+  <rect class="v-g" x="6" y="6" width="328" height="138" rx="12"/>
+  <text class="v-s" x="16" y="26">ハウスのそば（屋外）</text>
+  <rect class="v-b" x="16" y="38" width="130" height="52" rx="8"/>
+  <text class="v-t" x="81" y="60" text-anchor="middle">通風筒</text>
+  <text class="v-s" x="81" y="78" text-anchor="middle">センサー＋ファン</text>
+  <rect class="v-b" x="194" y="38" width="130" height="52" rx="8"/>
+  <text class="v-t" x="259" y="60" text-anchor="middle">防水箱</text>
+  <text class="v-s" x="259" y="78" text-anchor="middle">マイコン＋LoRa</text>
+  <path class="v-ln" d="M146,66 H192" marker-end="url(#f1a)"/>
+  <text class="v-s" x="170" y="58" text-anchor="middle">温湿度</text>
+  <path class="v-pw" d="M259,90 V110"/>
+  <text class="v-s" x="259" y="130" text-anchor="middle">電源：ハウスの100V</text>
+  <path class="v-rf" d="M259,144 V246" marker-end="url(#f1b)"/>
+  <text class="v-t" x="245" y="176" text-anchor="end">電波（LoRa）</text>
+  <text class="v-s" x="245" y="194" text-anchor="end">100〜150m・通信料なし</text>
+  <rect class="v-g" x="6" y="216" width="328" height="94" rx="12"/>
+  <text class="v-s" x="16" y="236">自宅の窓際</text>
+  <rect class="v-b" x="16" y="248" width="308" height="50" rx="8"/>
+  <text class="v-t" x="170" y="269" text-anchor="middle">受信機</text>
+  <text class="v-s" x="170" y="287" text-anchor="middle">マイコン＋LoRa（コンセントに挿すだけ）</text>
+  <path class="v-ln" d="M170,298 V352" marker-end="url(#f1a)"/>
+  <text class="v-s" x="180" y="330">自宅のWi-Fi → ネット</text>
+  <rect class="v-b" x="16" y="356" width="308" height="48" rx="8"/>
+  <text class="v-t" x="170" y="376" text-anchor="middle">スプレッドシート（gaiki シート）</text>
+  <text class="v-s" x="170" y="394" text-anchor="middle">10分ごとに1行ずつたまる</text>
+  <path class="v-ln" d="M170,404 L70,448" marker-end="url(#f1a)"/>
+  <path class="v-ln" d="M170,404 V448" marker-end="url(#f1a)"/>
+  <path class="v-ln" d="M170,404 L270,448" marker-end="url(#f1a)"/>
+  <rect class="v-b" x="16" y="450" width="100" height="44" rx="8"/>
+  <text class="v-t" x="66" y="469" text-anchor="middle">夜温設定</text>
+  <text class="v-s" x="66" y="486" text-anchor="middle">カーテン</text>
+  <rect class="v-b" x="120" y="450" width="100" height="44" rx="8"/>
+  <text class="v-t" x="170" y="469" text-anchor="middle">日中平均</text>
+  <text class="v-s" x="170" y="486" text-anchor="middle">実況の外気</text>
+  <rect class="v-b" x="224" y="450" width="100" height="44" rx="8"/>
+  <text class="v-t" x="274" y="469" text-anchor="middle">Claude</text>
+  <text class="v-s" x="274" y="486" text-anchor="middle">差の式づくり</text>
+</svg>` },
+
+      { key: "b", label: "B", title: "部品と Wi-Fi を確かめる", when: "部品が届いた日・10分", steps: [
+        { t: "箱を開け、「用意するもの」と照らし合わせる。" },
+        { t: "LoRaユニット2つに、アンテナと Groveケーブル 20cm が付いていることを確かめる。",
+          w: "<b>アンテナは付属のもの以外を付けない。</b>技適（電波法の認証）は付属のアンテナとセットで取られています。" },
+        { t: "自宅の Wi-Fi の名前（SSID）を控える。<b>2.4GHz</b> のほうを選ぶ。",
+          d: "ルーターの裏や横のラベルに書いてあります。名前の末尾が -g・-2G・-24 などのものが 2.4GHz のことが多い。",
+          w: "ATOMS3 Lite は 5GHz の Wi-Fi にはつながりません。" },
+        { t: "Claude に「部品がそろった」と、Wi-Fi の名前を伝える。",
+          d: "パスワードはチャットに書かなくてよい。E の書き込みのときに、パソコンで直接入れます。" },
+      ]},
+
+      { key: "c", label: "C", title: "ハウス側の機器をつなぐ", when: "机の上で・15分",
+        cap: "赤＝センサーの線（A）、青＝LoRaの線（C）、灰＝USB、橙＝100V",
+        fig: `<svg viewBox="0 0 340 446" role="img" aria-label="ハウス側の配線図">
+  <defs>
+    <marker id="f2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="v-aht"/></marker>
+  </defs>
+  <rect class="v-b" x="16" y="8" width="92" height="40" rx="6"/>
+  <text class="v-t" x="62" y="25" text-anchor="middle">コンセント</text>
+  <text class="v-s" x="62" y="41" text-anchor="middle">ハウスの100V</text>
+  <path class="v-pw" d="M62,48 V112"/>
+  <text class="v-s" x="70" y="72">防雨型の延長コード</text>
+  <rect class="v-g" x="6" y="86" width="328" height="244" rx="12"/>
+  <text class="v-s" x="326" y="102" text-anchor="end">防水箱（プラスチック）</text>
+  <rect class="v-b" x="22" y="112" width="84" height="50" rx="6"/>
+  <text class="v-t" x="64" y="133" text-anchor="middle">USB充電器</text>
+  <text class="v-s" x="64" y="151" text-anchor="middle">2口</text>
+  <rect class="v-b" x="152" y="112" width="100" height="92" rx="8"/>
+  <rect class="v-b" x="170" y="118" width="64" height="44" rx="6"/>
+  <text class="v-t" x="202" y="137" text-anchor="middle">ATOMS3</text>
+  <text class="v-s" x="202" y="153" text-anchor="middle">Lite</text>
+  <text class="v-s" x="202" y="182" text-anchor="middle">差し込み台</text>
+  <rect class="v-pa" x="161" y="198" width="22" height="14" rx="3"/>
+  <text class="v-pl" x="172" y="209" text-anchor="middle">A</text>
+  <rect class="v-pb" x="191" y="198" width="22" height="14" rx="3"/>
+  <text class="v-pl" x="202" y="209" text-anchor="middle">B</text>
+  <rect class="v-pc" x="221" y="198" width="22" height="14" rx="3"/>
+  <text class="v-pl" x="232" y="209" text-anchor="middle">C</text>
+  <path class="v-usb" d="M106,128 H170"/>
+  <text class="v-s" x="127" y="121" text-anchor="middle">USB-C</text>
+  <text class="v-s" x="202" y="230" text-anchor="middle">B：空き</text>
+  <rect class="v-b" x="250" y="252" width="70" height="46" rx="6"/>
+  <text class="v-t" x="285" y="272" text-anchor="middle">LoRa</text>
+  <text class="v-s" x="285" y="289" text-anchor="middle">ユニット</text>
+  <path class="v-ant" d="M306,252 V174"/>
+  <circle cx="306" cy="170" r="4" class="v-ah"/>
+  <text class="v-s" x="300" y="222" text-anchor="end">アンテナ</text>
+  <text class="v-s" x="300" y="237" text-anchor="end">付属のまま</text>
+  <path class="v-gc" d="M232,212 V275 H250"/>
+  <text class="v-s" x="226" y="256" text-anchor="end">Grove 20cm</text>
+  <rect class="v-tube" x="88" y="358" width="204" height="44" rx="3"/>
+  <rect class="v-tin" x="60" y="370" width="218" height="20"/>
+  <rect class="v-b" x="44" y="362" width="16" height="36" rx="2"/>
+  <rect class="v-b" x="30" y="354" width="14" height="52" rx="2"/>
+  <rect class="v-sens" x="214" y="374" width="24" height="12" rx="2"/>
+  <path class="v-usb" d="M64,162 V340 H37 V354"/>
+  <text class="v-s" x="70" y="250">ファンの</text>
+  <text class="v-s" x="70" y="265">USBプラグ</text>
+  <path class="v-ga" d="M172,212 V228 H140 V346 H72 V380 H214"/>
+  <text class="v-s" x="146" y="290">Grove 1m</text>
+  <text class="v-s" x="146" y="305">センサーへ</text>
+  <path class="v-air" d="M336,380 H298" marker-end="url(#f2b)"/>
+  <path class="v-air" d="M28,380 H6" marker-end="url(#f2b)"/>
+  <text class="v-s" x="334" y="352" text-anchor="end">吸い込み口（北）</text>
+  <text class="v-s" x="37" y="422" text-anchor="middle">ファン</text>
+  <text class="v-s" x="226" y="422" text-anchor="middle">センサー</text>
+  <text class="v-s" x="170" y="440" text-anchor="middle">下は通風筒（横から見た図）</text>
+</svg>`,
+        steps: [
+        { t: "<b>USB を抜いた状態で</b>つなぐ。",
+          w: "電気が来ているまま Grove を抜き差しすると、部品を傷めることがあります。" },
+        { t: "ATOMS3 Lite を差し込み台（PortABC）の上に、ピンの位置が合う向きで押し込む。",
+          ok: "すき間なく奥まで入る。" },
+        { t: "差し込み台の口の名前（A・B・C）を、台に印字された文字で確かめる。",
+          d: "図の赤・黒・青は見分けやすくするための色です。実物の色ではなく<b>印字</b>で見てください。" },
+        { t: "温湿度センサを、Groveケーブル 1m で <b>A</b> につなぐ。",
+          d: "Grove の差し込みは向きが決まっていて、逆には入りません。カチッと止まるまで押す。" },
+        { t: "LoRaユニットを、付属の Groveケーブル 20cm で <b>C</b> につなぐ。B は使わない。" },
+        { t: "LoRaユニットにアンテナをねじ込む。手で止まるところまででよい。" },
+        { t: "USB は、E の書き込みが終わるまで挿さない。",
+          d: "設置するときは、充電器の1口目を USB-C で ATOMS3 Lite に、2口目にファンを挿します（図の灰色の線）。" },
+      ]},
+
+      { key: "d", label: "D", title: "自宅側の機器をつなぐ", when: "机の上で・5分",
+        cap: "受信機はハウスが見える窓の内側に置く",
+        fig: `<svg viewBox="0 0 340 245" role="img" aria-label="自宅側の配線図">
+  <defs>
+    <marker id="f3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="v-aht"/></marker>
+  </defs>
+  <path class="v-win" d="M44,70 V240"/>
+  <text class="v-t" x="44" y="62" text-anchor="middle">窓</text>
+  <path class="v-rf" d="M4,121 H96" marker-end="url(#f3b)"/>
+  <text class="v-s" x="6" y="110">電波</text>
+  <rect class="v-b" x="100" y="98" width="76" height="46" rx="6"/>
+  <text class="v-t" x="138" y="118" text-anchor="middle">LoRa</text>
+  <text class="v-s" x="138" y="135" text-anchor="middle">ユニット</text>
+  <path class="v-ant" d="M112,98 V36"/>
+  <circle cx="112" cy="32" r="4" class="v-ah"/>
+  <text class="v-s" x="120" y="44">アンテナは上向き</text>
+  <path class="v-gc" d="M176,121 H206"/>
+  <text class="v-s" x="191" y="162" text-anchor="middle">Grove 20cm</text>
+  <rect class="v-b" x="206" y="100" width="60" height="42" rx="6"/>
+  <text class="v-t" x="236" y="119" text-anchor="middle">ATOMS3</text>
+  <text class="v-s" x="236" y="134" text-anchor="middle">Lite</text>
+  <path class="v-rf" d="M266,121 H288"/>
+  <rect class="v-b" x="288" y="100" width="48" height="42" rx="6"/>
+  <text class="v-s" x="312" y="117" text-anchor="middle">Wi-Fi</text>
+  <text class="v-s" x="312" y="133" text-anchor="middle">ルーター</text>
+  <text class="v-s" x="312" y="92" text-anchor="middle">2.4GHz</text>
+  <path class="v-usb" d="M236,142 V192"/>
+  <text class="v-s" x="244" y="172">USB-C</text>
+  <rect class="v-b" x="196" y="192" width="84" height="40" rx="6"/>
+  <text class="v-t" x="238" y="216" text-anchor="middle">USB充電器</text>
+  <path class="v-pw" d="M196,212 H156"/>
+  <rect class="v-b" x="112" y="198" width="44" height="28" rx="5"/>
+  <text class="v-s" x="134" y="216" text-anchor="middle">100V</text>
+</svg>`,
+        steps: [
+        { t: "LoRaユニットを、付属の Groveケーブル 20cm で ATOMS3 Lite の差し込み口につなぐ。" },
+        { t: "アンテナをねじ込む。" },
+        { t: "置き場所を決める。<b>ハウスが見える窓の内側</b>で、アンテナを上に向けて置ける所。",
+          w: "金属の網入りガラス・遮熱フィルムを貼った窓・金属の棚の裏は、電波が通りにくい。" },
+        { t: "USB は、E の書き込みが終わってから充電器につなぐ。" },
+      ]},
+
+      { key: "e", label: "E", title: "プログラムを書き込む", when: "夜・パソコンで・30分〜1時間", steps: [
+        { t: "Claude が、ハウス側と自宅側のプログラム2本と、送り先のスプレッドシートを用意する。",
+          d: "ここは Claude の作業です。用意ができたら知らせます。" },
+        { t: "パソコンに Arduino IDE（マイコンにプログラムを書き込む無料のソフト）を入れる。"
+           + "スタートボタンを右クリック →「ターミナル」を開き、次の1行を貼り付けて Enter。"
+           + "<br><code>winget install ArduinoSA.IDE.stable</code>",
+          ok: "最後に「インストールが完了しました」と出る。" },
+        { t: "LoRaユニットの小さなスイッチを「設定モード」にする。位置は Claude が説明書と照らして指示します。",
+          d: "2台の LoRa に、同じ「チャンネル」と「あて先」を覚えさせるため。最初の1回だけ要ります。" },
+        { t: "ATOMS3 Lite を USB-C でパソコンにつなぎ、Claude の案内どおりに書き込む。2台とも。",
+          d: "自宅側には、このとき Wi-Fi のパスワードをパソコンで入れます。" },
+        { t: "LoRaユニットのスイッチを「通常モード」に戻す。",
+          w: "戻し忘れると電波を出しません。" },
+        { t: "パソコンから外す。" },
+      ]},
+
+      { key: "f", label: "F", title: "机の上で試す", when: "部屋で・1時間", steps: [
+        { t: "2台を同じ部屋で、それぞれ充電器につなぐ。" },
+        { t: "10分待ってから、Claude が渡す確認用のリンクをスマホで開く。",
+          ok: "いちばん新しい行に、いまの時刻と室温・湿度が出ている。" },
+        { t: "部屋の温度計と比べる。",
+          ok: "差が 0.5℃くらいまで（温度計どうしのずれもあるので、だいたいでよい）。" },
+        { t: "センサーを手で包んで1分待つ。",
+          ok: "次の行で温度が上がる（センサーとつながっている証拠）。" },
+        { t: "1時間おいて、行が10分ごとに増えているか見る。", ok: "6行増えている。" },
+      ]},
+
+      { key: "g", label: "G", title: "電波が届くか試す", when: "昼・30分〜半日", steps: [
+        { t: "自宅側を、ハウスが見える窓際に置いて電源を入れる。" },
+        { t: "ハウス側を、設置する予定の場所まで持って行き、ハウスのコンセントから延長コードで電源をとる。",
+          d: "地面に置かず、1.5m くらいの高さ（脚立や杭の上）に置くと本番に近い。雨の日は避ける。" },
+        { t: "30分待って、確認用のリンクで行が増えているか、電波の強さの欄を見る。",
+          ok: "3行以上続けて届き、電波の強さが「良」。" },
+        { t: "届かない・「ぎりぎり」のときは、自宅側を別の窓へ → ハウス側を高く → 置き場所を少しずらす、の順に試す。",
+          w: "アンテナを付属以外の大きいものに替えるのは不可（技適から外れます）。" },
+        { t: "それでもだめなら Claude に知らせる（モバイルルーターを使う案に切り替えるかを相談）。" },
+        { t: "届いたら、ハウス側の機器を持ち帰る。ここで初めて通風筒の材料を買う。" },
+      ]},
+
+      { key: "h", label: "H", title: "通風筒を作る", when: "半日",
+        cap: "ファンが内筒から空気を吸い出し、センサーに外気を当て続ける",
+        fig: `<svg viewBox="0 0 340 292" role="img" aria-label="通風筒の図">
+  <defs>
+    <marker id="f4b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="v-aht"/></marker>
+  </defs>
+  <path class="v-ant" d="M14,56 H60"/>
+  <text class="v-s" x="14" y="46">雨よけ板</text>
+  <rect class="v-tube" x="108" y="64" width="210" height="52" rx="3"/>
+  <rect class="v-tin" x="52" y="73" width="245" height="34"/>
+  <rect class="v-b" x="34" y="67" width="18" height="46" rx="2"/>
+  <rect class="v-b" x="22" y="69" width="12" height="42" rx="2"/>
+  <rect class="v-sens" x="204" y="83" width="24" height="14" rx="2"/>
+  <path class="v-bolt" d="M124,64 V73 M124,116 V107 M302,64 V73 M302,116 V107"/>
+  <path class="v-ga" d="M80,73 V22"/>
+  <circle cx="80" cy="73" r="3.5" class="v-ah"/>
+  <text class="v-s" x="88" y="28">ケーブルの穴 8mm（箱へ）</text>
+  <path class="v-ln" d="M216,83 V58"/>
+  <text class="v-s" x="216" y="52" text-anchor="middle">センサー（口から12cm奥）</text>
+  <path class="v-air" d="M338,90 H322" marker-end="url(#f4b)"/>
+  <path class="v-air" d="M190,90 H150" marker-end="url(#f4b)"/>
+  <path class="v-air" d="M20,90 H4" marker-end="url(#f4b)"/>
+  <text class="v-s" x="28" y="128" text-anchor="middle">ファン</text>
+  <text class="v-s" x="318" y="132" text-anchor="end">内筒は3cm 引っ込める</text>
+  <path class="v-ln" d="M52,150 H297 M52,144 V156 M297,144 V156"/>
+  <text class="v-s" x="174" y="168" text-anchor="middle">内筒 VU40・長さ35cm</text>
+  <path class="v-ln" d="M108,184 H318 M108,178 V190 M318,178 V190"/>
+  <text class="v-s" x="213" y="202" text-anchor="middle">外筒 VU75・長さ30cm</text>
+  <circle class="v-tube" cx="64" cy="252" r="27"/>
+  <circle class="v-tin" cx="64" cy="252" r="17"/>
+  <path class="v-bolt" d="M64,225 V235 M40.6,265.5 L49.3,260.5 M87.4,265.5 L78.7,260.5"/>
+  <rect class="v-sens" x="59" y="248" width="10" height="8" rx="1"/>
+  <text class="v-t" x="106" y="242">口から見た図</text>
+  <text class="v-s" x="106" y="260">ボルト3本で内筒を</text>
+  <text class="v-s" x="106" y="276">まん中に支える（2か所）</text>
+</svg>`,
+        steps: [
+        { t: "VU40（内筒）を 35cm、VU75（外筒）を 30cm に切る。切り口はやすりでならす。" },
+        { t: "外筒の外側を白く塗るか、アルミテープで巻く。",
+          d: "日射をはね返し、筒そのものが温まるのを防ぎます。" },
+        { t: "内筒の片方の端に、異径ソケット 50×40 の細いほう（40 の側）を差し込む。",
+          d: "ソケットの側がファン、反対の端が吸い込み口になります。" },
+        { t: "ソケットから 3cm ほどの所で、内筒に 8mm の穴を開ける（センサーのケーブルを通す）。" },
+        { t: "外筒の両端から 3cm の位置に、ぐるりと3か所ずつ（120°おき）4.5mm の穴を開け、ボルトとナットを付ける。" },
+        { t: "内筒を外筒に通す。吸い込み口の側は外筒より 3cm 引っ込め、ソケットとケーブルの穴は外に出す。"
+           + "ボルトを締めて、内筒がまん中に来るように支える。",
+          ok: "口から見て、内筒のまわりのすき間がどこも同じくらい。",
+          d: "すき間にも空気が自然に流れ、内筒が日で温まるのを防ぎます。" },
+        { t: "センサーをケーブルごと穴から入れ、吸い込み口から 12cm 奥に来るようにして、穴の外でケーブルを結束バンドで止める。穴のすき間はテープでふさぐ。",
+          w: "センサーの板が内筒の壁にべったり付かないように。結束バンドを巻いて余りを足にすると浮かせられます。" },
+        { t: "ファンを、<b>風が筒から外へ出る向き</b>にしてソケットの口にかぶせ、結束バンドとテープで留める。",
+          d: "ファンの側面にある矢印が風の向きです。",
+          ok: "ファンを回すと、吸い込み口にティッシュを近づけたとき吸い寄せられる。" },
+        { t: "ファンの上に、雨よけの板を屋根のように付ける。" },
+      ]},
+
+      { key: "i", label: "I", title: "設置する", when: "晴れた日・半日",
+        cap: "向きは例。冬の風上側に、ハウスから離して立てる",
+        fig: `<svg viewBox="0 0 340 378" role="img" aria-label="置き場所の図">
+  <defs>
+    <marker id="f5a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="v-aht"/></marker>
+  </defs>
+  <text class="v-t" x="8" y="18">上から見た図（例）</text>
+  <rect class="v-b" x="170" y="34" width="160" height="110" rx="4"/>
+  <text class="v-t" x="250" y="94" text-anchor="middle">ハウス</text>
+  <circle cx="72" cy="89" r="7" class="v-sens"/>
+  <path class="v-ln" d="M80,89 H170 M80,83 V95 M170,83 V95"/>
+  <text class="v-s" x="125" y="82" text-anchor="middle">5〜10m</text>
+  <text class="v-s" x="72" y="114" text-anchor="middle">通風筒</text>
+  <text class="v-s" x="72" y="130" text-anchor="middle">風上・草地</text>
+  <path class="v-air" d="M14,34 L54,68" marker-end="url(#f5a)"/>
+  <text class="v-s" x="60" y="44">冬の風（北西）</text>
+  <text class="v-t" x="8" y="162">↑ 北</text>
+  <text class="v-t" x="8" y="200">横から見た図</text>
+  <path class="v-gr" d="M8,350 H332"/>
+  <rect class="v-b" x="150" y="214" width="8" height="136"/>
+  <rect class="v-tube" x="96" y="214" width="116" height="26" rx="3"/>
+  <rect class="v-b" x="88" y="216" width="8" height="22" rx="2"/>
+  <text class="v-s" x="220" y="231">通風筒（口は北）</text>
+  <rect class="v-b" x="160" y="256" width="46" height="52" rx="4"/>
+  <text class="v-s" x="183" y="286" text-anchor="middle">箱</text>
+  <text class="v-s" x="214" y="276">箱は日の当たらない側</text>
+  <path class="v-ln" d="M60,227 V350 M54,227 H66"/>
+  <text class="v-t" x="52" y="294" text-anchor="end">1.5m</text>
+  <path class="v-pw" d="M183,308 V344 H300"/>
+  <text class="v-s" x="330" y="336" text-anchor="end">ハウスのコンセントへ</text>
+  <text class="v-s" x="100" y="370" text-anchor="middle">地面は草地か土</text>
+</svg>`,
+        steps: [
+        { t: "置き場所を決める。<b>ハウスから 5〜10m 離し、冬の風上側</b>、下は草地か土。",
+          w: "暖房機の排気口・天窓・コンクリート・水たまりのそばは避ける。"
+           + "ハウスより低いくぼ地も避ける（夜に冷えた空気がたまり、ハウスのまわりより低く出る）。" },
+        { t: "支柱を立てる。" },
+        { t: "通風筒を、筒の中心が地面から <b>1.5m</b> になるように、耐候性の結束バンドで2か所留める。"
+           + "吸い込み口を北に向け、口の側をほんの少し下げる。",
+          d: "1.5m はアメダスと同じ高さで、比べやすくなります。少し下げると、吹き込んだ雨が抜けます。" },
+        { t: "防水ボックスを、支柱の日の当たらない側、通風筒の下に付ける。",
+          w: "箱は<b>金属にしない</b>（電波を通さない）。" },
+        { t: "箱の下側に穴を開けてゴムブッシングを付け、延長コード・Groveケーブル 1m・ファンの USB を下から入れる。",
+          w: "線は箱に入る手前で一度下にたるませる。雨水が線を伝って箱に入るのを防ぎます。" },
+        { t: "箱の中に、充電器・ATOMS3 Lite（台ごと）・LoRaユニット（アンテナを上に）・乾燥剤を入れ、C の図のとおりにつなぐ。",
+          d: "アンテナは箱の壁から少し離す。" },
+        { t: "延長コードをハウスのコンセントにつなぎ、箱を閉める。",
+          ok: "ファンが回り、30分以内に確認用のリンクへ行が届く。" },
+        { t: "次の晴れた日の昼に、Claude に鹿沼アメダスとの差を見てもらう。",
+          ok: "昼の差が大きく開いていない（開いていたら、日よけか通風の不具合）。" },
+      ]},
+
+      { key: "j", label: "J", title: "点検", when: "毎日ちらっと・月1回", steps: [
+        { t: "毎日：ファンの出口に結んだ短いリボンがなびいているか見る（ファンが回っている印）。" },
+        { t: "月1回：吸い込み口からのぞいて、クモの巣・虫・ごみが無いか見る。" },
+        { t: "月1回：箱の中に水滴が無いか、乾燥剤が湿っていないかを見る。" },
+        { t: "ファンが止まっていたら、予備のファンに挿し替える（USB を挿し替えるだけ）。" },
+        { t: "冬が明けたら、センサーとファンのほこりを落とす。",
+          w: "センサーは指で触らない。ほこりは息で吹き飛ばす程度に。" },
+      ]},
+    ],
+    tips: [
+      "<b>アンテナは付属のまま。</b>付け替えや改造をすると技適（電波法の認証）から外れ、使えなくなります。",
+      "<b>Grove の抜き差しは USB を抜いてから。</b>",
+      "<b>Wi-Fi は 2.4GHz。</b>ATOMS3 Lite は 5GHz にはつながりません。",
+      "<b>箱はプラスチック。</b>金属の箱や金属の板の陰では電波が出ません。",
+      "<b>USB充電器は防水ではありません。</b>箱の中以外に置かない。雨の日に箱を開けない。",
+      "<b>停電やコードが抜けている間の記録は抜けます。</b>戻れば自動で記録を再開します。",
+      "<b>冬の夜の氷点下について。</b>M5Stack の部品は、公式の動作温度が 0〜40℃ と書かれているものがあります。"
+        + "中の部品は氷点下でも動くものが使われているので実際には動く見込みですが、保証の外です。止まったら Claude に知らせてください。",
+      "<b>昼の値だけ高いときは</b>、ファンが止まっているか、日よけのすき間から日が入っています。夜の値への影響は小さめです。",
+    ],
+    afterTitle: "記録の行き先",
+    after: "記録はスプレッドシートの <b>gaiki</b> シートに10分ごとにたまります。"
+         + "Claude はここを読み、鹿沼アメダスとの差を月ごと・晴れとくもりで分けて出し、"
+         + "夜温設定の「鹿沼めやす」を圃場の値に置き換える式を作ります（一冬ぶんたまってから）。"
+         + "<br>夜温設定・日中平均のページにつなぐのは、記録がたまり始めてからです。",
+  },
+  {
     id: "handbook", kind: "slide", icon: "📕",
     title: "スタッフハンドブック",
     sub: "農園のこと・作業の基礎・勤務の決まり",
@@ -332,8 +749,9 @@ const $ = s => document.querySelector(s);
 
 /* ===== 一覧 ===== */
 function card(m){
+  // 手順書は「手順 A〜F」のように、最初と最後のまとまりの記号で数を見せる
   const meta = m.kind === "tejun"
-    ? `${m.parts.length}つの手順・${m.time}・${m.updated} 更新`
+    ? `手順 ${m.parts[0].label}〜${m.parts[m.parts.length - 1].label}・${m.time}・${m.updated} 更新`
     : m.meta;
   const href = m.kind === "tejun" ? `#${m.id}` : m.href;
   return `<a class="card k-${m.kind}" href="${href}">
@@ -381,14 +799,18 @@ function drawDoc(m){
 
   for(const p of m.parts){
     const keys = p.steps.map((_, i) => `${p.key}${i}`);
+    // 図があれば、手順の行より前に出す
+    const fig = p.fig
+      ? `<figure class="fig">${p.fig}${p.cap ? `<figcaption>${p.cap}</figcaption>` : ""}</figure>`
+      : "";
     h += partBox("", p.label, p.title, p.when, keys,
-      p.steps.map((s, i) => stepRow(`${p.key}${i}`, i + 1, s)).join(""));
+      fig + p.steps.map((s, i) => stepRow(`${p.key}${i}`, i + 1, s)).join(""));
   }
 
   h += `<details class="part tip"><summary><span class="pk">!</span>
       <span class="pt"><b>つまずきやすいところ</b></span><span class="pc"></span></summary>
       <div class="body"><ul class="tips">${m.tips.map(t => `<li>${t}</li>`).join("")}</ul></div></details>`;
-  h += `<div class="after"><h3>測った値の行き先</h3>${m.after}</div>`;
+  h += `<div class="after"><h3>${m.afterTitle || "測った値の行き先"}</h3>${m.after}</div>`;
   h += `<button class="reset" id="reset" type="button">チェックを全部消す</button>`;
 
   $("#doc").innerHTML = h;
@@ -424,9 +846,15 @@ function applyChecks(id){
   let all = 0, got = 0;
   document.querySelectorAll("#doc details.part[data-keys]").forEach(d => {
     const keys = d.dataset.keys.split(" ").filter(Boolean);
+    const pc = d.querySelector(".pc");
+    // 図だけのまとまりはチェックが無いので「図」と出す
+    if(keys.length === 0){
+      pc.textContent = "図";
+      pc.classList.remove("done");
+      return;
+    }
     const n = keys.filter(k => done.has(k)).length;
     all += keys.length; got += n;
-    const pc = d.querySelector(".pc");
     pc.textContent = `${n}/${keys.length}`;
     pc.classList.toggle("done", n === keys.length);
   });
