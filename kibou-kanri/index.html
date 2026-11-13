@@ -183,11 +183,34 @@ td.total, th.total{background:var(--sub); min-width:76px; font-variant-numeric:t
   padding:5px 0; border-top:1px solid var(--hair); font-weight:700}
 .fcard .frow span{color:var(--muted); font-size:12.5px; line-height:1.45}
 .fcard .frow em{font-style:normal; font-size:15px}
-.fcard input.fjitsu{width:6.2em; font-family:var(--ui); font-weight:800; font-size:17px; color:var(--ink);
-  background:var(--sub); border:1px solid var(--line); border-radius:10px; padding:8px 10px;
-  text-align:right; font-variant-numeric:tabular-nums; flex:none}
-.fcard input.fjitsu:focus{outline:2px solid var(--teal); border-color:var(--teal)}
-.fcard input.fjitsu.ng{border-color:var(--tomato); outline-color:var(--tomato)}
+/* 実測をまとめて入れる欄。1人1行（名前／何日まで／何時間） */
+.jbox{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:12px 14px;
+  margin-bottom:12px; max-width:560px}
+.jttl{font-size:13px; font-weight:800; color:var(--muted); margin-bottom:4px}
+.jrow{display:grid; grid-template-columns:auto 1fr 5.4em auto; gap:6px 8px; align-items:center;
+  padding:9px 0; border-top:1px solid var(--hair)}
+.jrow:first-child{border-top:0}
+.jrow .jname{font-size:15px; white-space:nowrap}
+.jrow select.jhi{font-family:var(--ui); font-weight:700; font-size:15px; color:var(--ink); min-width:0;
+  background:var(--sub); border:1px solid var(--line); border-radius:10px; padding:9px 6px; cursor:pointer}
+.jrow input.jh{font-family:var(--ui); font-weight:800; font-size:17px; color:var(--ink); width:100%;
+  background:var(--sub); border:1px solid var(--line); border-radius:10px; padding:8px 9px;
+  text-align:right; font-variant-numeric:tabular-nums}
+.jrow input.jh:focus, .jrow select.jhi:focus{outline:2px solid var(--teal); border-color:var(--teal)}
+.jrow input.jh.ng{border-color:var(--tomato); outline-color:var(--tomato)}
+.jrow .jtani{font-size:13px; font-weight:700; color:var(--muted)}
+.jrow .jnote{grid-column:1 / -1; margin:0; font-size:11.5px; font-weight:700; color:var(--faint); line-height:1.5}
+.jrow .jnote.mada{color:var(--amber)}
+.jrow .jnote.ng{color:var(--tomato)}
+/* スマホでは名前を1行目に出し、日付と時間を2行目に並べる */
+@media (max-width:420px){
+  .jrow{grid-template-columns:1fr 5.4em auto}
+  .jrow .jname{grid-column:1 / -1}
+}
+.jsave{width:100%; margin-top:8px; border:1px solid var(--teal); background:var(--teal-soft);
+  color:var(--ink); border-radius:11px; font-family:var(--ui); font-weight:800; font-size:15px;
+  padding:12px; cursor:pointer}
+.jsave:disabled{border-color:var(--line); background:var(--sub); color:var(--faint); cursor:default}
 .fcard .fnote{font-size:11.5px; color:var(--muted); font-weight:700; line-height:1.55; margin:3px 0 0}
 .fcard .fnote.ng{color:var(--tomato)}
 .fcard .fsum{display:flex; justify-content:space-between; align-items:baseline; gap:10px;
@@ -198,10 +221,6 @@ td.total, th.total{background:var(--sub); min-width:76px; font-variant-numeric:t
 .fcard .kumeru{margin-top:6px; background:var(--sub); border-radius:9px; padding:7px 10px;
   font-weight:800; font-size:13.5px; text-align:center}
 .fcard.koeru .kumeru{background:var(--card); color:var(--tomato)}
-.fcard button.fsave{width:100%; margin-top:9px; border:1px solid var(--teal); background:var(--teal-soft);
-  color:var(--ink); border-radius:11px; font-family:var(--ui); font-weight:800; font-size:14.5px;
-  padding:11px; cursor:pointer}
-.fcard button.fsave:disabled{border-color:var(--line); background:var(--sub); color:var(--faint); cursor:default}
 /* 表の「合計」の下に出す残り */
 .fNokori{display:block; font-size:10.5px; font-weight:800; color:var(--leaf); margin-top:2px}
 .fNokori.koeru{color:var(--tomato)}
@@ -399,6 +418,11 @@ textarea.msgin{width:100%; box-sizing:border-box; background:var(--sub);
     <section id="fuyouSec" hidden>
       <h2>扶養のめやす</h2>
       <p class="lead" id="fuyouLead">　</p>
+      <div class="jbox">
+        <div class="jttl">実測を入れる（○日までで○時間）</div>
+        <div id="jitsuRan"></div>
+        <button type="button" class="jsave" id="btnJitsu">実測をまとめて保存</button>
+      </div>
       <div class="fuyous" id="fuyous"></div>
     </section>
 
@@ -1108,16 +1132,18 @@ function kakuInfo(){
 }
 
 /* ====================================================================
-   扶養のめやす（2026-11-12）
+   扶養のめやす（2026-11-12。11-13 に実測の入れ方を変更）
 
    給与は15日締め。1か月＝16日〜翌月15日（ここでは「締め月」と呼びます）。
-   締め月ごとに、1人ずつ次の3つを足して、fuyou シートの上限時間とくらべます。
+   管理者が1人ずつ「○日までで○時間」を入れます（まとめて入れる欄が1つ）。
+   締め月ごとに、1人ずつ次を足して、fuyou シートの上限時間とくらべます。
 
-     締め月のはじめ 〜 昨日          … 実測（管理者が打つ。1人1つの合計）
-     今日 〜 締め月のおわり
+     締め月のはじめ 〜 入れた日      … 入れた時間（実測）
+     入れた日の翌日 〜 締め月のおわり
        ・いま組んでいる期間の日     … 画面のマス（直すたびに計算し直す）
        ・それ以外の日               … 確定ずみのシフト（kakutei）
 
+   実測を入れていない人は、締め月のはじめからシフトで数えます。
    未定の日は時間が分からないので足しません（日数だけ数えて添えます）。
    まだ組んでいない期間の日も足しません（どの期間かを添えます）。
    時給はどこにも持ちません。上限は「時間」で受け取ります。
@@ -1125,9 +1151,12 @@ function kakuInfo(){
 
 var fuyou = [];      // [{ person, maxH }]   … 管理者のあいことばのときだけ届く
 var jitsudou = [];   // [{ shime, person, upto, min, at }]
-var jitsuIn = {};    // 打ちかけの実測。jitsuIn["締め月|名前"] = "41:30"（まだ保存していない文字）
+/* 入れかけの実測（まだ保存していないもの）。
+   jitsuIn["締め月のはじめ|名前"] = { upto:"2026-11-27", h:"41:30" } */
+var jitsuIn = {};
 
-/* 今日。?kyou=2026-11-28 を付けると、その日に組んでいるつもりで計算します（確かめ用） */
+/* 今日。実測の日付の既定値（昨日）にだけ使います。
+   ?kyou=2026-11-28 を付けると、その日に開いたつもりになります（確かめ用） */
 var KYOU = (function(){
   var m = /[?&]kyou=(\d{4}-\d{2}-\d{2})/.exec(String(location.search || ""));
   if (m) return m[1];
@@ -1143,6 +1172,11 @@ function hiTasu(s, n){
 }
 /* "2026-11-28" → "11/28" */
 function md(s){ var a = s.split("-"); return (+a[1]) + "/" + (+a[2]); }
+/* "2026-11-28" → "11/28（土）" */
+function mdw(s){
+  var a = s.split("-");
+  return md(s) + "（" + WD[new Date(+a[0], +a[1]-1, +a[2]).getDay()] + "）";
+}
 
 /* その日がふくまれる締め月。16日以降ならその月の16日から、15日までなら前の月の16日から */
 function shimeOf(s){
@@ -1158,15 +1192,13 @@ function kikanKeyOf(s){
   return s.slice(0, 8) + ((+s.slice(8)) <= 15 ? "01" : "16");
 }
 
-/* 分を「12:30」の形に。マイナスも書けます */
-function fmtH(m){ return (m < 0 ? "-" : "") + fmt(Math.abs(Math.round(m))); }
-
-/* 打った実測を分に直します。「41:30」「41.5」「41」を受け付けます。
-   読めないときは NaN を返します（黙って 0 にしない） */
+/* 打った時間を分に直します。「41:30」「41.5」「41」を受け付けます（全角も）。
+   空なら null（実測なし）、読めないときは NaN を返します（黙って 0 にしない） */
 function jitsuWoYomu(s){
   s = String(s || "").trim()
         .replace(/[０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); })
         .replace(/[：]/g, ":").replace(/[．。]/g, ".");
+  if (!s) return null;
   var m1 = /^(\d{1,3}):([0-5]?\d)$/.exec(s);
   if (m1) return (+m1[1]) * 60 + (+m1[2]);
   if (/^\d{1,3}(\.\d+)?$/.test(s)) return Math.round(parseFloat(s) * 60);
@@ -1190,20 +1222,7 @@ function kakuteiNoSakuin(list){
   return { hi: hi, kikan: kikan };
 }
 
-/* from〜to（両端をふくむ）の日を、1日ずつ見て足します。
-   hiNoNaka(日) が { fun } か { mitei:true } か { mada:true } を返し、それを数えます */
-function hiWoTasu(from, to, hiNoNaka){
-  var r = { fun: 0, mitei: 0, mada: {} };
-  for (var d = from; d <= to; d = hiTasu(d, 1)){
-    var x = hiNoNaka(d);
-    if (x.mitei) r.mitei++;
-    else if (x.mada) r.mada[kikanKeyOf(d)] = true;
-    else r.fun += x.fun;
-  }
-  return r;
-}
-
-/* 1日ぶんを、確定ずみのシフトから読みます */
+/* 1日ぶんを、確定ずみのシフトから読みます。{fun} か {mitei:true} か {mada:true} を返します */
 function kakuteiNoHi(sakuin, name){
   return function(d){
     var k = sakuin.hi[d + "|" + name];
@@ -1216,78 +1235,92 @@ function kakuteiNoHi(sakuin, name){
   };
 }
 
-/* 実測の既定値。保存した実測があれば、それに「その翌日〜昨日」の確定シフトを足します。
-   無ければ、締め月のはじめ〜昨日の確定シフトをそのまま見込みにします。
-   返す kind … "hozon"（保存した実測そのまま）/ "tsugitashi"（実測＋見込み）/ "mikomi"（見込みだけ） */
-function jitsuNoKitei(arg){
-  var rec = arg.rec;
-  var kara = arg.from, motoFun = 0, kind = "mikomi";
-  if (rec && rec.upto >= arg.from && rec.upto <= arg.to && isFinite(rec.min)){
-    motoFun = rec.min;
-    kara = hiTasu(rec.upto, 1);
-    kind = (rec.upto === arg.to) ? "hozon" : "tsugitashi";
-  }
-  var tashi = (kara <= arg.to) ? hiWoTasu(kara, arg.to, arg.hiNoNaka) : { fun:0, mitei:0, mada:{} };
-  return { fun: motoFun + tashi.fun, kind: kind, rec: rec, tashi: tashi };
-}
-
 /* 1人ぶんの締め月の見通しを計算します（画面には触りません）。
-   arg = { name, maxMin, kyou, shime:{from,to}, kikan:{from,to},
-           kumu(日) … いま組んでいる期間のマスを {fun}|{mitei} で返す,
-           sakuin, jitsuFun（実測。null なら実測の範囲なし） } */
+   arg = { maxMin, shime:{from,to}, kikan:{from,to},
+           kumu(日)   … いま組んでいる期間のマスを {fun}|{mitei:true} で返す,
+           kakuHi(日) … 確定シフトを {fun}|{mitei:true}|{mada:true} で返す,
+           jitsu      … { upto, fun }（○日までで○分）。入れていなければ null } */
 function fuyouWoKeisan(arg){
-  var kino = hiTasu(arg.kyou, -1);
-  var jitsuTo = (kino < arg.shime.to) ? kino : arg.shime.to;
-  var aru = (jitsuTo >= arg.shime.from);              // 実測の範囲があるか
+  var jitsu = arg.jitsu;
+  // シフトで数えはじめる日。実測を入れた日の翌日（入れていなければ締め月のはじめ）
+  var saki = jitsu ? hiTasu(jitsu.upto, 1) : arg.shime.from;
 
-  var saki = (arg.kyou > arg.shime.from) ? arg.kyou : arg.shime.from;   // 予定の始まり
-  var kakuHi = kakuteiNoHi(arg.sakuin, arg.name);
-  var hoka = { fun:0, mitei:0, mada:{} }, kumi = { fun:0, mitei:0, mada:{} };
-  if (saki <= arg.shime.to){
-    var hokaFrom = null, hokaTo = null;
-    for (var d = saki; d <= arg.shime.to; d = hiTasu(d, 1)){
-      var x;
-      if (d >= arg.kikan.from && d <= arg.kikan.to){
-        x = arg.kumu(d);
-        if (x.mitei) kumi.mitei++; else kumi.fun += x.fun;
-      } else {
-        x = kakuHi(d);
-        if (x.mitei) hoka.mitei++;
-        else if (x.mada) hoka.mada[kikanKeyOf(d)] = true;
-        else hoka.fun += x.fun;
-        if (!hokaFrom) hokaFrom = d;
-        hokaTo = d;
-      }
+  var hoka = { fun:0, mitei:0, mada:{}, from:null, to:null };
+  var kumi = { fun:0, mitei:0 };
+  for (var d = saki; d <= arg.shime.to; d = hiTasu(d, 1)){
+    if (d >= arg.kikan.from && d <= arg.kikan.to){
+      var x = arg.kumu(d);
+      if (x.mitei) kumi.mitei++; else kumi.fun += x.fun;
+    } else {
+      var y = arg.kakuHi(d);
+      if (y.mitei) hoka.mitei++;
+      else if (y.mada) hoka.mada[kikanKeyOf(d)] = true;
+      else hoka.fun += y.fun;
+      if (!hoka.from) hoka.from = d;
+      hoka.to = d;
     }
-    hoka.from = hokaFrom; hoka.to = hokaTo;
   }
 
-  // いま組んでいる期間のうち、今日より前の日は実測のほうに入っているので数えない
+  // いま組んでいる期間のうち、実測に入っている日は数えない
   var kumiFrom = (arg.kikan.from > saki) ? arg.kikan.from : saki;
-  var jitsu = aru ? arg.jitsuFun : 0;
-  var goukei = jitsu + hoka.fun + kumi.fun;
+  var jitsuFun = jitsu ? jitsu.fun : 0;
+  var goukei = jitsuFun + hoka.fun + kumi.fun;
 
   return {
-    jitsuAru: aru, jitsuFrom: arg.shime.from, jitsuTo: jitsuTo, jitsu: jitsu,
+    jitsu: jitsu, jitsuFun: jitsuFun,
     hoka: hoka,
     kumi: kumi, kumiFrom: kumiFrom, kumiTo: arg.kikan.to,
     kumiAru: (kumiFrom <= arg.kikan.to),
     goukei: goukei,
-    nokori: arg.maxMin - goukei,                       // マイナスなら超えている
-    kumeru: arg.maxMin - jitsu - hoka.fun,             // いま組んでいる期間に入れてよい時間
+    nokori: arg.maxMin - goukei,                 // マイナスなら超えている
+    kumeru: arg.maxMin - jitsuFun - hoka.fun,    // いま組んでいる期間に入れてよい時間
     mitei: hoka.mitei + kumi.mitei,
     mada: Object.keys(hoka.mada).sort()
+  };
+}
+
+/* いま見ている期間と、その締め月 */
+function imaNoShime(){
+  var p = periodOf(perKey);
+  var kikan = { from: ymd(p.y, p.m, p.from), to: ymd(p.y, p.m, p.to) };
+  return { kikan: kikan, shime: shimeOf(kikan.from) };
+}
+
+/* 実測の日付の既定値。昨日を、締め月の中に収めたもの */
+function kiteiNoHi(shime){
+  var kino = hiTasu(KYOU, -1);
+  if (kino < shime.from) return shime.from;
+  if (kino > shime.to)   return shime.to;
+  return kino;
+}
+
+/* 1人ぶんの実測の欄の状態。入れかけがあればそれ、無ければ保存したもの */
+function jitsuNoJotai(name, shime){
+  var kagi = shime.from + "|" + name;
+  var rec = null;
+  jitsudou.forEach(function(j){
+    if (j.shime === shime.from && String(j.person) === name) rec = j;
+  });
+  var hozonUpto = rec ? rec.upto : kiteiNoHi(shime);
+  var hozonH    = (rec && isFinite(rec.min)) ? fmt(rec.min) : "";
+  var ika = jitsuIn[kagi];
+  var upto = ika ? ika.upto : hozonUpto;
+  var h    = ika ? ika.h    : hozonH;
+  var fun  = jitsuWoYomu(h);
+  return {
+    kagi: kagi, rec: rec, upto: upto, h: h, fun: fun,
+    yomenai: (fun !== null && !isFinite(fun)),
+    // 保存したものと違うか（時間は「41.5」と「41:30」を同じとみなします）
+    kawatta: !!ika && (upto !== hozonUpto || fun !== jitsuWoYomu(hozonH))
   };
 }
 
 /* 画面の状態から、1人ぶんの計算の材料をそろえて計算します。
    kawari を渡すと、その日だけマスを置きかえて計算します（マスを直す画面の「もしこうしたら」用） */
 function fuyouNoHito(f, kawari){
-  var p = periodOf(perKey);
-  var kikan = { from: ymd(p.y, p.m, p.from), to: ymd(p.y, p.m, p.to) };
-  var shime = shimeOf(kikan.from);
-  var sakuin = kakuteiNoSakuin(kakutei);
+  var ks = imaNoShime();
   var gyo = grid[f.person] || {};
+  var st = jitsuNoJotai(f.person, ks.shime);
 
   var kumu = function(d){
     var day = +d.slice(8);
@@ -1296,44 +1329,19 @@ function fuyouNoHito(f, kawari){
     return { fun: c ? workOf(c) : 0 };
   };
 
-  // 実測：打ちかけがあればそれ、無ければ既定値
-  var kino = hiTasu(KYOU, -1);
-  var jitsuTo = (kino < shime.to) ? kino : shime.to;
-  var rec = null;
-  jitsudou.forEach(function(j){
-    if (j.shime === shime.from && String(j.person) === f.person) rec = j;
-  });
-  var kitei = jitsuNoKitei({ from: shime.from, to: jitsuTo, rec: rec,
-                             hiNoNaka: kakuteiNoHi(sakuin, f.person) });
-  var kagi = shime.from + "|" + f.person;
-  var uchikake = jitsuIn.hasOwnProperty(kagi) ? jitsuIn[kagi] : null;
-  var yometa = (uchikake === null) ? kitei.fun : jitsuWoYomu(uchikake);
-  var yomenai = (uchikake !== null && !isFinite(yometa));
-
+  var maxMin = Math.round(f.maxH * 60);
   var r = fuyouWoKeisan({
-    name: f.person, maxMin: Math.round(f.maxH * 60), kyou: KYOU,
-    shime: shime, kikan: kikan, kumu: kumu, sakuin: sakuin,
-    // 読めない字のあいだは、既定値で計算しておきます（警告が消えてしまわないように）
-    jitsuFun: yomenai ? kitei.fun : yometa
+    maxMin: maxMin, shime: ks.shime, kikan: ks.kikan, kumu: kumu,
+    kakuHi: kakuteiNoHi(kakuteiNoSakuin(kakutei), f.person),
+    // 空か読めない字のあいだは「実測なし」として、締め月のはじめからシフトで数えます
+    jitsu: (st.fun !== null && isFinite(st.fun)) ? { upto: st.upto, fun: st.fun } : null
   });
-  r.person = f.person; r.maxMin = Math.round(f.maxH * 60);
-  r.shime = shime; r.kitei = kitei; r.kagi = kagi;
-  r.uchikake = uchikake; r.yomenai = yomenai;
+  r.person = f.person; r.maxMin = maxMin; r.shime = ks.shime; r.jotai = st;
   return r;
 }
 
-/* 締め月の上限を超えている人の一覧。[{ person, koe（分） }] */
-function fuyouKoeruHito(){
-  var fz = fuyouZenin(), out = [];
-  Object.keys(fz).forEach(function(n){
-    if (fz[n].nokori < 0) out.push({ person:n, koe:-fz[n].nokori });
-  });
-  return out;
-}
-
-/* 上限がちゃんと入っていて、いま画面にいる人だけ */
+/* 上限がちゃんと入っていて、いま画面にいる人だけ。並びはシフトの表と同じ人の順 */
 function fuyouNoTaisho(){
-  // 並びはシフトの表と同じ人の順にします
   return people.map(function(h){
     var f = null;
     fuyou.forEach(function(x){ if (x.person === h.name) f = x; });
@@ -1350,6 +1358,15 @@ function fuyouZenin(){
   return out;
 }
 
+/* 締め月の上限を超えている人の一覧。[{ person, koe（分） }] */
+function fuyouKoeruHito(){
+  var fz = fuyouZenin(), out = [];
+  Object.keys(fz).forEach(function(n){
+    if (fz[n].nokori < 0) out.push({ person:n, koe:-fz[n].nokori });
+  });
+  return out;
+}
+
 /* 締め月のうち、まだ組んでいない期間の名前（「12/1〜15」の形） */
 function madaNoMoji(keys){
   return keys.map(function(k){
@@ -1358,165 +1375,195 @@ function madaNoMoji(keys){
   }).join("・");
 }
 
-/* ---- 描く ---- */
+/* ---- 描く ----
+   実測の欄（まとめて1つ）と、1人1枚の見通しのカードに分けてあります。
+   打っている最中に欄を作り直すと、小数点や打ちかけの字が消えるので、
+   打つたびに作り直すのはカードと注記だけにします */
 function kakuFuyou(){
   var sec = $("fuyouSec");
   var taisho = fuyouNoTaisho();
   sec.hidden = !taisho.length;
   if (!taisho.length) return;
 
-  var p = periodOf(perKey);
-  var shime = shimeOf(ymd(p.y, p.m, p.from));
+  var shime = imaNoShime().shime;
   $("fuyouLead").textContent =
-    "締め月 " + md(shime.from) + "〜" + md(shime.to) + "（今日 " + md(KYOU) + "）。" +
-    "昨日までは実測、今日からは確定したシフトと、いま組んでいる中身で数えます";
+    "締め月 " + md(shime.from) + "〜" + md(shime.to) + "。" +
+    "入れた日までは実測、その翌日からは確定したシフトと、いま組んでいる中身で数えます";
 
-  var box = $("fuyous");
+  kakuJitsuRan(taisho, shime);
+  kakuFuyouCards();
+}
+
+/* 実測をまとめて入れる欄 */
+function kakuJitsuRan(taisho, shime){
+  var box = $("jitsuRan");
   box.innerHTML = "";
+
+  // 日付の選びかた。締め月の16日〜翌月15日を1日ずつ
+  var hibi = [];
+  for (var d = shime.from; d <= shime.to; d = hiTasu(d, 1)) hibi.push(d);
+
   taisho.forEach(function(f){
-    var el = document.createElement("div");
-    el.className = "fcard";
-    box.appendChild(el);
-    kakuFuyouCard(el, f, true);
+    var st = jitsuNoJotai(f.person, shime);
+    var row = document.createElement("div");
+    row.className = "jrow";
+    row.setAttribute("data-p", f.person);
+
+    var nm = document.createElement("b");
+    nm.className = "jname";
+    nm.textContent = f.person + " さん";
+    row.appendChild(nm);
+
+    var sel = document.createElement("select");
+    sel.className = "jhi";
+    sel.setAttribute("aria-label", f.person + " さんの実測は何日までか");
+    hibi.forEach(function(d){ sel.appendChild(new Option(mdw(d) + " まで", d)); });
+    sel.value = st.upto;
+    row.appendChild(sel);
+
+    var inp = document.createElement("input");
+    inp.className = "jh";
+    inp.type = "text";
+    inp.setAttribute("inputmode", "decimal");
+    inp.setAttribute("autocomplete", "off");
+    inp.setAttribute("aria-label", f.person + " さんの実測の時間");
+    inp.placeholder = "未入力";     // 数字の例を出すと、入れた値と見まちがえるため
+    inp.value = st.h;
+    row.appendChild(inp);
+
+    var tani = document.createElement("span");
+    tani.className = "jtani";
+    tani.textContent = "時間";
+    row.appendChild(tani);
+
+    var note = document.createElement("p");
+    note.className = "jnote";
+    row.appendChild(note);
+
+    var kawaru = function(){
+      jitsuIn[st.kagi] = { upto: sel.value, h: inp.value };
+      kakuJitsuNote(row, f.person, shime);
+      kakuFuyouCards();
+      kakuGrid(); kakuInfo();
+    };
+    sel.addEventListener("change", kawaru);
+    inp.addEventListener("input", kawaru);
+
+    box.appendChild(row);
+    kakuJitsuNote(row, f.person, shime);
   });
 }
 
-/* カード1枚。tsukuru が true のときは入力欄ごと作り、false のときは数字だけ書き換えます。
-   打っている最中に入力欄を作り直すと、小数点や打ちかけの字が消えるためです */
-function kakuFuyouCard(el, f, tsukuru){
-  var r = fuyouNoHito(f);
-
-  el.className = "fcard" + (r.nokori < 0 ? " koeru" : r.nokori < 5 * 60 ? " chikai" : "");
-
-  if (tsukuru){
-    var h = "";
-    h += '<div class="fhead"><b>' + f.person + ' さん</b><small>上限 ' + fmtH(r.maxMin) + '</small></div>';
-
-    if (r.jitsuAru){
-      h += '<div class="frow"><span>実測<br>' + md(r.jitsuFrom) + '〜' + md(r.jitsuTo) + '</span>' +
-           '<input class="fjitsu" type="text" inputmode="decimal" autocomplete="off" ' +
-           'aria-label="' + f.person + ' さんの実測"></div>';
-      h += '<p class="fnote" data-k="note"></p>';
-    } else {
-      h += '<div class="frow"><span>実測</span><em>まだありません</em></div>';
-    }
-    h += '<div class="frow" data-k="hokaRow"><span data-k="hokaL"></span><em data-k="hoka"></em></div>';
-    h += '<div class="frow"><span data-k="kumiL"></span><em data-k="kumi"></em></div>';
-    h += '<div class="fsum"><span data-k="goukei"></span><span class="nokori" data-k="nokori"></span></div>';
-    h += '<div class="kumeru" data-k="kumeru"></div>';
-    h += '<p class="fnote" data-k="tsuki"></p>';
-    if (r.jitsuAru) h += '<button type="button" class="fsave">実測を保存</button>';
-    el.innerHTML = h;
-
-    var inp = el.querySelector("input.fjitsu");
-    if (inp){
-      inp.value = (r.uchikake !== null) ? r.uchikake : fmt(r.kitei.fun);
-      inp.addEventListener("input", function(){
-        jitsuIn[r.kagi] = inp.value;
-        kakuFuyouCard(el, f, false);      // 数字だけ。入力欄には書き戻さない
-        kakuGrid(); kakuInfo();
-      });
-      el.querySelector("button.fsave").onclick = function(){ jitsuWoHozon(el, f); };
-    }
-  }
-
-  var q = function(k){ return el.querySelector('[data-k="' + k + '"]'); };
-
-  // 実測の下の説明
-  if (r.jitsuAru){
-    var note = q("note"), msg;
-    var inp2 = el.querySelector("input.fjitsu");
-    inp2.className = "fjitsu" + (r.yomenai ? " ng" : "");
-    if (r.yomenai){
-      msg = "読めません。「41:30」か「41.5」の形で入れてください（いまは見込みで数えています）";
-    } else if (r.uchikake !== null && jitsuWoYomu(r.uchikake) !== r.kitei.fun){
-      msg = "まだ保存していません";
-    } else if (r.kitei.kind === "hozon"){
-      msg = "保存した実測です";
-    } else if (r.kitei.kind === "tsugitashi"){
-      msg = md(r.kitei.rec.upto) + " までの実測 " + fmt(r.kitei.rec.min) +
-            " ＋ そのあとの確定シフト（見込み）です。実際の時間に直して保存してください";
-    } else {
-      msg = "確定シフトからの見込みです。実際の時間に直して保存してください";
-    }
-    if (!r.yomenai && r.kitei.tashi.mitei) msg += "。未定 " + r.kitei.tashi.mitei + " 日は入っていません";
-    note.textContent = msg;
-    note.className = "fnote" + (r.yomenai ? " ng" : "");
-  }
-
-  // 今日〜いま組んでいる期間の前後（確定ずみのシフト）
-  if (r.hoka.from){
-    q("hokaRow").hidden = false;
-    // 1日も確定していない区間を「確定シフト 0:00」と書くと、0時間で確定したように読めるので分けます
-    var zenbuMada = r.mada.length && !r.hoka.fun && !r.hoka.mitei;
-    q("hokaL").innerHTML = (zenbuMada ? "まだ組んでいない" : "確定シフト") + "<br>" +
-                           md(r.hoka.from) + "〜" + md(r.hoka.to);
-    q("hoka").textContent = zenbuMada ? "0 で数える" : fmt(r.hoka.fun);
-    // 日付の順に並べます（いま組んでいる期間より後の区間なら、その下へ）
-    var kumiRow = q("kumiL").parentNode, hokaRow = q("hokaRow");
-    if (r.hoka.from > r.kumiTo) kumiRow.parentNode.insertBefore(hokaRow, kumiRow.nextSibling);
-    else                        kumiRow.parentNode.insertBefore(hokaRow, kumiRow);
+/* 1行ぶんの注記（保存したか・読めるか） */
+function kakuJitsuNote(row, name, shime){
+  var st = jitsuNoJotai(name, shime);
+  var note = row.querySelector(".jnote"), inp = row.querySelector(".jh");
+  var msg, ng = false;
+  if (st.yomenai){
+    msg = "読めません。「41:30」か「41.5」の形で入れてください（いまは実測なしで数えています）";
+    ng = true;
+  } else if (st.kawatta){
+    msg = "まだ保存していません";
+  } else if (st.rec){
+    msg = "保存ずみ";
   } else {
-    q("hokaRow").hidden = true;
+    msg = "空欄なら、" + md(shime.from) + " からシフトで数えます";
   }
-
-  // いま組んでいる期間
-  if (r.kumiAru){
-    q("kumiL").innerHTML = "いま組んでいる<br>" + md(r.kumiFrom) + "〜" + md(r.kumiTo);
-    q("kumi").textContent = fmt(r.kumi.fun);
-  } else {
-    q("kumiL").textContent = "いま組んでいる期間";
-    q("kumi").textContent = "すぎた期間です";
-  }
-
-  q("goukei").textContent = "合計 " + fmt(r.goukei);
-  q("nokori").textContent = (r.nokori < 0) ? "超過 " + fmt(-r.nokori) : "残り " + fmt(r.nokori);
-
-  if (r.kumiAru){
-    var kp = md(r.kumiFrom) + "〜" + md(r.kumiTo);
-    q("kumeru").textContent = (r.kumeru < 0)
-      ? kp + " を入れる前から " + fmt(-r.kumeru) + " 超えています"
-      : kp + " に組めるのは " + fmt(r.kumeru) + " まで";
-    q("kumeru").hidden = false;
-  } else {
-    q("kumeru").hidden = true;
-  }
-
-  var tsuki = [];
-  if (r.mitei) tsuki.push("今日から先の未定 " + r.mitei + " 日は合計に入っていません");
-  if (r.mada.length) tsuki.push(madaNoMoji(r.mada) + " はまだ組んでいないので 0 で数えています");
-  q("tsuki").textContent = tsuki.join("。");
-  q("tsuki").hidden = !tsuki.length;
+  note.textContent = msg;
+  note.className = "jnote" + (ng ? " ng" : st.kawatta ? " mada" : "");
+  inp.className = "jh" + (ng ? " ng" : "");
 }
 
-/* 実測をシートへ送ります */
-function jitsuWoHozon(el, f){
-  var r = fuyouNoHito(f);
-  var fun = (r.uchikake !== null) ? jitsuWoYomu(r.uchikake) : r.kitei.fun;
-  if (!isFinite(fun)){
-    shiraseru(f.person + " さんの実測が読めません。「41:30」か「41.5」の形で入れてください", true);
+/* 見通しのカード（入力欄は無いので、何度作り直してもかまいません） */
+function kakuFuyouCards(){
+  var box = $("fuyous");
+  box.innerHTML = "";
+  fuyouNoTaisho().forEach(function(f){
+    var r = fuyouNoHito(f);
+    var el = document.createElement("div");
+    el.className = "fcard" + (r.nokori < 0 ? " koeru" : r.nokori < 5 * 60 ? " chikai" : "");
+
+    var gyo = function(midashi, atai){
+      return '<div class="frow"><span>' + midashi + '</span><em>' + atai + '</em></div>';
+    };
+
+    var h = '<div class="fhead"><b>' + f.person + ' さん</b><small>上限 ' + fmt(r.maxMin) + '</small></div>';
+
+    // 実測
+    if (r.jitsu){
+      h += gyo("実測<br>" + md(r.shime.from) + "〜" + md(r.jitsu.upto), fmt(r.jitsuFun));
+    } else {
+      h += gyo("実測", "入れていません");
+    }
+
+    // 確定シフト（いま組んでいる期間より前か後か、日付の順に並べます）
+    var hokaGyo = "";
+    if (r.hoka.from){
+      // 1日も確定していない区間を「確定シフト 0:00」と書くと、0時間で確定したように読めるので分けます
+      var zenbuMada = r.mada.length && !r.hoka.fun && !r.hoka.mitei;
+      hokaGyo = gyo((zenbuMada ? "まだ組んでいない" : "確定シフト") + "<br>" +
+                    md(r.hoka.from) + "〜" + md(r.hoka.to),
+                    zenbuMada ? "0 で数える" : fmt(r.hoka.fun));
+    }
+    var kumiGyo = r.kumiAru
+      ? gyo("いま組んでいる<br>" + md(r.kumiFrom) + "〜" + md(r.kumiTo), fmt(r.kumi.fun))
+      : gyo("いま組んでいる期間", "実測に入っています");
+    h += (r.hoka.from && r.hoka.from > r.kumiTo) ? kumiGyo + hokaGyo : hokaGyo + kumiGyo;
+
+    h += '<div class="fsum"><span>合計 ' + fmt(r.goukei) + '</span><span class="nokori">' +
+         (r.nokori < 0 ? "超過 " + fmt(-r.nokori) : "残り " + fmt(r.nokori)) + '</span></div>';
+
+    if (r.kumiAru){
+      var kp = md(r.kumiFrom) + "〜" + md(r.kumiTo);
+      h += '<div class="kumeru">' + (r.kumeru < 0
+        ? kp + " を入れる前から " + fmt(-r.kumeru) + " 超えています"
+        : kp + " に組めるのは " + fmt(r.kumeru) + " まで") + '</div>';
+    }
+
+    var tsuki = [];
+    if (r.mitei) tsuki.push("未定 " + r.mitei + " 日は合計に入っていません");
+    if (r.mada.length) tsuki.push(madaNoMoji(r.mada) + " はまだ組んでいないので 0 で数えています");
+    if (tsuki.length) h += '<p class="fnote">' + tsuki.join("。") + '</p>';
+
+    el.innerHTML = h;
+    box.appendChild(el);
+  });
+}
+
+/* 変えた実測を、まとめてシートへ送ります */
+function jitsuWoMatometeHozon(){
+  var shime = imaNoShime().shime;
+  var items = [], yomenai = [];
+  fuyouNoTaisho().forEach(function(f){
+    var st = jitsuNoJotai(f.person, shime);
+    if (!st.kawatta) return;
+    if (st.yomenai){ yomenai.push(f.person); return; }
+    // 空にした人は、保存してある実測を消します（min を空で送る）
+    items.push({ shime: shime.from, person: f.person, upto: st.upto,
+                 min: (st.fun === null) ? "" : st.fun });
+  });
+  if (yomenai.length){
+    shiraseru(yomenai.join("、") + " さんの時間が読めません。「41:30」か「41.5」の形で入れてください", true);
     return;
   }
-  var bt = el.querySelector("button.fsave");
-  bt.disabled = true; bt.textContent = "保存しています…";
+  if (!items.length){ shiraseru("変えたところはありません"); return; }
 
-  okuru({ action:"saveJitsudou", aikotoba:pw,
-          item:{ shime:r.shime.from, person:f.person, upto:r.jitsuTo, min:fun } })
+  var bt = $("btnJitsu");
+  bt.disabled = true; bt.textContent = "保存しています…";
+  okuru({ action:"saveJitsudou", aikotoba:pw, items:items })
     .then(function(j){
-      // 手元の一覧も同じに直し、打ちかけは捨てます
-      jitsudou = jitsudou.filter(function(x){
-        return !(x.shime === j.item.shime && String(x.person) === j.item.person);
-      }).concat([j.item]);
-      delete jitsuIn[r.kagi];
-      shiraseru(f.person + " さんの実測を保存しました（" + md(r.jitsuTo) + " まで " + fmt(fun) + "）");
+      jitsudou = j.jitsudou || jitsudou;
+      items.forEach(function(it){ delete jitsuIn[it.shime + "|" + it.person]; });
+      bt.disabled = false; bt.textContent = "実測をまとめて保存";
+      shiraseru("実測を保存しました（" + items.length + "人）");
       kaku();
     })
     .catch(function(err){
-      bt.disabled = false; bt.textContent = "実測を保存";
-      shiraseru(f.person + " さんの実測を保存できませんでした。" +
-                (err && err.message ? err.message : ""), true);
+      bt.disabled = false; bt.textContent = "実測をまとめて保存";
+      shiraseru("実測を保存できませんでした。" + (err && err.message ? err.message : ""), true);
     });
 }
+$("btnJitsu").onclick = jitsuWoMatometeHozon;
 
 /* ====================================================================
    マスを直すシート
