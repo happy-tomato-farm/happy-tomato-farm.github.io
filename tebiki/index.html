@@ -341,16 +341,17 @@ const MANUALS = [
       { t: "GROVE - 温湿度センサ（SHT41搭載）　×1",
         d: "<a href=\"https://www.switch-science.com/products/8737\" target=\"_blank\" rel=\"noopener\">スイッチサイエンス 8737</a>。"
          + "温度 ±0.2℃・湿度 ±1.8%。ケースの無い基板なので、センサーの部分を指で触らない" },
-      { t: "M5Stack用GROVE互換ケーブル 100cm　×1",
-        d: "<a href=\"https://www.switch-science.com/catalog/5216/\" target=\"_blank\" rel=\"noopener\">スイッチサイエンス 5216</a>。"
-         + "センサーを筒の中まで延ばす" },
+      { t: "M5Stack用GROVE互換ケーブル 200cm（A034-E）　×1",
+        d: "<a href=\"https://www.switch-science.com/catalog/5216/\" target=\"_blank\" rel=\"noopener\">スイッチサイエンス 5216</a> のページの表から 200cm を選ぶ。"
+         + "センサーから箱まで約1.2m要るので、1m では足りない" },
       { t: "ファン　Noctua NF-A6x25 5V　×1",
         d: "60mm角・5V。軸受けが長持ち。<b>型番に「5V」が入ったものを選ぶ</b>（12V用は USB では回らない）。"
          + "予備がもう1つあると、止まったときにすぐ替えられる" },
       { t: "アイネックス ファン用USB電源変換ケーブル CA-010B　×1",
         d: "ファンの3ピンの差し込みを USB につなぐ。差し込むだけ" },
       { t: "USB充電器　2口（合計2A以上）×1・1口 ×1", d: "2口は外、1口は窓際" },
-      { t: "USB-Cケーブル 1m　×2", d: "1本はパソコンからの書き込みにも使う" },
+      { t: "USB-Cケーブル 1m　×2",
+        d: "ふだんは充電器とマイコンをつなぐ。書き込みの夜だけ、1本をパソコンにつなぎ直す（記録の受け取りにパソコンは使わない）" },
       { t: "ホームセンター：通風筒の材料（G で電波を確かめてから）",
         d: "<b>白い</b>ポリバケツ 10〜15L（<b>深さ 25cm 以上</b>・ふたは不要）・VU40 の管（20cm 使う）・"
          + "DV異径ソケット 50×40・全ねじボルト M5（長さ30cm くらい）2本とナット・ワッシャー 各8・"
@@ -446,7 +447,7 @@ const MANUALS = [
   <rect class="v-tin" x="168" y="330" width="24" height="90"/>
   <rect class="v-sens" x="174" y="370" width="12" height="20" rx="1"/>
   <path class="v-ga" d="M205,168 V268 H290 V412 H250 V345 H192 M192,345 H180 V370"/>
-  <text class="v-s" x="211" y="232">Grove 100cm</text>
+  <text class="v-s" x="211" y="232">Grove 200cm</text>
   <path class="v-usb" d="M64,158 V412 H125 V305 H162"/>
   <text class="v-s" x="58" y="330" text-anchor="end">USB変換</text>
   <text class="v-s" x="58" y="345" text-anchor="end">CA-010B</text>
@@ -461,7 +462,7 @@ const MANUALS = [
         steps: [
         { t: "<b>USB を抜いた状態で</b>つなぐ。",
           w: "電気が来ているまま Grove を抜き差しすると、部品を傷めることがあります。" },
-        { t: "温湿度センサを、Groveケーブル 100cm で ATOMS3 Lite の Grove の口（1つだけ）につなぐ。",
+        { t: "温湿度センサを、Groveケーブル 200cm で ATOMS3 Lite の Grove の口（1つだけ）につなぐ。",
           d: "Grove の差し込みは向きが決まっていて、逆には入りません。カチッと止まるまで押す。" },
         { t: "ファンの差し込みに、変換ケーブル CA-010B をつなぐ。",
           d: "差し込みの出っぱりと溝の向きを合わせる。" },
