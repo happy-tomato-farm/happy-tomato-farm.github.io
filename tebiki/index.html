@@ -168,6 +168,95 @@ code{font-family:Consolas,"Courier New",monospace;font-size:13.5px;background:va
 .reset{display:block;width:100%;min-height:48px;margin-top:18px;font:inherit;font-size:15px;
   font-weight:800;color:var(--tomato);background:none;border:2px solid var(--tomato);
   border-radius:14px;cursor:pointer}
+
+/* ===== 解説書（アプリの理屈）=====
+   色の役割は全冊で固定する。どの章でも同じ色が同じ意味になるように。
+     緑＝ポイント（実用上の意味）  青＝式  赤＝ここが大事  黄＝前提と限界  灰＝計算例 */
+.k-kaisetsu{--bgc:color-mix(in srgb,var(--teal) 13%,var(--card));--bdc:color-mix(in srgb,var(--teal) 45%,var(--line))}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 6px}
+.legend span{font-size:12.5px;font-weight:800;padding:4px 10px;border-radius:99px;
+  border:2px solid var(--c);background:color-mix(in srgb,var(--c) 14%,var(--card));color:var(--ink)}
+.appbtn{display:block;margin:12px 0;padding:13px 14px;border-radius:14px;text-align:center;
+  font-weight:800;font-size:15.5px;text-decoration:none;color:#fff;background:var(--teal)}
+.kbtns{display:flex;gap:8px;margin:14px 0 4px}
+.kbtns button{flex:1;min-height:44px;font:inherit;font-size:14px;font-weight:800;color:var(--teal);
+  background:var(--card);border:2px solid var(--line);border-radius:12px;cursor:pointer}
+.chap .pk{background:var(--teal)}
+.chap .body{padding:4px 13px 14px}
+.chap .body > p,.kp{margin:10px 2px;font-size:15px}
+.chap h4{margin:18px 0 4px;font-size:15.5px;font-weight:800;color:var(--teal)}
+
+/* 色つきの囲み */
+.kb{border-radius:14px;padding:10px 13px 11px;margin:12px 0;font-size:15px;
+  border-left:6px solid var(--c);background:color-mix(in srgb,var(--c) 10%,var(--card))}
+.kb .kh{display:block;font-size:12.5px;font-weight:800;color:var(--c);letter-spacing:.04em;margin-bottom:3px}
+.kb p{margin:6px 0}
+.kb ul{margin:4px 0;padding-left:1.2em}
+.kb li{margin:3px 0}
+.kb-pt{--c:var(--leaf)} .kb-eq{--c:var(--teal)} .kb-imp{--c:var(--tomato)}
+.kb-as{--c:var(--sun)} .kb-num{--c:var(--muted)}
+.legend .lg-pt{--c:var(--leaf)} .legend .lg-eq{--c:var(--teal)}
+.legend .lg-imp{--c:var(--tomato)} .legend .lg-as{--c:var(--sun)} .legend .lg-num{--c:var(--muted)}
+/* 文中で目立たせる（赤字・緑字） */
+.red{color:var(--tomato);font-weight:800}
+.grn{color:var(--leaf);font-weight:800}
+.blu{color:var(--teal);font-weight:800}
+mark{background:color-mix(in srgb,var(--sun) 35%,transparent);color:inherit;padding:0 2px;border-radius:3px}
+
+/* 式。変数は斜体のセリフ体にして、日本語の地の文と見分けやすくする */
+.kf{margin:6px 0 4px;padding:9px 8px;border-radius:10px;background:var(--card);
+  font-size:15.5px;line-height:2.1;text-align:center;overflow-wrap:anywhere}
+.kf i{font-family:"Times New Roman",Times,serif;font-style:italic;font-size:1.08em}
+.kf sub,.kf sup{font-size:.68em}
+.kf .op{margin:0 .18em}
+.kf small{font-size:.8em;color:var(--muted);font-weight:700}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 3px;line-height:1.45}
+.fr > span:first-child{border-bottom:1.6px solid currentColor;padding:0 4px 1px}
+.fr > span:last-child{padding:1px 4px 0}
+/* 式の記号の列は折り返さない（記号が縦に割れて読めなくなるため） */
+.kb-eq .kt th:first-child,.kb-eq .kt td:first-child{white-space:nowrap;width:1%}
+.kn{font-size:13.5px;color:var(--muted);font-weight:700;margin:6px 0 0}
+
+/* 表。スマホで横に流れないよう、列は2〜3までにする */
+.kt{margin:8px 0}
+.kt table{width:100%;border-collapse:collapse;font-size:14px;background:var(--card);border-radius:10px;overflow:hidden}
+.kt th,.kt td{padding:6px 8px;border-bottom:1px solid var(--line-soft);text-align:left;vertical-align:top}
+.kt th{font-size:12.5px;color:var(--muted);font-weight:800;background:var(--card-sub)}
+.kt td:first-child{font-weight:800}
+.kt td.n{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kt td{overflow-wrap:anywhere}
+.kt td:first-child{min-width:4.8em}
+.kt .kcap{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:4px}
+.kt tr.hl td{background:color-mix(in srgb,var(--sun) 16%,var(--card))}
+
+/* 計算の流れ（縦1列の箱と矢印） */
+.flow{margin:10px 0;display:flex;flex-direction:column;align-items:stretch}
+.flow .fs{border:2px solid var(--c,var(--line));border-radius:12px;padding:8px 11px;
+  background:color-mix(in srgb,var(--c,var(--line)) 9%,var(--card))}
+.flow .fs b{display:block;font-size:15px}
+.flow .fs small{display:block;font-size:13px;color:var(--muted);font-weight:700}
+.flow .fs .ch{float:right;font-size:12px;font-weight:800;color:var(--c,var(--muted));margin-left:6px}
+.flow .fa{align-self:center;color:var(--muted);font-size:18px;line-height:1.1;margin:2px 0}
+.flow .c-pt{--c:var(--leaf)} .flow .c-eq{--c:var(--teal)} .flow .c-imp{--c:var(--tomato)} .flow .c-as{--c:var(--sun)}
+
+/* 解説書の図で使う色（SVG）。暗い画面でも読めるよう変数から取る */
+.fig .v-sun{fill:none;stroke:var(--sun);stroke-width:3.5;stroke-linecap:round}
+.fig .v-sunf{fill:color-mix(in srgb,var(--sun) 25%,transparent);stroke:none}
+.fig .v-tom{fill:none;stroke:var(--tomato);stroke-width:3;stroke-linecap:round}
+.fig .v-tomf{fill:var(--tomato)}
+.fig .v-lf{fill:color-mix(in srgb,var(--leaf) 35%,var(--card));stroke:var(--leaf);stroke-width:1.5}
+.fig .v-lfs{fill:none;stroke:var(--leaf);stroke-width:3;stroke-linecap:round}
+.fig .v-tl{fill:none;stroke:var(--teal);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.fig .v-tlf{fill:var(--teal)}
+.fig .v-tlb{fill:color-mix(in srgb,var(--teal) 14%,var(--card));stroke:var(--teal);stroke-width:1.5}
+.fig .v-sb{fill:color-mix(in srgb,var(--sun) 16%,var(--card));stroke:var(--sun);stroke-width:1.5}
+.fig .v-rb{fill:color-mix(in srgb,var(--tomato) 13%,var(--card));stroke:var(--tomato);stroke-width:1.5}
+.fig .v-soil{fill:color-mix(in srgb,#8B5E3C 22%,var(--card));stroke:#8B5E3C;stroke-width:1.5}
+.fig .v-tt{fill:var(--teal);font-size:12px;font-weight:800}
+.fig .v-tr{fill:var(--tomato);font-size:12px;font-weight:800}
+.fig .v-tg{fill:var(--leaf);font-size:12px;font-weight:800}
+.fig .v-ty{fill:var(--sun);font-size:12px;font-weight:800}
+.fig .v-ax{fill:none;stroke:var(--muted);stroke-width:1.2}
 </style>
 </head>
 <body>
@@ -208,6 +297,13 @@ code{font-family:Consolas,"Courier New",monospace;font-size:13.5px;background:va
                                      steps を空にすると「図だけ」のまとまりになる（チェック無し）
          tips: ["..."],            … つまずきやすいところ
          after, afterTitle? }      … 測った値・結果の行き先（見出しは既定で「測った値の行き先」）
+   ・解説書（アプリの計算の理屈。チェックは無い）
+       { id, kind:"kaisetsu", icon, title, sub, time, updated,
+         app, appName,             … 解説しているアプリの URL と名前（上と下にボタンが出る）
+         why,                      … この冊で分かること（最初に見える）
+         chapters: [{label, title, sum, html}],
+                                   … 章。たたんで並ぶ。html は下の K の部品で組む
+         after, afterTitle? }      … 最後の囲み（関連・直したときの注意など）
    ・別のページの本（リンクだけ）
        { id, kind:"slide", icon, title, sub, meta, href }
 
@@ -215,6 +311,52 @@ code{font-family:Consolas,"Courier New",monospace;font-size:13.5px;background:va
    チェックした場所は端末に覚えさせる（id と項目の key で区別）。
    一度出した手順書の key（a, b …）を付け替えると、チェックがずれるので注意。
    ========================================================================= */
+
+/* =========================================================================
+   解説書の部品。どれも HTML の文字列を返すだけ（画面には触らない）。
+   色の役割は CSS の .kb-* で固定してある：
+     K.pt  緑の囲み「ポイント」      … 結論・実用上の意味
+     K.eq  青の囲み「式」            … 式と、記号の意味の表
+     K.imp 赤の囲み「ここが大事」    … 間違えやすいところ
+     K.as  黄の囲み「前提と限界」    … 前提・仮の値・それが崩れるとき
+     K.num 灰の囲み「計算例」        … 実際の数字を当てはめた例
+   ========================================================================= */
+const K = {
+  pt:  (h, t) => `<div class="kb kb-pt"><span class="kh">${t || "ポイント"}</span>${h}</div>`,
+  imp: (h, t) => `<div class="kb kb-imp"><span class="kh">${t || "ここが大事"}</span>${h}</div>`,
+  as:  (h, t) => `<div class="kb kb-as"><span class="kh">${t || "前提と、それが崩れるとき"}</span>${h}</div>`,
+  /* 式。f は式の行（配列なら1つずつ行を分ける）、vars は [記号, 意味] の並び */
+  eq: (name, f, vars, note) => {
+    const lines = (Array.isArray(f) ? f : [f]).map(x => `<div class="kf">${x}</div>`).join("");
+    const tbl = vars && vars.length
+      ? `<div class="kt"><table><tr><th>記号</th><th>意味・単位・値</th></tr>`
+        + vars.map(v => `<tr><td>${v[0]}</td><td>${v[1]}</td></tr>`).join("") + `</table></div>`
+      : "";
+    return `<div class="kb kb-eq"><span class="kh">式　${name}</span>${lines}${tbl}`
+         + `${note ? `<p class="kn">${note}</p>` : ""}</div>`;
+  },
+  /* 計算例。rows は [項目, 値] の並び。値に hl:true を付けた行は黄色く光らせる */
+  num: (title, rows, note) =>
+    `<div class="kb kb-num"><span class="kh">計算例　${title}</span><div class="kt"><table>`
+    + rows.map(r => `<tr${r[2] ? ' class="hl"' : ""}><td>${r[0]}</td><td class="n">${r[1]}</td></tr>`).join("")
+    + `</table></div>${note ? `<p class="kn">${note}</p>` : ""}</div>`,
+  /* ふつうの表。head は見出しの並び、rows は行の並び（列は2〜3まで） */
+  tbl: (head, rows, cap) =>
+    `<div class="kt"><table><tr>${head.map(x => `<th>${x}</th>`).join("")}</tr>`
+    + rows.map(r => `<tr>${r.map(x => `<td>${x}</td>`).join("")}</tr>`).join("")
+    + `</table>${cap ? `<div class="kcap">${cap}</div>` : ""}</div>`,
+  fig: (svg, cap) => `<figure class="fig">${svg}${cap ? `<figcaption>${cap}</figcaption>` : ""}</figure>`,
+  /* 計算の流れ。steps は {t, d?, c?（pt/eq/imp/as）, ch?（章の番号）} */
+  flow: steps => `<div class="flow">` + steps.map((s, i) =>
+      (i ? `<span class="fa">▼</span>` : "")
+      + `<div class="fs${s.c ? " c-" + s.c : ""}">${s.ch ? `<span class="ch">${s.ch}</span>` : ""}`
+      + `<b>${s.t}</b>${s.d ? `<small>${s.d}</small>` : ""}</div>`).join("") + `</div>`,
+  p: h => `<p class="kp">${h}</p>`,
+  h: h => `<h4>${h}</h4>`,
+  /* 分数（式の中で使う） */
+  fr: (a, b) => `<span class="fr"><span>${a}</span><span>${b}</span></span>`,
+};
+
 const MANUALS = [
   {
     id: "ec", kind: "tejun", icon: "🧪",
@@ -683,6 +825,712 @@ const MANUALS = [
          + "夜温設定の「鹿沼めやす」を圃場の値に置き換える式を作ります（一冬ぶんたまってから）。"
          + "<br>夜温設定・日中平均のページにつなぐのは、記録がたまり始めてからです。",
   },
+  /* =======================================================================
+     解説書①　潅水のめやす（Streamlit の潅水アプリ）
+     式と定数は 蒸散光合成モデル の core/・config.py・app.py から写した（2026-11-14）。
+     アプリの式を変えたら、ここも直すこと
+     ======================================================================= */
+  {
+    id: "kansui", kind: "kaisetsu", icon: "💧",
+    title: "潅水のめやすの理屈",
+    sub: "日射から潅水量・N量を出すまで",
+    time: "読むのに約25分",
+    updated: "2026-11-14",
+    app: "https://kansui.streamlit.app/", appName: "潅水のめやす",
+    why: "潅水アプリは、<b>葉1枚の物理（気孔・光合成・葉温）を群落に積み上げて、その日の蒸散量を出す</b>アプリです。"
+       + "蒸散に「塩を流す上乗せ」を足したものが潅水量で、それを液肥レシピの「10MJあたり潅水量」に直します。"
+       + "N量は目標収量から逆算し、その日の受光量で日に配り、給液ECの帯で挟みます。<br>"
+       + "章は計算の順に並んでいます。まず <b>1 全体の流れ</b> だけ読めば、どこで何をしているかが分かります。",
+    chapters: [
+
+      /* ---------------------------------------------------------------- 1 */
+      { label: "1", title: "全体の流れ", sum: "何を入れて、どこを通って、何が出るか",
+        html:
+          K.pt("朝に決めるのは<b>日付・ハウス・空の様子（または日射の予報）・葉の枚数・葉1枚の面積</b>だけです。"
+            + "気温・湿度・CO₂ は日付と日射から推定した値が入ります。"
+            + "あとは物理の式で <b>1日の蒸散量</b> を出し、<b>潅水量 → 10MJあたり潅水量 → N量</b> の順に決まります。")
+          + K.flow([
+              { t: "① 日射", d: "快晴は太陽の位置から計算。予報の全天日射を入れてもよい → ハウス内に直す", ch: "2章", c: "eq" },
+              { t: "② 気温・湿度・CO₂", d: "日付で決まる季節の曲線 ＋ その日の明るさの補正", ch: "3章", c: "eq" },
+              { t: "③ 1日を5分×288こまに分ける", d: "日射を日の出〜日の入に正弦（山形）で配る", ch: "4章", c: "eq" },
+              { t: "④ 葉1枚の蒸散・光合成", d: "気孔と境界層を通る水蒸気・CO₂ の流れ", ch: "5章", c: "eq" },
+              { t: "⑤ 葉温を熱の釣り合いで解く", d: "日射で温まり、蒸散で冷える", ch: "6章", c: "eq" },
+              { t: "⑥ 群落20層に積み上げて1日分を足す", d: "→ 蒸散量 [L/m²]", ch: "7章", c: "pt" },
+              { t: "⑦ 潅水量 → 10MJあたり潅水量", d: "蒸散 ×（1＋上乗せ15%）÷ 実質日射 × 10", ch: "7章", c: "pt" },
+              { t: "⑧ 土の水収支", d: "流亡・夕方の pF・空気率の見込み", ch: "8章", c: "as" },
+              { t: "⑨ N量", d: "目標収量 → 作期の施肥N → 受光量で日に配る → ECの帯で挟む", ch: "9章", c: "pt" },
+              { t: "⑩ 液肥レシピへリンクで渡す", d: "10MJあたり・日射・上乗せ・日射ごとの蒸散表・N量", ch: "10章", c: "imp" },
+            ])
+          + K.imp("日射には<b>2つの使い道</b>があり、使う値が違います。<ul>"
+            + "<li><span class=\"blu\">蒸散の計算</span>には<b>ハウス内の日射</b>（作物が実際に浴びる光）</li>"
+            + "<li><span class=\"red\">10MJあたりの分母</span>には<b>実質日射</b>＝ハウス内 ÷ 0.65（液肥レシピと合わせるための取り決め）</li></ul>"
+            + "0.65 は被覆の透過率ではありません（7章）。")
+          + K.num("11月15日・中央・快晴（既定のまま）", [
+              ["全天日射（外）", "13.0 MJ/m²"],
+              ["ハウス内の日射", "8.29 MJ/m²"],
+              ["日中の気温・湿度・CO₂", "21.0℃・70%・553 ppm"],
+              ["葉の枚数 × 葉1枚 → LAI", "18.0枚 × 0.18 m² → 3.24"],
+              ["1日の蒸散量", "1.68 L/m²"],
+              ["潅水量（×1.15）", "1.93 L/m²"],
+              ["実質日射（8.29 ÷ 0.65）", "12.75 MJ/m²"],
+              ["10MJあたり潅水量", "1.52 L/m²", true],
+              ["1日のN量", "0.159 kg-N/10a", true],
+              ["給液EC", "1.00 dS/m（11月の帯 0.40〜1.40 の中）"],
+            ], "この例は以降の章でも使います。数字はアプリの式をそのまま回したもの。"),
+      },
+
+      /* ---------------------------------------------------------------- 2 */
+      { label: "2", title: "日射：太陽の位置から快晴の日射を出す", sum: "「快晴」「曇天」ボタンの中身・被覆の透過率",
+        html:
+          K.pt("「快晴」「曇天」ボタンの日射は、<b>暦と緯度経度だけ</b>で決まる太陽の位置から計算しています。"
+            + "空の澄み具合は <b>τ（タウ、大気透過率）</b>＝大気を真上から1回通り抜けたときに残る日射の割合、で表します。"
+            + "ハウス内の値は、外の日射に<b>被覆の透過率</b>を掛けて出します。")
+          + K.p("式は『生物環境物理学の基礎』第11章（式11.1〜11.13）で、日照予測アプリと同じものです。"
+            + "1分ごとに日射を出して1日分を足しています。<i>J</i> は通日（1月1日＝1）です。")
+          + K.h("太陽の通り道")
+          + K.eq("赤緯（式11.2）",
+              `sin<i>δ</i> = 0.39785 sin[ 278.97 + 0.9856<i>J</i> + 1.9165 sin(356.6 + 0.9856<i>J</i>) ]`,
+              [["<i>δ</i>", "赤緯。太陽が赤道からどれだけ北にいるか [°]。夏至 +23.4°、冬至 −23.4°"],
+               ["<i>J</i>", "通日 [日]"]])
+          + K.eq("均時差と南中時刻（式11.3・11.4）",
+              [`<i>f</i> = 279.575 + 0.9856<i>J</i>`,
+               `<i>ET</i> = −104.7 sin<i>f</i> + 596.2 sin2<i>f</i> + 4.3 sin3<i>f</i> − 12.7 sin4<i>f</i><br>− 429.3 cos<i>f</i> − 2.0 cos2<i>f</i> + 19.3 cos3<i>f</i>　<small>[秒]</small>`,
+               `<i>t</i><sub>0</sub> = 12 − ${K.fr("経度 − 135", "15")} − ${K.fr("<i>ET</i>", "3600")}　<small>[時]</small>`],
+              [["<i>ET</i>", "均時差。地球の軌道が楕円で軸が傾いているため、太陽の南中が時計の12時からずれる量"],
+               ["<i>t</i><sub>0</sub>", "南中時刻。経度 139.76°（農場）なので、明石より約19分早い"]])
+          + K.eq("日の出・日の入り",
+              [`cos<i>h</i> = −tan<i>Φ</i> × tan<i>δ</i>`,
+               `日の出 = <i>t</i><sub>0</sub> − ${K.fr("<i>h</i>", "15")}`,
+               `日の入り = <i>t</i><sub>0</sub> + ${K.fr("<i>h</i>", "15")}`],
+              [["<i>Φ</i>", "緯度 36.52°"],
+               ["<i>h</i>", "日の出の時角 [°]。太陽は1時間に15°動くので、15で割ると時間になる"]])
+          + K.h("ある時刻の日射")
+          + K.eq("太陽の高さ（式11.1）",
+              `cos<i>ψ</i> = sin<i>Φ</i> sin<i>δ</i> + cos<i>Φ</i> cos<i>δ</i> cos[ 15(<i>t</i> − <i>t</i><sub>0</sub>) ]`,
+              [["<i>ψ</i>", "天頂角（真上からの角度）。cos<i>ψ</i> ＝ sin(太陽高度)"],
+               ["<i>t</i>", "時刻 [時]"]])
+          + K.eq("大気を通る距離（式11.12）",
+              [`<i>m</i> = ${K.fr("<i>P</i><sub>a</sub>", "101.3 cos<i>ψ</i>")}`,
+               `<i>P</i><sub>a</sub> = 101.3 × (1 − 2.25577×10<sup>−5</sup> <i>z</i>)<sup>5.25588</sup>`],
+              [["<i>m</i>", "大気路程。真上なら1、太陽高度30°なら約2（大気を2倍通る）"],
+               ["<i>P</i><sub>a</sub>", "気圧 [kPa]。標高 <i>z</i>＝150 m で約99.6"]])
+          + K.eq("直達日射と散乱日射（式11.11・11.13）",
+              [`<i>S</i><sub>b</sub> = <i>S</i><sub>po</sub> <i>τ</i><sup><i>m</i></sup> cos<i>ψ</i>`,
+               `<i>S</i><sub>d</sub> = 0.3 (1 − <i>τ</i><sup><i>m</i></sup>) <i>S</i><sub>po</sub> cos<i>ψ</i>`,
+               `<i>S</i><sub>t</sub> = <i>S</i><sub>b</sub> + <i>S</i><sub>d</sub>　　1日 = Σ<sub>1分ごと</sub> <i>S</i><sub>t</sub> × 60 秒`],
+              [["<i>S</i><sub>po</sub>", "太陽定数 1360 W/m²（大気の外の日射）"],
+               ["<i>S</i><sub>b</sub>", "直達日射 [W/m²]。<i>τ</i> の <i>m</i> 乗で減る（太陽が低いほど強く減る）"],
+               ["<i>S</i><sub>d</sub>", "散乱日射 [W/m²]。大気で散らされた分の3割が地面に届く"],
+               ["<i>S</i><sub>t</sub>", "全天日射 [W/m²]"]])
+          + K.h("空の澄み具合とハウスの被覆")
+          + K.eq("快晴の τ（宇都宮気象台 341日から当てはめ）",
+              [`<i>θ</i><sub>365</sub> = 2π<i>J</i> ÷ 365`,
+               `<i>τ</i> = 0.7185 + 0.1429 cos<i>θ</i><sub>365</sub> + 0.0400 sin<i>θ</i><sub>365</sub>`],
+              [["<i>θ</i><sub>365</sub>", "1年で1周する角度（下の透過率の式でも使う）"],
+               ["<i>τ</i>", "1月 0.87（空気が乾いて澄む）〜 7月 0.57（水蒸気が多い）。曇天ボタンは <i>τ</i>＝0.45"]],
+              "黄砂・花粉・煙霧の日は 0.05〜0.15 下げる（「日射の細かい設定」で変えられる）。")
+          + K.eq("被覆の透過率（季節で動く）",
+              `<i>T</i>(<i>J</i>) = 0.678 × exp( −0.0390 cos<i>θ</i><sub>365</sub> + 0.0475 sin<i>θ</i><sub>365</sub> )`,
+              [["0.678", "年の水準（フィルムの齢で下がる。2019年 0.76 → 2026年 0.67）"],
+               ["<i>T</i>", "5月中旬が最大 0.72、11月中旬が最小 0.64。冬は日が低く、フィルムでの反射が増えるため"]])
+          + K.eq("ハウス内の日射",
+              `ハウス内 = 外の全天日射 × <i>T</i>(<i>J</i>)`, null,
+              "予報の全天日射を入れたときも同じ掛け算をします。")
+          + K.eq("平年のハウス内日射（「平年なみ」ボタン）",
+              `平年 = 9.003 + 2.701 sin<i>θ</i> − 2.428 cos<i>θ</i> − 0.829 sin2<i>θ</i> − 0.005 cos2<i>θ</i>　<small>[MJ/m²]</small>`,
+              [["<i>θ</i>", "2π<i>J</i> ÷ 365.25。1年で1周する角度"]],
+              "中央ハウスの日射センサーの実測を、1年で1周する波（2次まで）でならしたもの。")
+          + K.num("11月15日", [
+              ["快晴の τ", "0.790"],
+              ["日の出・南中・日の入り", "6:22・11:25・16:29"],
+              ["外の全天日射（快晴）", "13.0 MJ/m²"],
+              ["被覆の透過率", "0.638"],
+              ["ハウス内（快晴）", "8.29 MJ/m²", true],
+              ["ハウス内（平年）", "6.20 MJ/m²"],
+            ])
+          + K.imp("運用の決まり：<b>日射は快晴の計算値から変えない</b>。暗い日は、液肥レシピで2回目以降の日射を減らして合わせます。"
+            + "日射を打ち替えても、気温・湿度の欄は推定し直されない作りのためです（打ち替えると画面に注意が出ます）。")
+          + K.as("<ul><li>透過率は張り替え（2026年6月）の後のデータがまだ少なく、快晴の日が10日ほどたまったら測り直す値です。</li>"
+            + "<li>快晴の式は朝夕に実測より少なめに出る傾向があります（日の低い時刻）。1日の合計への影響は小さいです。</li></ul>"),
+      },
+
+      /* ---------------------------------------------------------------- 3 */
+      { label: "3", title: "気温・湿度・CO₂ の推定", sum: "季節の曲線＋その日の明るさ。湿りは水蒸気圧で持つ",
+        html:
+          K.pt("気温・湿度・CO₂ の初期値は、<b>日付で決まる季節の曲線</b>に、<b>その日が平年よりどれだけ明るいか</b>の補正を足したものです。"
+            + "明るい日は暖かく・乾いて・CO₂ が下がる、という実測の傾きを使っています。")
+          + K.eq("季節の曲線（1年で1周する波、2次まで）",
+              `<i>S</i>(<i>J</i>) = <i>a</i><sub>0</sub> + <i>a</i><sub>1</sub> sin<i>θ</i> + <i>b</i><sub>1</sub> cos<i>θ</i> + <i>a</i><sub>2</sub> sin2<i>θ</i> + <i>b</i><sub>2</sub> cos2<i>θ</i>`,
+              [["<i>θ</i>", "2π<i>J</i> ÷ 365.25"],
+               ["<i>a</i>, <i>b</i>", "項目ごとの係数（下の表）"]])
+          + K.tbl(["項目", "係数 a₀ ／ a₁ ／ b₁ ／ a₂ ／ b₂"], [
+              ["日中の気温 [℃]", "21.779 ／ −0.979 ／ −2.296 ／ 0.637 ／ 0.529"],
+              ["日中の水蒸気圧 [kPa]", "1.944 ／ −0.272 ／ −0.247 ／ 0.234 ／ 0.113"],
+              ["日中の CO₂ [ppm]", "464.99 ／ 33.75 ／ 111.83 ／ 6.11 ／ 25.79"],
+              ["日中の湿度（表示用）", "0.7432 ／ −0.0534 ／ 0.0090 ／ 0.0545 ／ 0.0184"],
+              ["夜の気温 [℃]", "16.847 ／ −2.250 ／ −3.815 ／ 2.039 ／ 0.772"],
+              ["夜の水蒸気圧 [kPa]", "1.690 ／ −0.266 ／ −0.392 ／ 0.274 ／ 0.078"],
+              ["夜の CO₂ [ppm]", "610.78 ／ 25.46 ／ 174.48 ／ 22.68 ／ 18.09"],
+            ], "日中＝日の出〜日の入り、夜＝それ以外。中央ハウス 2025-09〜2026-06 の257日（湿球が信頼できる日）から当てはめ。")
+          + K.eq("明るさの補正",
+              [`<i>Δ</i> = その日のハウス内日射 − 平年のハウス内日射　<small>[MJ/m²]</small>`,
+               `日中の気温 = <i>S</i><sub>気温</sub> + 0.361 <i>Δ</i>　<small>（10〜35℃）</small>`,
+               `日中の水蒸気圧 <i>e</i><sub>a</sub> = <i>S</i><sub>ea</sub> − 0.00187 <i>Δ</i>　<small>（0.3〜4.0 kPa）</small>`,
+               `日中の湿度 = <i>S</i><sub>湿度</sub> − 0.0161 <i>Δ</i>　<small>（0.35〜0.95）</small>`],
+              [["<i>Δ</i>", "平年より明るければ正。1 MJ 明るいごとに気温 +0.36℃"]],
+              "かっこ内は、外へ出ないように丸める範囲。夜の値には日射の補正を入れていない（夜は日射とほとんど関係しないため）。")
+          + K.eq("日中の CO₂（直線ではなく指数で減る）",
+              `CO₂ = <i>S</i><sub>CO₂</sub> + 324.1 × exp(−${K.fr("日射", "4.0")})　<small>（350〜1200 ppm）</small>`,
+              [["324.1", "日射ゼロの日の上乗せ [ppm]"],
+               ["4.0", "日射がこの量 [MJ/m²] 増えるごとに上乗せが 1/e（約37%）になる"]],
+              "暗い日は締め切るうえ光合成でも減らないので急にたまり、明るい日は換気と光合成で外気の水準まで下がって止まる。この「暗い側に張り出す」形は直線では表せない。")
+          + K.h("湿り具合は水蒸気圧で持つ")
+          + K.eq("飽和水蒸気圧（Tetens の式、式3.8）",
+              `<i>e</i><sub>s</sub>(<i>T</i>) = 0.611 × exp(${K.fr("17.502 <i>T</i>", "<i>T</i> + 240.97")})　<small>[kPa]</small>`,
+              [["<i>e</i><sub>s</sub>", "その温度の空気が抱えられる水蒸気の上限。気温が上がると急に大きくなる"],
+               ["<i>T</i>", "気温 [℃]"]])
+          + K.eq("湿度と飽差（VPD）",
+              [`相対湿度 RH = ${K.fr("<i>e</i><sub>a</sub>", "<i>e</i><sub>s</sub>(<i>T</i>)")}`,
+               `VPD = <i>e</i><sub>s</sub>(<i>T</i>) − <i>e</i><sub>a</sub>`],
+              [["<i>e</i><sub>a</sub>", "空気中の水蒸気圧 [kPa]（実際に入っている水蒸気の量）"],
+               ["VPD", "飽差（Vapor Pressure Deficit）＝空気があとどれだけ水蒸気を受け取れるかの余力。蒸散の駆動力 [kPa]"]],
+              "気温・湿度を手で入れた日は <i>e</i><sub>a</sub> ＝ <i>e</i><sub>s</sub>(気温) × 湿度 で作り直す。")
+          + K.imp("<b>相対湿度は気温で動きます</b>（RH ＝ <i>e</i><sub>a</sub> ÷ <i>e</i><sub>s</sub>）。"
+            + "水蒸気が1滴も出入りしなくても、気温が上がれば RH は下がります。"
+            + "だから計算の中では水蒸気圧 <i>e</i><sub>a</sub> を持ち、RH は表示にだけ使います。"
+            + "気温と RH を別々に動かすと、同じことを二重に数えてしまいます。")
+          + K.num("11月15日・快晴（Δ ＝ 8.29 − 6.20 ＝ +2.09 MJ）", [
+              ["日中の気温", "21.0℃"],
+              ["日中の水蒸気圧 → 湿度", "1.73 kPa → 70%"],
+              ["日中の CO₂", "553 ppm"],
+              ["夜の気温・CO₂", "13.7℃・692 ppm"],
+            ])
+          + K.as("<ul><li>当てはまりの外れ（標準的な大きさ）は 日中の気温 約1.2℃・水蒸気圧 約0.19 kPa・CO₂ 約72 ppm です。</li>"
+            + "<li><b>7〜9月は栽培していない時期の外挿</b>で、平年が実測より2〜4割低く出ます（画面に注意が出ます）。</li>"
+            + "<li>換気のしかたが普段と違う日（台風で締め切るなど）は推定が外れます。実測があれば打ち替えてください。</li></ul>"),
+      },
+
+      /* ---------------------------------------------------------------- 4 */
+      { label: "4", title: "1日を5分ごとに分ける", sum: "日射を山形に配り、気温を揺らす",
+        html:
+          K.pt("予報で分かるのは1日の合計の日射だけです。それを<b>日の出〜日の入りに正弦の山形</b>で配り、"
+            + "<b>5分ごと・288こま</b>で蒸散を計算して足します。気温も日射の形に合わせて揺らします。")
+          + K.fig(`<svg viewBox="0 0 340 215" role="img" aria-label="1日の日射と気温の形">
+  <path class="v-ax" d="M30,170 H322 M30,30 V170"/>
+  <path class="v-sunf" d="M107,170 L119.2,132.9 L131.4,99.5 L143.6,72.9 L155.8,55.9 L168,50 L180.2,55.9 L192.4,72.9 L204.6,99.5 L216.8,132.9 L229,170 Z"/>
+  <path class="v-sun" d="M107,170 L119.2,132.9 L131.4,99.5 L143.6,72.9 L155.8,55.9 L168,50 L180.2,55.9 L192.4,72.9 L204.6,99.5 L216.8,132.9 L229,170"/>
+  <path class="v-tom" d="M30,128.4 H107 L107,125.3 L119.2,110.8 L131.4,97.8 L143.6,87.4 L155.8,80.8 L168,78.5 L180.2,80.8 L192.4,87.4 L204.6,97.8 L216.8,110.8 L229,125.3 L229,128.4 H322"/>
+  <path class="v-g" d="M107,40 V170 M229,40 V170"/>
+  <text class="v-s" x="30" y="186" text-anchor="middle">0</text>
+  <text class="v-s" x="102.5" y="186" text-anchor="middle">6</text>
+  <text class="v-s" x="175" y="186" text-anchor="middle">12</text>
+  <text class="v-s" x="247.5" y="186" text-anchor="middle">18</text>
+  <text class="v-s" x="320" y="186" text-anchor="middle">24時</text>
+  <text class="v-tt" x="107" y="204" text-anchor="middle">日の出 6:22</text>
+  <text class="v-tt" x="229" y="204" text-anchor="middle">日の入り 16:29</text>
+  <text class="v-ty" x="176" y="44">日射（山形に配る）</text>
+  <text class="v-tr" x="236" y="118">気温</text>
+  <text class="v-s" x="34" y="152">夜は夜温で一定</text>
+  <text class="v-s" x="34" y="24">11月15日の例（形だけ。縦軸は目盛りなし）</text>
+</svg>`, "日中の気温の山の高さは日較差 10.4℃。日中の平均が推定値どおりになるよう中心をそろえる")
+          + K.eq("日射の配り方",
+              [`<i>w</i><sub><i>i</i></sub> = sin(π × ${K.fr("<i>t</i><sub><i>i</i></sub> − 日の出", "日の入り − 日の出")})　<small>（夜は 0）</small>`,
+               `<i>S</i><sub><i>i</i></sub> = ${K.fr("1日の日射 [J/m²] × <i>w</i><sub><i>i</i></sub>", "Σ<i>w</i> × 300 秒")}　<small>[W/m²]</small>`],
+              [["<i>t</i><sub><i>i</i></sub>", "<i>i</i> 番目のこまの真ん中の時刻（5分ごと、<i>i</i>＝0〜287）"],
+               ["<i>w</i><sub><i>i</i></sub>", "そのこまの日射の重み"],
+               ["<i>S</i><sub><i>i</i></sub>", "そのこまの瞬間の日射（ハウス内）"]])
+          + K.eq("気温の揺らし方",
+              [`<i>n</i><sub><i>i</i></sub> = ${K.fr("<i>w</i><sub><i>i</i></sub>", "最大の <i>w</i>")}`,
+               `<i>T</i><sub><i>i</i></sub> = 日中の平均気温 + 10.4 × (<i>n</i><sub><i>i</i></sub> − <i>n̄</i>)`],
+              [["<i>n</i><sub><i>i</i></sub>", "正午を1とした日射の形（0〜1）"],
+               ["<i>n̄</i>", "日中の <i>n</i> の平均（約 2/π ≒ 0.64）。これを引くので、日中の平均気温は推定値のまま"],
+               ["10.4", "気温の日較差 [℃]。実測の日射の形に対する回帰"]],
+              "水蒸気圧は日中一定（揺らさない）。夜のこまは夜の気温・水蒸気圧・CO₂ をそのまま使う。水蒸気圧が飽和の 99.5% を超えたら頭を押さえる（結露する分）。")
+          + K.imp("配る時間帯は<b>その日の日の出〜日の入り</b>です。以前の 6〜17時 に詰め込むと、5月（日長14.2時間）は真昼が強くなりすぎて、明るい日の蒸散が12%多く出ていました。"
+            + K.tbl(["配る時間帯", "平均の外れ"], [["6〜17時（以前）", "0.159 L/m²"], ["日の出〜日の入り（いま）", "<span class=\"grn\">0.071 L/m²</span>"]],
+              "中央ハウスの実測257日を、実測の5分値で計算した値と比べた"))
+          + K.as("<ul><li>晴れの日はこの山形とよく合います。曇りの日は実際の山がもっと低くなだらかですが、1日の合計が同じなら蒸散の差は数%です。</li>"
+            + "<li>雲の切れ間の一瞬の強い光や、正午の気温のとがりで稼いでいた水は、なめらかな形にすると消えます。これを戻すのが 7章の 1.036 です。</li></ul>"),
+      },
+
+      /* ---------------------------------------------------------------- 5 */
+      { label: "5", title: "葉1枚：蒸散と光合成", sum: "気孔・境界層・光と温度の効き",
+        html:
+          K.pt("蒸散も光合成も、<b>濃度の差 × 通しやすさ（コンダクタンス）</b>という同じ形の式です。"
+            + "通り道は<b>気孔</b>と<b>境界層</b>（葉の表面にはりつく動きの遅い空気の層）の2つで、これが直列につながっています。"
+            + "ここで出すのは葉の面積 1 m² あたりの値で、地面あたりにするのは 7章です。")
+          + K.fig(`<svg viewBox="0 0 340 170" role="img" aria-label="気孔と境界層を通る水蒸気とCO2">
+  <defs><marker id="k5a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="v-tlf"/></marker>
+  <marker id="k5b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="v-tomf"/></marker></defs>
+  <rect class="v-lf" x="6" y="40" width="82" height="80" rx="10"/>
+  <text class="v-t" x="47" y="70" text-anchor="middle">葉の中</text>
+  <text class="v-s" x="47" y="88" text-anchor="middle">水蒸気は飽和</text>
+  <text class="v-s" x="47" y="104" text-anchor="middle">e<tspan dy="3" font-size="9">s</tspan><tspan dy="-3">(葉温)</tspan></text>
+  <rect class="v-tlb" x="104" y="46" width="52" height="68" rx="8"/>
+  <text class="v-t" x="130" y="74" text-anchor="middle">気孔</text>
+  <text class="v-tt" x="130" y="94" text-anchor="middle">g<tspan dy="3" font-size="9">vs</tspan></text>
+  <rect class="v-sb" x="172" y="46" width="60" height="68" rx="8"/>
+  <text class="v-t" x="202" y="74" text-anchor="middle">境界層</text>
+  <text class="v-ty" x="202" y="94" text-anchor="middle">g<tspan dy="3" font-size="9">va</tspan></text>
+  <rect class="v-b" x="248" y="40" width="86" height="80" rx="10"/>
+  <text class="v-t" x="291" y="70" text-anchor="middle">ハウスの</text>
+  <text class="v-t" x="291" y="88" text-anchor="middle">空気</text>
+  <text class="v-s" x="291" y="106" text-anchor="middle">e<tspan dy="3" font-size="9">a</tspan><tspan dy="-3">・CO₂</tspan></text>
+  <path class="v-tl" d="M60,26 H286" marker-end="url(#k5a)"/>
+  <text class="v-tt" x="170" y="18" text-anchor="middle">水蒸気（蒸散）→</text>
+  <path class="v-tom" d="M286,138 H60" marker-end="url(#k5b)"/>
+  <text class="v-tr" x="170" y="160" text-anchor="middle">← CO₂（光合成）</text>
+</svg>`, "2つの関門を必ず両方通る＝直列。どちらかが狭ければ全体が狭くなる")
+          + K.h("水蒸気の通り道")
+          + K.eq("光合成に使える光（PAR）",
+              `<i>S</i><sub>tp</sub> = ${K.fr("<i>S</i>", "2")}`,
+              [["<i>S</i><sub>tp</sub>", "光合成有効放射（PAR, Photosynthetically Active Radiation）[W/m²]。日射のうち光合成に使える波長はエネルギーで約半分"],
+               ["<i>S</i>", "その葉に届く日射 [W/m²]"]])
+          + K.eq("気孔コンダクタンス",
+              [`光で開く分 = min{ max(0.000103 <i>S</i><sub>tp</sub> + 0.0345,　0.001035 <i>S</i><sub>tp</sub>),　0.207 }`,
+               `CO₂ で閉じる分 = max(0.00005 <i>C</i><sub>ca</sub> − 0.01,　0)`,
+               `<i>g</i><sub>vs</sub> = 2.4 × (光で開く分 − CO₂ で閉じる分)　<small>（0 未満は 0）</small>`],
+              [["<i>g</i><sub>vs</sub>", "気孔コンダクタンス（水蒸気）[mol/(m²·s)]。大きいほど気孔が開いている"],
+               ["<i>C</i><sub>ca</sub>", "空気の CO₂ 濃度 [ppm]。CO₂ が十分にあれば水を惜しんで気孔を絞る"],
+               ["2.4", "水準の補正倍率。元の演習用の式は上限 0.207 で、実測（日中 0.3〜0.6）の半分以下のため"]],
+              "弱い光では直線、強い光で頭打ち（0.207）になる折れ線。")
+          + K.eq("境界層コンダクタンス（p.113）",
+              `<i>g</i><sub>va</sub> = 0.147 √(${K.fr("<i>u</i>", "<i>d</i>")})`,
+              [["<i>u</i>", "群落内の風速 0.2 m/s（ダクトで24時間送風）"],
+               ["<i>d</i>", "葉の特性長 ＝ 葉幅 0.07 m × 0.72 ＝ 0.050 m"],
+               ["<i>g</i><sub>va</sub>", "＝ 0.293 mol/(m²·s)。風速の平方根に比例するので、風を 0.2→2.0 m/s にしても蒸散は 1.21倍どまり"]])
+          + K.eq("直列のコンダクタンス",
+              `<i>g</i><sub>v</sub> = ${K.fr("1", `${K.fr("1", "<i>g</i><sub>vs</sub>")} + ${K.fr("1", "<i>g</i><sub>va</sub>")}`)}`,
+              [["<i>g</i><sub>v</sub>", "総コンダクタンス。電気の直列抵抗と同じで、抵抗（＝1/<i>g</i>）を足して逆数にする"]])
+          + K.eq("蒸散速度（式6.7）",
+              [`<i>E</i> = <i>g</i><sub>v</sub> × (<i>C</i><sub>vs</sub> − <i>C</i><sub>va</sub>)`,
+               `<i>C</i><sub>vs</sub> = ${K.fr("<i>e</i><sub>s</sub>(<i>T</i><sub>l</sub>)", "<i>P</i><sub>a</sub>")}　　<i>C</i><sub>va</sub> = ${K.fr("<i>e</i><sub>a</sub>", "<i>P</i><sub>a</sub>")}`,
+               `<i>P</i><sub>a</sub> = 101.3 × e<sup>−126/8200</sup> = 99.76 kPa`],
+              [["<i>E</i>", "蒸散速度 [mol/(m²·s)]。×18 g/mol で重さになる"],
+               ["<i>C</i><sub>vs</sub>", "葉の中の水蒸気のモル分率。葉の中は葉温 <i>T</i><sub>l</sub> で飽和しているとみなす"],
+               ["<i>C</i><sub>va</sub>", "空気の水蒸気のモル分率"],
+               ["<i>P</i><sub>a</sub>", "現地（標高126 m）の気圧"]])
+          + K.h("CO₂ の通り道と光合成")
+          + K.eq("CO₂ のコンダクタンス",
+              [`<i>g</i><sub>cs</sub> = 0.66 <i>g</i><sub>vs</sub>　　<i>g</i><sub>ca</sub> = 0.75 <i>g</i><sub>va</sub>`,
+               `<i>g</i><sub>c</sub> = ${K.fr("1", `${K.fr("1", "<i>g</i><sub>cs</sub>")} + ${K.fr("1", "<i>g</i><sub>ca</sub>")}`)}`],
+              [["0.66・0.75", "CO₂ は水蒸気より分子が大きく拡散が遅いので割り引く（気孔は分子拡散、境界層は空気の混ざりも効くので比が大きい）"]])
+          + K.eq("光の効き（非直角双曲線）",
+              [`<i>I</i> = <i>S</i><sub>tp</sub> × 4.57　<small>[µmol/(m²·s)]</small>`,
+               `<i>Q</i> = <i>φI</i> + <i>P</i><sub>max</sub>`,
+               `<i>P</i><sub>I</sub> = ${K.fr("<i>Q</i> − √(<i>Q</i>² − 4<i>θ φI P</i><sub>max</sub>)", "2<i>θ</i>")}`],
+              [["<i>I</i>", "光量子束密度（光の粒の数）。4.57 µmol/J で換算"],
+               ["<i>φ</i>", "量子収率 0.060。弱い光で、光の粒1個あたり何個の CO₂ を固定するか"],
+               ["<i>P</i><sub>max</sub>", "強い光での上限 45 µmol/(m²·s)"],
+               ["<i>θ</i>", "曲がりの角ばり具合 0.80（1なら折れ線、0なら直角双曲線）"]])
+          + K.eq("温度の効き",
+              `<i>h</i> = ${K.fr("2(<i>T</i><sub>l</sub> + <i>a</i>)²(<i>T</i><sub>m</sub> + <i>a</i>)² − (<i>T</i><sub>l</sub> + <i>a</i>)<sup>4</sup>", "(<i>T</i><sub>m</sub> + <i>a</i>)<sup>4</sup>")}　<small>（0 未満は 0）</small>`,
+              [["<i>T</i><sub>m</sub>", "最適温度 28℃（ここで <i>h</i>＝1）"],
+               ["<i>a</i>", "温度係数 5℃。釣り鐘の幅を決める"],
+               ["<i>T</i><sub>l</sub>", "葉温 [℃]（6章で解く）"]])
+          + K.eq("総光合成（輸送と生化学を連立）",
+              [`<i>P</i><sub>m</sub> = <i>P</i><sub>I</sub> × <i>h</i>`,
+               `<i>B</i> = <i>C</i><sub>a</sub> + <i>K</i><sub>C</sub> + ${K.fr("<i>P</i><sub>m</sub>", "<i>g</i><sub>c</sub>")}`,
+               `<i>P</i> = <i>g</i><sub>c</sub> × ${K.fr("<i>B</i> − √(<i>B</i>² − 4<i>C</i><sub>a</sub> <i>P</i><sub>m</sub> / <i>g</i><sub>c</sub>)", "2")}`],
+              [["<i>P</i><sub>m</sub>", "CO₂ が十分あるときの光合成（光と温度だけで決まる上限）"],
+               ["<i>C</i><sub>a</sub>", "空気の CO₂（mol/mol に直して使う）"],
+               ["<i>K</i><sub>C</sub>", "半分の速さになる CO₂ 濃度 250 ppm"],
+               ["<i>P</i>", "総光合成 [mol/(m²·s)]"]],
+              "「空気から葉緑体まで運ぶ速さ ＝ <i>g</i><sub>c</sub>(<i>C</i><sub>a</sub> − <i>C</i><sub>c</sub>)」と「葉緑体で固定する速さ ＝ <i>P</i><sub>m</sub>・<i>C</i><sub>c</sub>/(<i>C</i><sub>c</sub>+<i>K</i><sub>C</sub>)」を等しいとおいて、葉緑体の CO₂ 濃度 <i>C</i><sub>c</sub> を消した2次方程式の小さいほうの解。")
+          + K.eq("呼吸と純光合成",
+              [`光呼吸 <i>R</i><sub>p</sub> = 0.3 × (1 − ${K.fr("<i>C</i><sub>ca</sub>", "1200")}) × <i>P</i>　<small>（0 未満は 0）</small>`,
+               `暗呼吸 <i>R</i><sub>d</sub> = 1.48 × 2<sup>(<i>T</i><sub>l</sub> − 20)/10</sup>　<small>[µmol/(m²·s)]</small>`,
+               `純光合成 <i>P</i><sub>n</sub> = <i>P</i> − <i>R</i><sub>p</sub> − <i>R</i><sub>d</sub>`],
+              [["<i>R</i><sub>p</sub>", "光呼吸。酵素（ルビスコ）が CO₂ の代わりに酸素と反応する無駄。CO₂ が濃いほど減り、1200 ppm でゼロ"],
+               ["<i>R</i><sub>d</sub>", "暗呼吸（生きるための呼吸）。10℃上がると2倍（Q10＝2）。夜温を下げると消耗が減るのはこのため"]])
+          + K.imp("<b>光合成の値は参考です。</b>実収量から逆算すると約3倍足りません。"
+            + "CO₂ の通り道（<i>g</i><sub>c</sub>）が頭打ちを作っているためで、日ごとの上下や季節の傾向を見るぶんには使えますが、絶対量は当てにしないでください。"
+            + "<b>蒸散の計算には影響しません</b>（蒸散は水蒸気の通り道だけで決まります）。")
+          + K.as("<ul><li>気孔は<b>光と CO₂ だけ</b>で決まる経験式です。土の乾き・高温・高い飽差で気孔が閉じる効果は入っていません（その日は蒸散を多めに出します）。</li>"
+            + "<li>群落の中の気温・湿度・CO₂・風は上下で一様とみなしています。</li>"
+            + "<li>直達光と散乱光を分けていません。ハウス内は被覆で光が散らされるので、屋外ほどの影響はありません。</li></ul>"),
+      },
+
+      /* ---------------------------------------------------------------- 6 */
+      { label: "6", title: "葉温：熱の釣り合いで解く", sum: "日射で温まり、蒸散で冷える",
+        html:
+          K.pt("葉温は気温と同じではありません。<b>葉が受け取る熱と捨てる熱がちょうど釣り合う葉温</b>を探して使います。"
+            + "これで「蒸散が足りない → 葉が冷えない → 葉温が上がる → 葉の中の水蒸気が増える → 蒸散が増える」という<b>自己調節</b>が計算に入ります。")
+          + K.fig(`<svg viewBox="0 0 340 210" role="img" aria-label="葉の熱の出入り">
+  <defs><marker id="k6s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#D9960F"/></marker>
+  <marker id="k6t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="v-tlf"/></marker>
+  <marker id="k6r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="v-tomf"/></marker>
+  <marker id="k6k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="v-ah"/></marker></defs>
+  <ellipse class="v-lf" cx="170" cy="120" rx="78" ry="17"/>
+  <text class="v-t" x="170" y="125" text-anchor="middle">葉（葉温 T<tspan dy="3" font-size="9">l</tspan><tspan dy="-3">）</tspan></text>
+  <path class="v-sun" d="M48,22 L118,100" marker-end="url(#k6s)"/>
+  <text class="v-ty" x="8" y="16">日射の吸収 0.5S</text>
+  <text class="v-s" x="8" y="32">（入る）</text>
+  <path class="v-tl" d="M178,98 V30" marker-end="url(#k6t)"/>
+  <text class="v-tt" x="186" y="26">潜熱 λE</text>
+  <text class="v-s" x="186" y="42">蒸散で冷える</text>
+  <path class="v-tom" d="M250,120 H330" marker-end="url(#k6r)"/>
+  <text class="v-tr" x="256" y="104">顕熱 H</text>
+  <text class="v-s" x="256" y="148">空気へ逃げる</text>
+  <path class="v-ln" d="M110,190 L135,140" marker-end="url(#k6k)"/>
+  <path class="v-ln" d="M215,140 L240,190" marker-end="url(#k6k)"/>
+  <text class="v-s" x="40" y="204">長波（周り→葉）</text>
+  <text class="v-s" x="220" y="204">長波（葉→周り）</text>
+</svg>`, "入る：日射の吸収・周りからの長波　出る：葉からの長波・顕熱・潜熱")
+          + K.eq("熱の釣り合い（葉の面積あたり）",
+              `0.5<i>S</i> + <i>F</i> × 2 × 0.97 × <i>σ</i> (<i>T</i><sub>a</sub><sup>4</sup> − <i>T</i><sub>l</sub><sup>4</sup>) − <i>H</i> − <i>λE</i> = 0`,
+              [["0.5", "葉の日射の吸収率"],
+               ["<i>F</i>", "視野率（下の式）。群落の奥ほど外が見えず、長波のやりとりが差し引きゼロに近づく"],
+               ["2 × 0.97", "葉の両面 × 葉の放射率"],
+               ["<i>σ</i>", "ステファン・ボルツマン定数 5.67×10<sup>−8</sup> W/(m²·K⁴)。温度は絶対温度 [K]"],
+               ["<i>T</i><sub>a</sub>, <i>T</i><sub>l</sub>", "気温・葉温。周りの面（被覆・床・ほかの葉）は気温と同じ温度とみなす"]])
+          + K.eq("顕熱と潜熱",
+              [`<i>H</i> = 29.3 × <i>g</i><sub>Ha</sub> × (<i>T</i><sub>l</sub> − <i>T</i><sub>a</sub>)`,
+               `<i>g</i><sub>Ha</sub> = 2 × 0.135 √(${K.fr("<i>u</i>", "<i>d</i>")})`,
+               `<i>λE</i> = 44100 × <i>g</i><sub>v</sub> × ${K.fr("<i>e</i><sub>s</sub>(<i>T</i><sub>l</sub>) − <i>e</i><sub>a</sub>", "<i>P</i><sub>a</sub>")}`],
+              [["<i>H</i>", "顕熱 [W/m²]。葉が空気より熱いと空気を温める"],
+               ["29.3", "空気のモル比熱 [J/(mol·K)]"],
+               ["<i>g</i><sub>Ha</sub>", "熱の境界層コンダクタンス。顕熱は葉の両面から出入りするので2倍"],
+               ["<i>λE</i>", "潜熱 [W/m²]。蒸散した水が気化熱を持ち去る"],
+               ["44100", "水の気化熱 [J/mol]"]])
+          + K.eq("視野率（群落の中で外がどれだけ見えるか）",
+              `<i>F</i> = ${K.fr("exp(−<i>k L</i><sub>上</sub>) + exp(−<i>k L</i><sub>下</sub>)", "2")}`,
+              [["<i>L</i><sub>上</sub>, <i>L</i><sub>下</sub>", "その層より上・下にある葉の量（累積LAI）"],
+               ["<i>k</i>", "吸光係数 0.7（7章）"]])
+          + K.p("葉温を上げると、葉からの長波・顕熱・潜熱の3つとも増えるので、釣り合う葉温はただ1つに決まります。"
+            + "気温の 15℃下〜30℃上の間を<b>二分法</b>（範囲を半分ずつに絞る方法）で 0.001℃まで追い込みます。")
+          + K.num("正午ごろ（気温24℃・水蒸気圧1.9 kPa・日射400 W/m²・CO₂ 500 ppm・LAI 3.24）", [
+              ["いちばん上の葉の葉温", "26.9℃（気温 +2.9℃）"],
+              ["群落の平均の葉温", "25.1℃"],
+              ["いちばん下の層に届く光", "44 W/m²（上の約1割）"],
+            ])
+          + K.imp("以前は<b>葉温＝気温</b>と置いていました。すると日射のうち蒸散に回るのが18%しかなく、蒸散が小さすぎました（よく茂った群落なら50〜80%）。"
+            + "葉温を解くようにして、自己調節が働くようになりました。")
+          + K.as("<ul><li>周りの面は気温と同じ温度とみなしています。ハウス内なら妥当ですが、屋外の晴れた夜のように空が冷たいときは成り立ちません。</li>"
+            + "<li>葉の熱容量は無視しています（5分のこまなら、葉は数十秒で新しい葉温に落ち着くため）。</li></ul>"),
+      },
+
+      /* ---------------------------------------------------------------- 7 */
+      { label: "7", title: "群落に積み上げ、10MJあたりにする", sum: "LAI・20層・1日の合計・上乗せ・実質日射",
+        html:
+          K.pt("群落を<b>20層</b>に分け、上の葉ほど明るく下の葉ほど暗いとして、層ごとに葉の式（5・6章）を解いて足します。"
+            + "それを5分ごとに1日分足したのが<b>蒸散量</b>、上乗せを足したのが<b>潅水量</b>、実質日射で割ったのが<b>10MJあたり潅水量</b>です。")
+          + K.eq("葉面積指数（LAI）",
+              `LAI = 葉の枚数 [枚/m²] × 葉1枚の面積 [m²]`,
+              [["LAI", "Leaf Area Index。地面1 m² の上に葉が何 m² あるか。2なら地面を2枚重ねで覆う量"],
+               ["葉の枚数", "初期値は作業計画の週ごとの目標（冬16枚 → 春40枚）。週の真ん中（木曜）どうしを直線でつないで日ごとに変える"],
+               ["葉1枚の面積", "既定 0.18 m²（仮の値。<b>結果にいちばん効く</b>ので実測したい）"]])
+          + K.fig(`<svg viewBox="0 0 340 215" role="img" aria-label="群落の中の明るさ">
+  <text class="v-t" x="8" y="18">群落の中の明るさ（LAI 3.24・k 0.7）</text>
+  <g class="v-lfs"><path d="M20,47 H130"/><path d="M20,62 H130"/><path d="M20,77 H130"/><path d="M20,92 H130"/><path d="M20,107 H130"/><path d="M20,122 H130"/><path d="M20,137 H130"/><path d="M20,152 H130"/><path d="M20,167 H130"/><path d="M20,182 H130"/></g>
+  <rect class="v-sb" x="150" y="42" width="134" height="10"/><rect class="v-sb" x="150" y="57" width="107" height="10"/>
+  <rect class="v-sb" x="150" y="72" width="85" height="10"/><rect class="v-sb" x="150" y="87" width="68" height="10"/>
+  <rect class="v-sb" x="150" y="102" width="54" height="10"/><rect class="v-sb" x="150" y="117" width="43" height="10"/>
+  <rect class="v-sb" x="150" y="132" width="34" height="10"/><rect class="v-sb" x="150" y="147" width="27" height="10"/>
+  <rect class="v-sb" x="150" y="162" width="22" height="10"/><rect class="v-sb" x="150" y="177" width="17" height="10"/>
+  <text class="v-ty" x="290" y="51">89%</text>
+  <text class="v-ty" x="174" y="186">12%</text>
+  <text class="v-s" x="20" y="38">上の葉</text>
+  <text class="v-s" x="20" y="202">下の葉</text>
+  <text class="v-s" x="150" y="38">届く日射（上を100%）</text>
+</svg>`, "図は10層で描いた（計算は20層）。下の葉は上の葉の約8分の1の光しか受けない")
+          + K.eq("群落の中の日射（Beer の法則）",
+              [`<i>L</i><sub><i>i</i></sub> = (<i>i</i> + 0.5) × ${K.fr("LAI", "20")}`,
+               `<i>I</i><sub><i>i</i></sub> = <i>I</i><sub>0</sub> × exp(−<i>k L</i><sub><i>i</i></sub>)`,
+               `群落の値 = Σ<sub><i>i</i>=0〜19</sub> 葉1枚の値(<i>I</i><sub><i>i</i></sub>) × ${K.fr("LAI", "20")}`],
+              [["<i>L</i><sub><i>i</i></sub>", "<i>i</i> 番目の層の真ん中までに上から重なっている葉の量"],
+               ["<i>I</i><sub>0</sub>", "群落の上の日射（4章の <i>S</i><sub><i>i</i></sub>）"],
+               ["<i>k</i>", "吸光係数（消散係数）0.7。トマトでは 0.6〜0.8"],
+               ["× LAI/20", "葉の面積あたりの値を、その層の葉の量で地面あたりに直す"]])
+          + K.eq("1日の蒸散量",
+              `蒸散 = Σ<sub>288こま</sub> 群落の蒸散速度 × 300 秒 × 1.036　<small>[L/m²]</small>`,
+              [["1.036", "1日をなめらかな曲線で代表させた目減りを戻す係数（下）"]])
+          + K.tbl(["実測の5分値の一部をモデルの形に差し替え", "蒸散の比"], [
+              ["全部実測（検算）", "1.000"],
+              ["日射だけ山形に", "0.970（雲のギザギザを失う分）"],
+              ["気温・湿度だけモデルに", "0.964（日変化のとがりを失う分）"],
+              ["両方", "0.938"],
+              ["水蒸気圧を日中一定にした分の戻り", "→ 0.965 ＝ 1/1.036"],
+            ], "蒸散は気温・日射に対して下に凸（急に立ち上がる）なので、ギザギザをならすと必ず小さくなる（イェンセンの不等式）")
+          + K.eq("潅水量と10MJあたり潅水量",
+              [`潅水量 = 蒸散 × (1 + 上乗せ)`,
+               `実質日射 = ${K.fr("ハウス内の日射", "0.65")} × フィルム係数(1.00)`,
+               `10MJあたり潅水量 = ${K.fr("潅水量", "実質日射")} × 10`],
+              [["上乗せ", "塩を流すための余分。既定 15%（作業日誌3作期904日の実績。快晴の日の実際の倍率 1.10〜1.23 の中ほど）"],
+               ["0.65", "液肥レシピの日射センサー係数（作業日誌の「センサー補正係数 6.5」）"],
+               ["フィルム係数", "レシピ側の film と同じ値（中央・東とも 1.00）"]],
+              "液肥レシピは 潅水量 ＝ 実質日射 ÷ 10 × 10MJあたり で水を出すので、ここで割った 0.65 と向こうで掛ける 0.65 が打ち消し合い、狙った量の水が出る。")
+          + K.num("11月15日・中央・快晴", [
+              ["LAI", "18.0 × 0.18 ＝ 3.24"],
+              ["1日の蒸散", "1.68 L/m²"],
+              ["正午前後の蒸散速度", "0.28 mm/時"],
+              ["潅水量", "1.68 × 1.15 ＝ 1.93 L/m²"],
+              ["実質日射", "8.29 ÷ 0.65 ＝ 12.75 MJ/m²"],
+              ["10MJあたり潅水量", "1.93 ÷ 12.75 × 10 ＝ 1.52 L/m²", true],
+              ["光合成（参考）", "CO₂ 10.8 g/m²・糖 7.4 g/m²"],
+            ])
+          + K.imp("<ul><li><b>0.65 は物理量ではありません。</b>被覆の実際の透過率（季節で 0.64〜0.72）とは別物で、レシピと同じ値であることだけが大事です。</li>"
+            + "<li><b>上乗せを増やしても吸える量は増えません。</b>流亡と土の過湿が進むだけです。排液の EC が上がったときだけ一時的に増やします。</li></ul>")
+          + K.as("<ul><li>実測257日と比べた当たり：比の中央値 1.02、±20%以内が95%、外れの平均 0.07 L/m²。</li>"
+            + "<li>葉1枚 0.18 m² は仮の値で、葉幅で言うと約75 cm 相当と大きめの可能性があります。LAI に比例して蒸散が動きます。</li>"
+            + "<li>下の古い葉も上の葉と同じ能力とみなしています。</li></ul>"),
+      },
+
+      /* ---------------------------------------------------------------- 8 */
+      { label: "8", title: "土の水収支", sum: "流亡・夕方の pF・空気率の見込み",
+        html:
+          K.pt("根の張る範囲の土を1つの箱とみて、<b>潅水を入れ、蒸散と排水を引く</b>計算を5分ごとに1日分回します。"
+            + "そこから<b>地下へ抜ける量（流亡）・夕方の pF・いちばん少ない空気率</b>を出します。"
+            + "潅水量そのものはこの章では変わりません（見込みを出すだけです）。")
+          + K.fig(`<svg viewBox="0 0 340 225" role="img" aria-label="根群域の水の出入り">
+  <defs><marker id="k8t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="v-tlf"/></marker>
+  <marker id="k8g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4E9A5A"/></marker>
+  <marker id="k8r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="v-tomf"/></marker></defs>
+  <rect class="v-soil" x="50" y="72" width="240" height="112" rx="6"/>
+  <text class="v-t" x="170" y="104" text-anchor="middle">根群域（深さ 0.35 m）</text>
+  <text class="v-s" x="170" y="124" text-anchor="middle">点滴で濡れる部分（床の70%）</text>
+  <text class="v-s" x="170" y="144" text-anchor="middle">含水率 θ を5分ごとに更新</text>
+  <text class="v-s" x="170" y="164" text-anchor="middle">空気率 ＝ 0.502 − θ</text>
+  <path class="v-tl" d="M95,14 V66" marker-end="url(#k8t)"/>
+  <text class="v-tt" x="103" y="24">潅水</text>
+  <text class="v-s" x="103" y="40">日中に配る</text>
+  <path class="v-lfs" d="M245,66 V14" marker-end="url(#k8g)"/>
+  <text class="v-tg" x="253" y="24">蒸散</text>
+  <text class="v-s" x="253" y="40">吸える量まで</text>
+  <path class="v-tom" d="M170,188 V218" marker-end="url(#k8r)"/>
+  <text class="v-tr" x="180" y="208">排水（流亡）＝ K(θ)</text>
+</svg>`, "飽和（θ＝0.502）を超えた分は、その場で地下へ抜けるとみなす")
+          + K.eq("保水曲線（土の水の持ち方。大小2種類のすき間を足した形）",
+              [`<i>S</i><sub>1</sub> = [1 + (<i>α</i><sub>1</sub><i>ψ</i>)<sup><i>n</i>₁</sup>]<sup>−<i>m</i>₁</sup>`,
+               `<i>S</i><sub>2</sub> = [1 + (<i>α</i><sub>2</sub><i>ψ</i>)<sup><i>n</i>₂</sup>]<sup>−<i>m</i>₂</sup>`,
+               `<i>m</i> = 1 − ${K.fr("1", "<i>n</i>")}　　<i>S</i><sub>e</sub> = <i>w S</i><sub>1</sub> + (1 − <i>w</i>) <i>S</i><sub>2</sub>`,
+               `<i>θ</i> = <i>θ</i><sub>r</sub> + (<i>θ</i><sub>s</sub> − <i>θ</i><sub>r</sub>) <i>S</i><sub>e</sub>`],
+              [["<i>ψ</i>", "水を引きとめる力の大きさ（マトリックポテンシャル）[J/kg]"],
+               ["<i>S</i><sub>1</sub>, <i>S</i><sub>2</sub>", "大きいすき間・小さいすき間それぞれの水の満ち具合（0〜1）"],
+               ["<i>S</i><sub>e</sub>", "土全体の水の満ち具合（0〜1）"],
+               ["<i>θ</i>", "体積含水率 [m³/m³]"],
+               ["<i>θ</i><sub>r</sub>, <i>θ</i><sub>s</sub>", "残留含水率 0.177・飽和含水率 0.502（＝すき間の全体）"],
+               ["<i>w</i>", "大きいすき間（団粒の間）の割合 0.324"],
+               ["<i>α</i><sub>1</sub>, <i>n</i><sub>1</sub>", "大きいすき間 0.699 kg/J・2.013（pF 1.2 くらいで抜け始める）"],
+               ["<i>α</i><sub>2</sub>, <i>n</i><sub>2</sub>", "小さいすき間 0.00441 kg/J・1.590"]],
+              "この土（シルト質壌土）の実測の pF 曲線に当てはめた値。pF ＝ log₁₀(<i>ψ</i> × 10.197)（J/kg を水柱 cm に直して常用対数）。")
+          + K.eq("透水係数と排水（単位勾配）",
+              [`<i>A</i> = <i>wα</i><sub>1</sub>[1 − (1 − <i>S</i><sub>1</sub><sup>1/<i>m</i>₁</sup>)<sup><i>m</i>₁</sup>]<br>+ (1 − <i>w</i>)<i>α</i><sub>2</sub>[1 − (1 − <i>S</i><sub>2</sub><sup>1/<i>m</i>₂</sup>)<sup><i>m</i>₂</sup>]`,
+               `<i>B</i> = <i>wα</i><sub>1</sub> + (1 − <i>w</i>)<i>α</i><sub>2</sub>`,
+               `<i>K</i>(<i>θ</i>) = <i>K</i><sub>s</sub> × <i>S</i><sub>e</sub><sup>0.5</sup> × (${K.fr("<i>A</i>", "<i>B</i>")})²`,
+               `排水速度 = <i>K</i>(<i>θ</i>)`],
+              [["<i>K</i><sub>s</sub>", "飽和透水係数 100 mm/日（未実測）"],
+               ["<i>K</i>(<i>θ</i>)", "その含水率での透水係数 [mm/日]。乾くと急に小さくなる（Mualem の式）"],
+               ["単位勾配", "潅水の数時間後には深さ方向の水分がならされ、重力だけで下へ流れるとみなす"]])
+          + K.eq("根が吸える量（式9.20・9.22）",
+              [`<i>A</i><sub>w</sub> = ${K.fr("<i>θ</i> − 0.248", "0.420 − 0.248")}　<small>（0〜1）</small>`,
+               `<i>U</i><sub>p</sub>* = 1 − (1 + 1.37 <i>A</i><sub>w</sub>)<sup>−5</sup>`,
+               `実際の蒸散 = min(計算した蒸散,　6 mm/日 × <i>U</i><sub>p</sub>*)`],
+              [["<i>A</i><sub>w</sub>", "有効水分度。圃場容水量（pF 1.8、<i>θ</i>＝0.420）で1、しおれ点（<i>θ</i>＝0.248）で0"],
+               ["<i>U</i><sub>p</sub>*", "根が吸える割合"],
+               ["6 mm/日", "根系の最大吸水速度（未実測）"]],
+              "比べるのは1日の合計どうし（朝の含水率で評価）。瞬間の蒸散速度と比べると、昼のピークで毎日頭を打ってしまうため。")
+          + K.eq("5分ごとの更新",
+              [`<i>θ</i> ← <i>θ</i> + ${K.fr("潅水 × <i>w</i><sub>潅</sub>", "深さ")}　<small>（飽和を超えた分はその場で流亡）</small>`,
+               `<i>θ</i> ← <i>θ</i> − ${K.fr("蒸散 × <i>w</i><sub>潅</sub> + <i>K</i>(<i>θ</i>) × 5分", "深さ")}`,
+               `空気率 = 0.502 − <i>θ</i>`],
+              [["<i>w</i><sub>潅</sub>", "潅水と蒸散を配る重み（6〜17時の山形）"],
+               ["深さ", "根群域 350 mm。潅水・蒸散は濡れる部分（床の70%）に集まるので、床あたりの量を 0.70 で割ってから入れる"]],
+              "出ていく量が残留含水率を割るときは、割らない量まで比例で縮める。")
+          + K.num("11月15日・中央・快晴（朝 pF 1.8 から）", [
+              ["地下へ抜ける量", "0.08 L/m²（流亡率 4%）"],
+              ["夕方の pF", "1.79"],
+              ["いちばん少ない空気率", "8.2%"],
+            ])
+          + K.tbl(["こんなとき", "画面に出る注意"], [
+              ["空気率が 8% を下回る", "回数を分けて1回量を減らす"],
+              ["潅水の 40% 超が抜ける", "減らす余地がある"],
+              ["圃場容水量超えが20時間以上", "土が乾く時間が無い"],
+              ["日射が 3 MJ 未満", "控えめにしないと過湿"],
+              ["夕方の有効水分度が 0.3 未満", "翌朝までに乾きすぎないか見る"],
+            ])
+          + K.p("「潅水基準を変えたらどうなるか」の表は、10MJあたりを 1.0〜4.0 に振って、<b>同じ天気が毎日つづいたら</b>流亡率・pF・空気率がどこに落ち着くかを、この計算を日を重ねて回して出しています。")
+          + K.imp("<b>空気率は鵜呑みにしないでください。</b>目安の10%を下回る値が出ますが、実際に栽培できています。"
+            + "飽和透水係数・根群域の深さ・濡れる面積の割合が実測ではないためです。"
+            + "また「落ち着いた ＝ 健全」ではありません。乾かしすぎると、吸えなくなって蒸散が潅水まで抑えられた形で落ち着きます。")
+          + K.as("土の中の塩（EC）が吸水を削る効果は、この章の式には入っていません（9章の最後で別に見ています）。"),
+      },
+
+      /* ---------------------------------------------------------------- 9 */
+      { label: "9", title: "N量とECの帯", sum: "目標収量から逆算し、受光量で日に配る",
+        html:
+          K.pt("<b>量は N 需要で決め、EC は帯で挟むだけ</b>です。"
+            + "目標収量から作期に要る N を逆算し、その日の<b>受光量の取り分</b>で日に配ります。"
+            + "その N 量で給液 EC が月ごとの帯から外れたときだけ、帯の端まで戻します。")
+          + K.flow([
+              { t: "目標収量 33 kg/m²（果実の生重）", c: "pt" },
+              { t: "× 果実の乾物率 0.05 ÷ 果実への分配 0.55", d: "→ 全乾物 3,000 g/m²", c: "eq" },
+              { t: "× 株全体の N 濃度 0.0227", d: "→ 作期の吸収 N 68.2 kg/10a", c: "eq" },
+              { t: "− 地力窒素 30.5 → ÷ 利用率 0.70", d: "→ 作期の施肥 N 53.9 kg/10a", c: "eq" },
+              { t: "× その日の受光量 ÷ 作期の受光量の合計", d: "→ 1日の N 量", c: "eq" },
+              { t: "給液 EC が月の帯に入るか", d: "外れたら帯の端の EC になる N 量に戻す", c: "imp" },
+            ])
+          + K.eq("株全体の N 濃度",
+              `<i>N</i><sub>全</sub> = Σ 分配率 × N 濃度 = 0.55×1.8% + 0.45×(0.50×4.0% + 0.35×1.8% + 0.15×1.5%) = 2.27%`,
+              [["0.55", "果実への乾物の分配"],
+               ["0.50・0.35<br>・0.15", "残りの乾物を 葉・茎・根 に分ける割合"],
+               ["1.8・4.0<br>・1.8・1.5%", "果実・葉・茎・根 の N 濃度"]],
+              "果実1トンあたりにすると 0.0227 × 0.05 ÷ 0.55 × 1000 ＝ 2.07 kg-N/t（文献の幅 2.0〜3.0 の中）。")
+          + K.eq("作期の施肥 N",
+              [`吸収 N = 目標収量 × 1000 × 0.05 ÷ 0.55 × <i>N</i><sub>全</sub>　<small>[g/m² ＝ kg/10a]</small>`,
+               `施肥 N = ${K.fr("吸収 N − 地力窒素 30.5", "利用率 0.70")}`],
+              [["地力窒素", "土（堆肥を含む）が出す N [kg/10a]"],
+               ["利用率", "施肥した N のうち作物が吸う割合（流亡などの損失を込みにした値）"]])
+          + K.eq("その日の取り分",
+              [`受光量 = ハウス内の日射 × [1 − exp(−0.7 × LAI<sub>計画</sub>)]`,
+               `1日の N 量 = 施肥 N × ${K.fr("その日の受光量", "作期の受光量の合計")}`],
+              [["LAI<sub>計画</sub>", "作業計画の葉の枚数 × 0.18 m²"],
+               ["1 − exp<br>(−0.7 LAI)", "群落が受け止める光の割合"],
+               ["作期の合計", "8月〜翌7月の平年の日射で1日ずつ受光量を足したもの。定植前（9月中旬より前）は数えない"]],
+              "1週間の N 量は、その日から7日間の<b>快晴の日射</b>で同じ計算をして足したもの（レシピ側が ÷7 するため）。")
+          + K.eq("N 量 → 給液 EC",
+              [`<i>c</i><sub>N</sub> = ${K.fr("<i>N</i><sub>日</sub>", "<i>W</i>")} × 1000`,
+               `給液 EC = ${K.fr("<i>c</i><sub>N</sub> ÷ 1000", "<i>r</i><sub>N</sub>")} × <i>k</i><sub>EC</sub> + <i>EC</i><sub>原水</sub>`],
+              [["<i>c</i><sub>N</sub>", "液肥の N 濃度 [mg-N/L]"],
+               ["<i>N</i><sub>日</sub>", "1日の N 量 [kg-N/10a]（＝ g-N/m²）"],
+               ["<i>W</i>", "潅水量 [L/m²]"],
+               ["<i>r</i><sub>N</sub>", "肥料の N 比。トケル養液配合1号で 0.100（肥料 1 g に N 0.1 g）"],
+               ["<i>k</i><sub>EC</sub>", "肥料の EC 係数。肥料 1 g/L あたり 1.0 dS/m（2026-11 実測）"],
+               ["<i>EC</i><sub>原水</sub>", "井戸水の EC 0.18 dS/m（2026-11 実測）"]],
+              "帯から外れたときは、この式を逆に解いて「帯の端の EC になる N 量」に戻す。")
+          + K.eq("帯の上限の決め方",
+              `給液 EC の上限 = ${K.fr("狙う ECe × 0.502", "0.420 × 3")}`,
+              [["ECe", "飽和抽出液の EC。文献の塩害のしきい値と比べる物差し"],
+               ["3", "根のまわりで給液が濃くなる倍率（仮定）"],
+               ["0.502 / 0.420", "飽和含水率 / 圃場容水量の含水率（同じ塩を飽和の水に薄めた濃さに直す）"]])
+          + K.tbl(["月", "給液 EC の帯 [dS/m]（狙う ECe）"], [
+              ["9・10月", "0.40〜1.00（2.5）上げない"],
+              ["11月", "0.40〜1.40（3.5）"],
+              ["12・1月", "0.40〜1.60（4.0）生殖側へ振る"],
+              ["2月", "0.40〜1.40（3.5）"],
+              ["3月", "0.40〜1.20（3.0）春に向けて下げる"],
+              ["4〜6月", "0.40〜1.00（2.5）強光期。尻腐果を避ける"],
+            ], "下限は作期を通して 0.40。7・8月は液肥を流さない")
+          + K.fig(`<svg viewBox="0 0 340 150" role="img" aria-label="11月の給液ECの帯">
+  <defs><marker id="k9r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="v-tomf"/></marker>
+  <marker id="k9y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#D9960F"/></marker></defs>
+  <path class="v-ax" d="M20,70 H320"/>
+  <rect class="v-lf" x="80" y="56" width="150" height="28" rx="4"/>
+  <text class="v-s" x="20" y="100" text-anchor="middle">0</text>
+  <text class="v-s" x="95" y="100" text-anchor="middle">0.5</text>
+  <text class="v-s" x="170" y="100" text-anchor="middle">1.0</text>
+  <text class="v-s" x="245" y="100" text-anchor="middle">1.5</text>
+  <text class="v-s" x="318" y="100" text-anchor="end">2.0 dS/m</text>
+  <text class="v-tg" x="80" y="50" text-anchor="middle">下限0.40</text>
+  <text class="v-tg" x="230" y="50" text-anchor="middle">上限1.40</text>
+  <path class="v-tl" d="M171,28 V54"/><circle cx="171" cy="70" r="6" class="v-tlf"/>
+  <text class="v-tt" x="171" y="22" text-anchor="middle">11/15 → 1.00（帯の中）</text>
+  <path class="v-tom" d="M314,116 H254" marker-end="url(#k9r)"/>
+  <text class="v-tr" x="246" y="121" text-anchor="end">上に出たら上限へ（N を減らす）</text>
+  <path class="v-sun" d="M24,138 H70" marker-end="url(#k9y)"/>
+  <text class="v-ty" x="78" y="143">下に出たら下限へ（N を増やす）</text>
+</svg>`, "11月の帯。外れたときだけ帯の端まで戻し、N 量のほうを合わせる")
+          + K.h("ハウスごとの割合ボタン")
+          + K.eq("潅水を 90% などに減らしたハウス",
+              [`水 = 潅水量 × 割合`,
+               `N 量 = 帯で挟み直す( 100% のときの N 量,　潅水量 × 割合 )`],
+              null,
+              "N 量が同じで水が減ると、給液 EC は 1/割合 倍に上がる。帯に収まる限り N 量は据え置き（レシピの倍率が下がって濃くなる）、上限に当たったら上限の EC で止める（N 量のほうが減る）。")
+          + K.num("11月15日・中央・快晴", [
+              ["その日の受光量", "8.29 × (1 − e<sup>−0.7×3.24</sup>) ＝ 7.43 MJ/m²"],
+              ["作期の受光量の合計", "2,513 MJ/m²"],
+              ["取り分", "0.296%"],
+              ["1日の N 量", "53.9 × 0.296% ＝ 0.159 kg-N/10a", true],
+              ["N 濃度", "0.159 ÷ 1.93 × 1000 ＝ 82 mg-N/L"],
+              ["給液 EC", "0.82 × 1.0 ＋ 0.18 ＝ 1.00 dS/m（帯の中）"],
+            ])
+          + K.h("参考：その EC は吸水をどれだけ削るか")
+          + K.eq("塩が水を引きとめる力と吸水の駆動力",
+              [`根のまわりの EC = 給液 EC × ${K.fr("1", "流亡率")}　<small>（流亡率 2% 未満は ×3 と置く）</small>`,
+               `浸透ポテンシャル = 36 × 根のまわりの EC　<small>[J/kg]</small>`,
+               `駆動力の比 = ${K.fr("1000 − 6.2 − 浸透ポテンシャル", "1000 − 6.2")}`],
+              [["1/流亡率", "流した水の一部しか抜けないと、塩はその逆数倍に濃くなって落ち着く"],
+               ["1000", "葉の水ポテンシャルの大きさ（−1.0 MPa）[J/kg]"],
+               ["6.2", "圃場容水量（pF 1.8）での土の引きとめる力 [J/kg]"]],
+              "湿った土では、根が感じる引きとめる力は EC（浸透ポテンシャル）が大半を占める。")
+          + K.eq("塩害の見込み",
+              [`ECe = 根のまわりの EC × ${K.fr("0.420", "0.502")}`,
+               `収量の比 = 1 − 0.099 × (ECe − 2.5)　<small>（ECe ≦ 2.5 なら 1）</small>`,
+               `糖度の変化 = 0.4 × (ECe − 2.5)　<small>[°Brix]</small>`],
+              [["2.5", "減収が始まる ECe（FAO）[dS/m]"],
+               ["0.099", "ECe 1 dS/m あたりの減収（9.9%）"]])
+          + K.imp("公的な施肥基準（道南農試 0.075〜0.60 kg-N/10a・日）はどれも<b>1日の N 量</b>で書かれています。"
+            + "EC を一定に保つ管理は、草勢過多・異常茎・尻腐果の原因として報告されています。だから EC は「挟むだけ」にしています。")
+          + K.as("<ul><li><b>地力窒素 30.5 と利用率 0.70 は、実績から逆算した対の値</b>です。片方だけ動かすと合わなくなります。</li>"
+            + "<li>根のまわりの EC は実測で確かめていません（土耕なので排液 EC は測れない）。土の 1:5 水浸出で確かめるのが次の手です。</li>"
+            + "<li>9〜10月は流亡がほぼゼロで塩の出口が無く、根のまわりの EC が年でいちばん高くなります（画面に注意が出ます）。</li></ul>"),
+      },
+
+      /* ---------------------------------------------------------------- 10 */
+      { label: "10", title: "液肥レシピへの受け渡しと実績比較", sum: "リンクで渡す数字・天気の比・過去の同じ日",
+        html:
+          K.pt("潅水アプリと液肥レシピは1つにまとめず、<b>リンクで数字だけ渡します</b>。"
+            + "レシピ側の「電波が無くても動く」「記録をスプレッドシートに残す」を失わないためです。")
+          + K.tbl(["リンクの名前", "中身"], [
+              ["need", "10MJあたり潅水量 [L/m²]"],
+              ["eday", "1日の日射（ハウス内）[MJ/m²]"],
+              ["leach", "上乗せ [%]"],
+              ["curve", "日射ごとの蒸散量の表（0〜26 MJ の17点）"],
+              ["coef・film", "0.65・フィルム係数（レシピ側の設定と合っているかの照合用）"],
+              ["nday・nweek", "1日の N 量・1週間の N 量 [kg-N/10a]"],
+              ["master", "n（1日の N 量を主にする）"],
+              ["nsaku", "作期の施肥 N（レシピ側で元肥を引くため）"],
+              ["pct_中央 など", "100% 以外を選んだハウスだけ。割合と、そのハウスの N 量"],
+            ])
+          + K.h("なぜ蒸散の表（curve）を渡すのか")
+          + K.p("レシピは「潅水量 ＝ 10MJあたり × 実質日射 ÷ 10」の<b>直線</b>で水を出します。"
+            + "ところが蒸散は日射に対して直線ではないので、朝に決めた係数のまま日射だけ外れると1日の合計がずれます。")
+          + K.tbl(["実際の日射", "直線 → 正しい [L/m²]", "直線は"], [
+              ["2 MJ", "0.54 → 0.67", "<span class=\"red\">19% 少ない</span>"],
+              ["6 MJ", "1.62 → 1.51", "8% 多い"],
+              ["12 MJ（計画）", "3.25 → 3.24", "ほぼ同じ"],
+              ["16 MJ", "4.33 → 4.58", "<span class=\"red\">5% 少ない</span>"],
+            ], "朝に 12 MJ で決めた係数のまま、日射だけ外れた場合（ある日の例）。暗い日に直線が少なく出るのは、夜の蒸散と上乗せが日射に比例して減らないため")
+          + K.p("表を渡せば、日中に日射が外れたときも、レシピ側で曲がりを保ったまま1日の合計を出し直せます。"
+            + "表の点のあいだは直線でつなぐので、曲がりの急な暗い側だけ 1 MJ 刻みにしています（2 MJ 刻みだと 2.3% ずれる）。")
+          + K.eq("気温・湿度・CO₂ を打ち替えた日だけ掛ける比",
+              `天気の比 = ${K.fr("打ち替えた天気での蒸散", "推定の天気での蒸散")}`,
+              null,
+              "表は推定の天気で作ってあるので、打ち替えた日は表の全点にこの比を掛けて渡す。触っていない日は掛けない（リンクは1文字も変わらない）。「触った」は、欄が最初に作られたときの値と比べて決める。")
+          + K.h("「実績・ふだん」との比較")
+          + K.p("過去の作業日誌から、<b>同じ時期（前後10日、足りなければ15→21→30日に広げる）</b>で"
+            + "<b>同じくらいの明るさ（入れた日射の ±25%、最低 ±1.5 MJ）</b>の日を集め、潅水量の中央値を出しています。"
+            + "使うのは2023年8月以降の3作期です。")
+          + K.imp("<b>実績はモデルの計算にいっさい使っていません。</b>答え合わせ用です。"
+            + "明るさをそろえないと、快晴の計算値を曇りも含めた平均と並べることになり（10月なら1.7倍違う）、モデルが大きく見えます。"),
+      },
+
+      /* ---------------------------------------------------------------- 11 */
+      { label: "11", title: "前提が崩れるとき（まとめ）", sum: "どこが外れると、どちらにずれるか",
+        html:
+          K.pt("当たりやすいのは<b>蒸散（＝潅水量）</b>、当たりにくいのは<b>光合成の絶対量</b>と<b>土の空気率</b>です。"
+            + "数字が思ったのと違う日は、まず「この日の前提条件」を開いて、気温・湿度・LAI を確かめてください。")
+          + K.tbl(["前提", "崩れるとき → どうずれる"], [
+              ["葉1枚 0.18 m²（仮）", "実際が小さい → <span class=\"red\">蒸散を多めに出す</span>（いちばん効く）"],
+              ["気温・湿度は季節＋明るさの推定", "7〜9月・換気がいつもと違う日 → 外れる。実測で打ち替える"],
+              ["日射は1日を山形に配る", "雲が多い日 → 数%"],
+              ["気孔は光と CO₂ だけで決まる", "土が乾く・高温・高い飽差 → 蒸散を多めに出す"],
+              ["群落の中は上下で一様", "上下で気温や湿度の差が大きい → 少しずれる"],
+              ["光合成", "絶対量は約3倍足りない → 参考値として見る"],
+              ["土の未実測の値（透水・根群域・濡れる面積）", "→ 流亡・空気率がずれる（潅水量は変わらない）"],
+              ["地力窒素・利用率", "堆肥の量ややり方が変わる → N 量がずれる"],
+              ["根のまわりの EC（濃縮3倍）", "実測なし → 帯の上限の意味がずれる"],
+            ])
+          + K.imp("日射は<b>快晴の計算値のまま</b>使い、暗い日は液肥レシピで2回目以降の日射を減らします。"
+            + "日射を打ち替えると、気温・湿度の欄が推定し直されず、画面の潅水量と EC の判定が古い気温で計算されます（暗い日ほど大きくずれる）。")
+          + K.as("アプリは12時間だれも開かないと眠ります（Streamlit の無料枠の決まり）。開くと1分ほどで起きます。"),
+      },
+    ],
+    afterTitle: "直したときは",
+    after: "潅水アプリの式や定数（<code>config.py</code>・<code>core/</code>）を変えたら、この解説書の該当する章も直します。"
+         + "計算例（11月15日）は、アプリの式をそのまま回して出した数字です。"
+         + "<br>関連：液肥混入機レシピ（この数字を受け取る）・栽培記録の「水やりと蒸散」（同じ計算で過去の蒸散を出している）。",
+  },
   {
     id: "handbook", kind: "slide", icon: "📕",
     title: "スタッフハンドブック",
@@ -733,8 +1581,10 @@ function card(m){
   // 手順書は「手順 A〜F」のように、最初と最後のまとまりの記号で数を見せる
   const meta = m.kind === "tejun"
     ? `手順 ${m.parts[0].label}〜${m.parts[m.parts.length - 1].label}・${m.time}・${m.updated} 更新`
-    : m.meta;
-  const href = m.kind === "tejun" ? `#${m.id}` : m.href;
+    : m.kind === "kaisetsu"
+      ? `全${m.chapters.length}章・${m.time}・${m.updated} 更新`
+      : m.meta;
+  const href = m.kind === "slide" ? m.href : `#${m.id}`;
   return `<a class="card k-${m.kind}" href="${href}">
       <span class="ic" aria-hidden="true">${m.icon}</span>
       <span class="tx"><span class="tt">${m.title}</span>
@@ -743,9 +1593,14 @@ function card(m){
 }
 function drawShelf(){
   const tejun = MANUALS.filter(m => m.kind === "tejun");
+  const kaisetsu = MANUALS.filter(m => m.kind === "kaisetsu");
   const slide = MANUALS.filter(m => m.kind === "slide");
   $("#cards").innerHTML =
       `<h2 class="shelf-h">作業の手順</h2><div class="cards">${tejun.map(card).join("")}</div>`
+    + (kaisetsu.length
+        ? `<h2 class="shelf-h">アプリの理屈<small>計算のしくみと式</small></h2>`
+          + `<div class="cards">${kaisetsu.map(card).join("")}</div>`
+        : "")
     + `<h2 class="shelf-h">スライドの本<small>みんなのページからも開けます</small></h2>`
     + `<div class="cards">${slide.map(card).join("")}</div>`;
 }
@@ -817,6 +1672,39 @@ function drawDoc(m){
   };
 }
 
+/* ===== 解説書 =====
+   章はたたんで並べる（スマホで目次の代わりになる）。最初の章だけ開いておく。
+   チェックは無いので、端末には何も覚えさせない */
+function drawKaisetsu(m){
+  const appBtn = m.app
+    ? `<a class="appbtn" href="${m.app}" target="_blank" rel="noopener">${m.appName || "アプリ"}を開く ›</a>`
+    : "";
+  let h = `<h2 class="dt">${m.icon} ${m.title}</h2>
+    <div class="upd">${m.updated} 更新・${m.time}</div>
+    <div class="why">${m.why}</div>
+    <div class="legend" aria-label="色の意味">
+      <span class="lg-pt">緑＝ポイント</span><span class="lg-eq">青＝式</span>
+      <span class="lg-imp">赤＝ここが大事</span><span class="lg-as">黄＝前提と限界</span>
+      <span class="lg-num">灰＝計算例</span></div>
+    ${appBtn}
+    <div class="kbtns"><button type="button" id="kOpen">全部ひらく</button>
+      <button type="button" id="kClose">全部とじる</button></div>`;
+  m.chapters.forEach((c, i) => {
+    h += `<details class="part chap"${i === 0 ? " open" : ""}>
+      <summary><span class="pk">${c.label}</span>
+        <span class="pt"><b>${c.title}</b>${c.sum ? `<small>${c.sum}</small>` : ""}</span>
+        <span class="pc"></span></summary>
+      <div class="body">${c.html}</div></details>`;
+  });
+  if(m.after) h += `<div class="after"><h3>${m.afterTitle || "関連"}</h3>${m.after}</div>`;
+  h += appBtn;
+  $("#doc").innerHTML = h;
+  $("#doc").onchange = null;
+  const all = open => document.querySelectorAll("#doc details.chap").forEach(d => { d.open = open; });
+  $("#kOpen").onclick = () => all(true);
+  $("#kClose").onclick = () => all(false);
+}
+
 /* 保存してあるチェックを画面に反映し、まとまりごとの「済/全」と全体の進み具合を出す */
 function applyChecks(id){
   const done = new Set(readChecks()[id] || []);
@@ -846,10 +1734,10 @@ function applyChecks(id){
 /* ===== 画面の切り替え。URL の # で決める（#ec なら EC計の手順書） ===== */
 function route(){
   const id = decodeURIComponent(location.hash.slice(1));
-  const m = MANUALS.find(x => x.id === id && x.kind === "tejun");
+  const m = MANUALS.find(x => x.id === id && (x.kind === "tejun" || x.kind === "kaisetsu"));
   const back = $("#back");
   if(m){
-    drawDoc(m);
+    if(m.kind === "kaisetsu") drawKaisetsu(m); else drawDoc(m);
     $("#shelf").hidden = true; $("#doc").hidden = false;
     back.href = "#"; back.textContent = "‹ マニュアル一覧";
     document.title = `${m.title}｜マニュアル`;
