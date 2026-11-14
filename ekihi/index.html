@@ -357,6 +357,9 @@ details.fold[open] > summary .hint::after{content:"　▲"}
     </div>
     <div class="sec-body">
       <div class="outs" id="today-out" style="border-top:none;padding-top:0;margin-top:0"></div>
+      <!-- 作期の通算（2026-11-14）。目標の総量に対して、ここまでどれだけ入ったか -->
+      <div class="outs" id="saku-out"></div>
+      <p class="foot" id="sakunote"></p>
       <details class="foldnote">
         <summary>この数字の出どころ・1週間のN量</summary>
         <p class="foot" id="usenote"></p>
@@ -1000,6 +1003,34 @@ function nanokaNoN(house, date){
   return { total, days };
 }
 
+/** 作期の通算N（2026-11-14 追加）。
+    作期の初め（8月1日）からその日までの、記録した日の1日N量を足す。
+    記録の無い日は 0（潅水しなかった日とみなす）。
+    目標は「作期の総量 nsaku − 元肥」＝液肥で入れる総量。nsaku は、
+    その作期でその日までにいちばん新しく受け取ったものを使う
+    （目標収量を変えない限り、日が変わっても同じ値が来る）。
+    倍率はこれを見て動かさない。見て判断するための数字（1週間のN量と同じ考え方）。 */
+function sakuNoN(house, date){
+  const saku = sakuOf(date);
+  const hajime = `${saku}-08-01`;
+  let total = 0, days = 0, nsaku = null, nsakuHi = "";
+  for(const k of Object.keys(state.days)){
+    if(!k.startsWith(house + "|")) continue;
+    const hi = k.split("|")[1];
+    if(hi < hajime || hi > date) continue;
+    const kk = state.days[k];
+    if(kk.saved && Number.isFinite(Number(kk.saved.D))){
+      total += Number(kk.saved.D); days++;
+    }
+    if(has(kk.nsaku) && num(kk.nsaku) > 0 && hi >= nsakuHi){
+      nsaku = num(kk.nsaku); nsakuHi = hi;
+    }
+  }
+  const mt = motoNo(state.set[house], date);
+  const mokuhyo = (nsaku !== null && mt.ok) ? Math.max(nsaku - mt.n, 0) : null;
+  return { saku, hajime, total, days, nsaku, moto: mt, mokuhyo };
+}
+
 /** 指定ハウスの、その日ぶんをまとめる。
     そのままスプレッドシートに送れる形にしておく。 */
 function matome(house, date){
@@ -1532,6 +1563,25 @@ function render(){
     + o("灌水時間 合計", hms(r.P))
     + o("日射（ハウス）", fmt(r.eMikomi,1), "MJ/㎡")
     + o("日射（外・近似）", fmt(jSoto,1), "MJ/㎡", "hi");
+
+  // ---- 作期の通算N（目標に対して、ここまでどれだけ入ったか）----
+  const sn = sakuNoN(state.house, state.date);
+  $("#saku-out").innerHTML =
+      o("作期の通算N（記録の合計）", fmt(sn.total,1), "kg/10a")
+    + (sn.mokuhyo !== null
+        ? o("液肥の目標（作期）", fmt(sn.mokuhyo,1), "kg/10a")
+          + o("目標に対して", sn.mokuhyo > 0 ? fmt(sn.total/sn.mokuhyo*100,0) : "—", "％", "hi")
+        : "");
+  $("#sakunote").innerHTML =
+      `${sn.saku}年作（${sn.saku}年8月1日〜）で記録した ${sn.days} 日ぶんの1日N量の合計です。`
+    + `記録の無い日は 0 として数えています（潅水した日は「この日を記録する」を押してください）。`
+    + (sn.mokuhyo !== null
+        ? `目標は、めやすアプリの作期の総量 ${fmt(sn.nsaku,1)} から元肥 ${fmt(sn.moto.n,1)} を`
+          + `引いた ${fmt(sn.mokuhyo,1)} kg/10a です。`
+          + `N は光の量に比例して配っているので、暗い冬は進みが遅く、春に大きく進みます。`
+        : (sn.nsaku === null
+            ? `目標は、めやすアプリの黄色いボタンから開くと出ます。`
+            : `目標は、今作の元肥のN量を登録すると出ます。`));
   $("#usenote").innerHTML =
     `使用量 ＝ ハウス全体のN量 ${fmt(zenN,3)} kg ÷ 含有N率 ${fmt(f.m.n*100,1)}％。`
     + `　肥料を変えるときは「液肥のもと」で選びなおしてください。<br>`
