@@ -139,6 +139,8 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 .wx .l{font-size:13px;font-weight:800;color:var(--muted);line-height:1.3}
 .wx .t{font-size:21px;font-weight:800;line-height:1.25}
 .wx .n{font-size:11.5px;font-weight:700;color:var(--muted);line-height:1.3}
+.wx .r{font-size:12.5px;font-weight:700;line-height:1.3;margin:1px 0 2px}
+.wx .r small{display:block;font-size:11px;color:var(--muted)}
 .wx button[aria-pressed="true"]{border-color:var(--night);background:var(--night-soft)}
 .wx button[aria-pressed="true"] .l,.wx button[aria-pressed="true"] .t{color:var(--night)}
 .wx button:disabled{opacity:.45;cursor:default}
@@ -463,6 +465,15 @@ footer a{color:var(--muted)}
       <li>その日の前後7日について、天気ごと・年ごとに平均し、さらに年の間で平均します（どの年も同じ重みにするため）</li>
       <li>曇雨天は日数が少ない時期があります。ボタンの「○年・○日」で、どれくらい当てになるかを見てください</li>
     </ul>
+    <p><b>振れ幅</b>は、同じ天気の日でも日中平均が日によって違う分を示します。その天気の日の<b>8割がこの範囲に入ります</b>（10日に2日は外れます）。</p>
+    <div class="eq">振れ幅 ＝ 平年値 ± 1.48 × 同じ日々（前後7日・同じ天気）のばらつき（標準偏差）</div>
+    <ul>
+      <li>1.48 は、年度を1つずつ伏せて残りの年度から振れ幅を作り、伏せた年度の日（10〜4月、2,522日）の8割が入るように合わせた値です（2026-11-14）</li>
+      <li>天気・ハウス・月ごとに見ても77〜82%が入りました。東の曇雨天だけは67%でしたが、外れたのは管理の違う2020〜2022年度で、直近3年度は86〜94%入っています</li>
+      <li>同じ天気の日が5日より少ないときは、ばらつきが当てにならないので振れ幅を出しません</li>
+      <li>平年値の外れ（平均的な大きさ）は12〜3月で1.0〜1.2℃、11月1.4℃、10月・4月は1.7〜1.9℃でした。平均のとり方を変えても（局所回帰・直近の年だけ など）ほとんど変わらなかったので、平年値の出し方はそのままにしています</li>
+      <li>より近い値がほしいときは、③の下の「実況やアグリネットから計算する」（実況＋予報の式。11〜3月の外れは約0.5〜0.7℃）を使ってください</li>
+    </ul>
     <p id="heinenSrc"></p>
   </div>
 </details>
@@ -496,6 +507,11 @@ const RULE = {
   pickToleranceC: 0.25,                    // 目標をこえる幅の許し（0.5℃きざみの丸め分）
   heinenWindowDays: 7,                     // 平年値は前後7日（計15日）から
   heinenMinDays: 1,                        // その天気の日が1日でもある年は使う（曇雨天は1年に1日だけのことが多い）
+  // 振れ幅 ＝ 平年値 ± この係数 × 同じ日々（前後7日・同じ天気・全部の年）の標準偏差。
+  // 2026-11-14 に年度を1つずつ伏せて確かめ、10〜4月の 2,522日の 80.0% が入る値に合わせた
+  // （天気・ハウス・月ごとでも 77〜82%。東の曇雨天だけ 67% だが、外れたのは管理の違う 2020〜2022年度で、直近3年度は 86〜94%）
+  spreadK: 1.48,
+  spreadMinDays: 5,                        // 同じ天気の日がこれより少ないと、ばらつきが当てにならないので振れ幅を出さない
 };
 
 /* 天気の分け方（晴天指数 ＝ 宇都宮の日射量 ÷ 快晴時の計算値） */
@@ -694,15 +710,18 @@ function planWeekOf(date, plan) {
 }
 
 /* 過去の同じ時期（前後7日）の日中平均を、天気ごとに出す。
-   戻り値：{ clear: {mean, min, max, years, days, perYear}, partly: {...}, cloudy: {...} }
-   その天気の記録が無いときは mean が null */
+   戻り値：{ clear: {mean, min, max, years, days, perYear, lo, hi}, partly: {...}, cloudy: {...} }
+   その天気の記録が無いときは mean が null。lo・hi は振れ幅（日が足りなければ null） */
 const meanOf = a => a.reduce((s, x) => s + x, 0) / a.length;
+/* 標本標準偏差（n−1 で割る）。2個未満では決まらないので null */
+const sdOf = a => a.length < 2 ? null : Math.sqrt(a.reduce((s, x) => s + (x - meanOf(a)) ** 2, 0) / (a.length - 1));
 function heinenOf(date, house, data) {
   const seasons = data && data.houses && data.houses[house];
   if (!seasons) return null;
   const sd = seasonDay(date);
   const own = seasonStartYear(date) + 1;          // この日の年度（自分の年は平年に入れない）
   const acc = Object.fromEntries(WX.map(w => [w.key, []]));
+  const pool = Object.fromEntries(WX.map(w => [w.key, []]));   // 振れ幅用：年を分けずに全部の日
   for (const [season, rec] of Object.entries(seasons)) {
     if (Number(season) === own) continue;
     const base = new Date(Number(season) - 1, 7, 1);           // その年度の8月1日
@@ -717,6 +736,7 @@ function heinenOf(date, house, data) {
     for (const w of WX) {
       if (bucket[w.key].length >= RULE.heinenMinDays) {
         acc[w.key].push({ season: Number(season), mean: meanOf(bucket[w.key]), days: bucket[w.key].length });
+        pool[w.key].push(...bucket[w.key]);
       }
     }
   }
@@ -724,10 +744,14 @@ function heinenOf(date, house, data) {
   for (const w of WX) {
     const list = acc[w.key].sort((a, b) => a.season - b.season);
     const ms = list.map(p => p.mean);
-    out[w.key] = list.length
-      ? { perYear: list, mean: meanOf(ms), min: Math.min(...ms), max: Math.max(...ms),
-          years: list.length, days: list.reduce((s, p) => s + p.days, 0) }
-      : { perYear: [], mean: null };
+    if (!list.length) { out[w.key] = { perYear: [], mean: null, lo: null, hi: null }; continue; }
+    const mean = meanOf(ms);
+    // 振れ幅：平年値（年の間の平均）を真ん中に、同じ日々のばらつきの RULE.spreadK 倍ずつ上下に広げる
+    const sd = pool[w.key].length >= RULE.spreadMinDays ? sdOf(pool[w.key]) : null;
+    out[w.key] = { perYear: list, mean, min: Math.min(...ms), max: Math.max(...ms),
+                   years: list.length, days: list.reduce((s, p) => s + p.days, 0),
+                   lo: sd === null ? null : mean - RULE.spreadK * sd,
+                   hi: sd === null ? null : mean + RULE.spreadK * sd };
   }
   return out;
 }
@@ -1492,6 +1516,7 @@ function renderHints(g) {
     return '<button type="button" data-wx="' + w.key + '" aria-pressed="' + on + '"' + (ok ? "" : " disabled") + ">" +
       '<span class="l">' + w.label + "</span>" +
       '<span class="t num">' + (ok ? c1(c.mean) + "℃" : "―") + "</span>" +
+      (ok && c.lo !== null ? '<span class="r num"><small>振れ幅</small>' + c1(c.lo) + "〜" + c1(c.hi) + "</span>" : "") +
       '<span class="n">' + (ok ? c.years + "年・" + c.days + "日" : "記録なし") + "</span></button>";
   }).join("");
   if (!HEINEN) {
@@ -1504,7 +1529,8 @@ function renderHints(g) {
     $("dayHint").textContent = "この時期の「" + wxLabel(wx) + "」の記録がありません。ほかの天気を押すか、値を入れてください。";
   } else {
     $("dayHint").innerHTML = "アグリネットの日の出〜日の入平均を入れてください。空欄の間は<b>" + wxLabel(wx) +
-      "の平年値</b>で計算します。上の値は" + esc(house) + "のハウス内、過去の同じ時期（前後7日）の天気別の平均です。";
+      "の平年値</b>で計算します。上の値は" + esc(house) + "のハウス内、過去の同じ時期（前後7日）の天気別の平均です。" +
+      "振れ幅は、同じ天気の日の8割が入る範囲です。";
   }
   $("dayavg").placeholder = hn && hn[wx].mean !== null ? c1(hn[wx].mean) : "";
   $("calcLink").href = "../nicchu/" + (g.date ? "?d=" + ymd(g.date) : "");
@@ -1550,6 +1576,20 @@ function renderResult(g) {
       tail += '<p class="hint">日中が暖かかったので、夜の必要平均は ' + c1(r.needC) + "℃ です。設定は下限（11℃、4段目は" + r.floorC + "℃）までしか下げないため、日平均は目標を " + c1(r.predictC - g.targetC) + "℃ 上回ります。</p>";
     }
   }
+  // 平年値で試算しているときだけ：日中平均が振れ幅の端だったら、夜に必要な平均がどこまで動くか
+  const sp = g.dayFrom !== "入力" && g.heinen ? g.heinen[wx] : null;
+  let spreadNote = "";
+  if (sp && sp.lo !== null) {
+    const needAt = d => (g.targetC * (r.dayH + r.nightH) - d * r.dayH) / r.nightH;   // compute() の needC と同じ式
+    // 設定の範囲（11〜16℃）の外なら、そのことを添える
+    const needTxt = d => {
+      const n = needAt(d);
+      return "<b>" + c1(n) + "℃</b>" + (n > RULE.maxC ? "（上限" + RULE.maxC + "℃をこえる）" : n < RULE.minC ? "（下限" + RULE.minC + "℃より低い）" : "");
+    };
+    spreadNote = '<p class="hint">日中平均が振れ幅の下の端（' + c1(sp.lo) + "℃）なら、夜に必要な平均は " + needTxt(sp.lo) +
+      "、上の端（" + c1(sp.hi) + "℃）なら " + needTxt(sp.hi) + " です（日中が1℃違うと、夜は約" +
+      c1(r.dayH / r.nightH) + "℃違う）。アグリネットの値が出たら③に入れてください。</p>";
+  }
   box.innerHTML =
     '<ul class="stages">' + rows + "</ul>" +
     (raise ? '<button type="button" class="undo" id="undoRaise">元の設定（' + r0.temps.map(t => t.toFixed(1)).join("・") + "℃）にもどす</button>" : "") +
@@ -1558,7 +1598,7 @@ function renderResult(g) {
       '<div class="kv"><span class="k">この設定での夜の平均</span><span class="v num">' + c1(r.nightAvgC) + "℃</span></div>" +
       '<div class="kv"><span class="k">日平均の見込み（目標 ' + c1(g.targetC) + "℃）" + tTag + '</span><span class="v num">' + c1(r.predictC) + "℃</span></div>" +
       '<div class="kv"><span class="k">計算に使った日中平均' + dayTag + '</span><span class="v num">' + c1(g.dayAvgC) + "℃</span></div>" +
-    "</div>" + tail;
+    "</div>" + spreadNote + tail;
   $("resTitle").innerHTML = "④ 暖房機に入れる設定（" + esc(house) + "）";
   return r;
 }
