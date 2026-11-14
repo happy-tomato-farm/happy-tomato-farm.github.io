@@ -1286,9 +1286,10 @@ function render(){
   const sakuAri = has(d.nsaku) && num(d.nsaku) > 0;
   $("#ndayu").innerHTML = !linkN ? `kg/10a`
     : (mt.ok && sakuAri)
-      ? `kg/10a　めやすアプリの <b>${fmt(num(d.nLinkRaw),3)}</b> から元肥ぶんを引いた値`
-        + `（作期の総量 ${fmt(num(d.nsaku),1)} − 元肥 ${fmt(mt.n,1)} ＝ 液肥 `
-        + `${fmt(Math.max(num(d.nsaku)-mt.n,0),1)} kg/10a なので <b>${fmt(wari*100,0)}％</b>）`
+      ? `kg/10a　めやすアプリの <b>${fmt(num(d.nLinkRaw),3)}</b> の `
+        + `<b>${fmt(wari*100,0)}％</b>（作期のN ${fmt(num(d.nsaku),1)} のうち元肥 `
+        + `${fmt(mt.n,1)} は入れ済みなので、残りの `
+        + `${fmt(Math.max(num(d.nsaku)-mt.n,0),1)} ぶんを液肥で配る）`
       : `kg/10a　めやすアプリの値のまま（<b>元肥を引いていない</b>）`;
   const mw = $("#motowarn");
   if(!mt.ok){
@@ -1838,11 +1839,23 @@ function motoGyo(p, date){
     const mt = motoNo(state.set[h], date);
     const d  = state.days[h + "|" + date];
     return mt.ok
-      ? `${h} <b>${fmt(num(d.nday),3)}</b>（元肥 ${fmt(mt.n,1)}）`
+      ? `${h} <b>${fmt(num(d.nday),3)}</b>`
       : `${h} <b>元肥が未登録なので引いていません</b>`;
   }).join("・");
-  return `<br>作期の総量 <b>${fmt(p.nsaku,1)}</b> kg/10a から元肥を引いて、`
-    + `液肥で入れる1日のN量は ${gyo} kg/10a`;
+  /* 「毎日 7.4 を引いている」と読まれないよう、割合で配っていることを書く。
+     説明は元肥が登録してある最初のハウスで書く（ふつうは両ハウス同じ値）。 */
+  const h0 = HOUSES.find(h => motoNo(state.set[h], date).ok);
+  let setsumei = "";
+  if(h0){
+    const moto = motoNo(state.set[h0], date).n;
+    const nokori = Math.max(p.nsaku - moto, 0);
+    setsumei = `<br>作期に入れるNは ${fmt(p.nsaku,1)} kg/10a。そのうち元肥の `
+      + `${fmt(moto,1)} は8月に入れ済みなので、液肥で入れるのは残りの `
+      + `${fmt(nokori,1)}。毎日の量を一律に <b>${fmt(nokori/p.nsaku*100,0)}％</b> にして、`
+      + `作期を通すと元肥のぶんだけ少なくなるようにしています`
+      + `（毎日 ${fmt(moto,1)} を引いているのではありません）。`;
+  }
+  return `<br>元肥のぶんを除いた、液肥で入れる1日のN量：${gyo} kg/10a` + setsumei;
 }
 
 /** 起動時に1回だけ呼ぶ */
