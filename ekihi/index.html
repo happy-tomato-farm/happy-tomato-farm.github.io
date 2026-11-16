@@ -1141,14 +1141,17 @@ function settoWoModosu(){
 async function pull(){
   netto("yomu");
   try{
+    const yomiHajime = Date.now();      // 読み込みを始めた時刻（このあと記録したものは消さない）
     const r = await fetch(API + "?want=ekihi&t=" + Date.now());
     const j = await r.json();
     if(!j.ok) throw new Error(j.error || "読み込めませんでした");
 
     let n = 0;
+    const sheetNoKagi = new Set();      // シートにある「ハウス|日付」
     for(const it of (j.ekihi || [])){
       if(!it.date || !it.house) continue;
       const k = it.house + "|" + it.date;
+      sheetNoKagi.add(k);
       const mine = state.days[k];
 
       // 手元にまだ送れていない記録があれば、そちらを優先する
@@ -1180,6 +1183,22 @@ async function pull(){
         saved:  Object.assign({}, it, { sent:true })
       };
       n++;
+    }
+
+    /* シートで消された記録は、この端末からも消す（2026-11-16）。
+       以前は読み込みで足す・書きかえるだけだったので、別の端末やパソコンで
+       消した記録がこの端末に残り、作期の通算や直近7日のN量に入り続けた。
+       消すのは「送りずみ」で「読み込みを始める前に記録した」ものだけ。
+       まだ送れていない記録・読み込みの最中に記録したものは残す。
+       シートが空で返ってきたとき（読み違い・作り直し）は何も消さない。 */
+    if(sheetNoKagi.size){
+      for(const k of Object.keys(state.days)){
+        const s = state.days[k].saved;
+        if(!s || s.sent !== true || sheetNoKagi.has(k)) continue;
+        if(Number(s.at || 0) >= yomiHajime) continue;
+        delete state.days[k].saved;
+        n++;
+      }
     }
 
     if(FRESH && n) settoWoModosu();
