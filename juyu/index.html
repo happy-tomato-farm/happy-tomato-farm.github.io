@@ -128,7 +128,7 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
       <div class="wk num" id="wkLabel"></div>
       <button type="button" id="nextWk" aria-label="次の週">次 ▶</button>
     </div>
-    <p class="hint">測った日を含む週（月〜日）が出ています。栽培記録のこの週に入ります。</p>
+    <p class="hint" id="wkHint"></p>
   </section>
 
   <section class="card">
@@ -143,7 +143,7 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
     <div class="row" id="cm2Row" hidden>
       <div class="f">
         <label for="cm2">② 給油のあとに下がった長さ</label>
-        <div class="box"><input id="cm2" type="text" inputmode="decimal" autocomplete="off"><span class="u">cm</span></div>
+        <div class="box"><input id="cm2" type="text" inputmode="decimal" autocomplete="off" placeholder="測ったら入れる"><span class="u">cm</span></div>
       </div>
     </div>
     <div class="row">
@@ -230,6 +230,9 @@ const fmt = (v, d) => v.toLocaleString("ja-JP", { minimumFractionDigits: d, maxi
 
 /* ---- 状態 ---- */
 const THIS_MON = monday(new Date());
+// 来週まで選べる。給油したときの①（給油の前までに下がった長さ）は、次に測る週の記録に入るため
+// （ユーザー要望 2026-11-19。たとえば木曜に給油し、次に測るのが来週の月曜なら、①は来週の分）
+const NEXT_MON = addDays(THIS_MON, 7);
 let house = "中央";
 try { if (L_PER_CM[localStorage.getItem("htf_juyu_house")]) house = localStorage.getItem("htf_juyu_house"); } catch (e) { /* 覚えられない端末でも動く */ }
 let week = THIS_MON;
@@ -237,6 +240,29 @@ let REC = { state: "idle", rows: {}, error: "" };      // rows は「週|ハウ�
 let form = { key: "", edited: false, sending: false, msg: "", ng: false, kyuyu: false };
 
 const keyOf = () => ymd(week) + "|" + house;
+
+/* ---- ②がまだの記録の印（この端末だけの控え。消えても下の waitsCm2 の1つめの見分け方は効く） ---- */
+const PENDING_KEY = "htf_juyu_cm2_mada";
+function readPending() {
+  try {
+    const list = JSON.parse(localStorage.getItem(PENDING_KEY) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch (e) { return []; }      // 覚えられない端末・壊れた控えは、印なしとして動く
+}
+function writePending(list) {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); } catch (e) { /* 覚えられなくても動く */ }
+}
+// 印を付けた／外した新しい一覧を返す（古いものから捨てて20件まで）
+const withPending = (list, id, on) => (on ? [...list.filter(k => k !== id), id] : list.filter(k => k !== id)).slice(-20);
+let PENDING = readPending();
+
+/* 給油の前の①だけを先に送り、②（給油のあとに下がった長さ）がまだの記録か。
+   - 週が始まる前に送った記録は、給油の①を先に入れたものしかない（来週を選べるのはそのため）
+   - 週の中で①だけ送ったときは、この端末に控えた印で見分ける */
+function waitsCm2(r) {
+  if (!r || String(r.cm1 ?? "") === "" || String(r.cm2 ?? "") !== "") return false;
+  return Number(r.at) < fromYmd(r.week).getTime() || PENDING.includes(r.id);
+}
 
 /* 中央の単価の初期値：シートでいちばん新しい中央の記録の単価 */
 function lastPrice() {
@@ -256,8 +282,9 @@ function fillForm() {
   const saved = REC.rows[keyOf()];
   FIELDS.forEach(f => { $(f).value = saved ? String(saved[f] ?? "") : ""; });
   if (!saved && house === PRICE_FROM) $("price").value = lastPrice();
-  form = { key: keyOf(), edited: false, sending: false, msg: "", ng: false,
-           kyuyu: !!(saved && String(saved.cm2 ?? "") !== "") };
+  // 来週の分を先に入れるのは給油をはさむとき（①を先に送る）なので、まだ記録が無ければ2回分の形で開く
+  const kyuyu = saved ? String(saved.cm2 ?? "") !== "" || waitsCm2(saved) : week > THIS_MON;
+  form = { key: keyOf(), edited: false, sending: false, msg: "", ng: false, kyuyu };
 }
 
 function readForm() {
@@ -273,8 +300,11 @@ function render() {
   const sun = addDays(week, 6);
   const diff = Math.round((THIS_MON - week) / 864e5 / 7);
   $("wkLabel").innerHTML = md(week) + "〜" + md(sun) + "<small>" +
-    (diff === 0 ? "今週" : diff === 1 ? "先週" : diff + "週まえ") + "（月〜日）</small>";
-  $("nextWk").disabled = week >= THIS_MON;
+    (diff === 0 ? "今週" : diff === 1 ? "先週" : diff === -1 ? "来週" : diff + "週まえ") + "（月〜日）</small>";
+  $("nextWk").disabled = week >= NEXT_MON;
+  $("wkHint").textContent = week > THIS_MON
+    ? "来週の分です。給油したときは、給油の前までに下がった長さ（①）を先に送っておけます。②は来週測ったときに足して送り直してください。"
+    : "測った日を含む週（月〜日）が出ています。栽培記録のこの週に入ります。";
 
   // 読み込み中は打てないようにする（読み終えたときに入力欄を入れ直すため、打った数が消えてしまう）
   FIELDS.forEach(f => { $(f).disabled = REC.state === "loading"; });
@@ -302,7 +332,7 @@ function render() {
     const L = cm * per;
     $("liters").innerHTML = fmt(L, 1) + " <small>L</small>" +
       (v.price !== "" ? "　" + fmt(Math.round(L * v.price), 0) + " <small>円</small>" : "");
-    $("litersHow").textContent = (form.kyuyu ? "(" + fmt(v.cm1 || 0, 1) + "＋" + fmt(v.cm2 || 0, 1) + ") cm" : fmt(cm, 1) + " cm") +
+    $("litersHow").textContent = (form.kyuyu ? "(" + fmt(v.cm1 || 0, 1) + "＋" + (v.cm2 === "" ? "②まだ" : fmt(v.cm2, 1)) + ") cm" : fmt(cm, 1) + " cm") +
       " × " + per + " L" + (v.price !== "" ? " × " + v.price + " 円/L" : "");
   }
   const saved = REC.rows[keyOf()];
@@ -318,6 +348,7 @@ function render() {
   $("send").textContent = form.sending ? "送っています…" : saved ? "直した内容で送り直す" : "この週の記録を送る";
   const status = REC.state === "loading" ? "記録を読んでいます…"
     : REC.state === "error" ? REC.error
+    : waitsCm2(saved) ? "この週は①だけ記録済みです（" + when(saved.at) + " に記録）。給油のあとに測ったら、②を足して送ってください。"
     : saved ? "この週は記録済みです（" + when(saved.at) + " に記録）。直して送ると上書きします。"
     : "この週はまだ記録していません。";
   $("msg").textContent = form.msg || status;
@@ -346,7 +377,7 @@ function renderHist() {
     const priceText = n(r.price) !== null ? "・" + r.price + " 円/L" : src !== "" ? "・" + src + " 円/L（中央）" : "";
     return '<li><button type="button" data-week="' + r.week + '"' + (r.week === ymd(week) ? ' aria-current="true"' : "") + '>' +
       "<b>" + md(w) + "〜" + md(addDays(w, 6)) + "　" + (hasCm ? fmt(cm * per, 1) + " L" : "重油なし") + priceText + "</b>" +
-      "<span>" + (hasCm ? (n(r.cm2) !== null ? r.cm1 + "＋" + r.cm2 : cm) + " cm" : "") + eq("加温機", r.hkH, r.hkN) + eq("グロウ", r.glowH, r.glowN) + "</span>" +
+      "<span>" + (hasCm ? (n(r.cm2) !== null ? r.cm1 + "＋" + r.cm2 : waitsCm2(r) ? r.cm1 + "＋②まだ" : cm) + " cm" : "") + eq("加温機", r.hkH, r.hkN) + eq("グロウ", r.glowH, r.glowN) + "</span>" +
       "</button></li>";
   }).join("");
 }
@@ -372,7 +403,9 @@ function send() {
   const bad = FIELDS.filter(f => v[f] === null);
   if (bad.length) { form = { ...form, msg: "数として読めない欄があります。数字と小数点だけで入れてください。", ng: true }; render(); return; }
   if (FIELDS.every(f => v[f] === "")) { form = { ...form, msg: "どの欄も空です。入れてから送ってください。", ng: true }; render(); return; }
-  if (form.kyuyu && v.cm2 === "") { form = { ...form, msg: "給油のあとに下がった長さ（②）が空です。給油をはさまなかったときは、ボタンを押して1回分に戻してください。", ng: true }; render(); return; }
+  // ②が空のまま送るのは「給油の前の①だけを先に送る」とき。②は測ってから足して送り直す
+  if (form.kyuyu && v.cm1 === "" && v.cm2 === "") { form = { ...form, msg: "給油の前までに下がった長さ（①）が空です。", ng: true }; render(); return; }
+  const onlyCm1 = form.kyuyu && v.cm2 === "";
   const key = keyOf();
   const item = { week: ymd(week), house, ...Object.fromEntries(FIELDS.map(f => [f, v[f] === "" ? "" : String(v[f])])) };
   form = { ...form, sending: true, msg: "", ng: false };
@@ -388,7 +421,11 @@ function send() {
     .catch(() => new Promise(res => setTimeout(res, 2500)).then(once))
     .then(saved => {
       REC = { ...REC, rows: { ...REC.rows, [saved.id]: saved } };
-      if (form.key === key) form = { ...form, sending: false, edited: false, ng: false, msg: "送りました。PC で栽培記録アプリを開くと、この週に入ります。" };
+      PENDING = withPending(PENDING, saved.id, onlyCm1);
+      writePending(PENDING);
+      if (form.key === key) form = { ...form, sending: false, edited: false, ng: false,
+        msg: onlyCm1 ? "①だけ送りました。給油のあとに測ったら、この週を開いて②を足して送り直してください。"
+                     : "送りました。PC で栽培記録アプリを開くと、この週に入ります。" };
     })
     .catch(e => {
       if (form.key === key) form = { ...form, sending: false, ng: true,
@@ -411,7 +448,7 @@ $("houseBtns").addEventListener("click", e => {
   render();
 });
 $("prevWk").addEventListener("click", () => { if (canLeave()) { week = addDays(week, -7); render(); } });
-$("nextWk").addEventListener("click", () => { if (week < THIS_MON && canLeave()) { week = addDays(week, 7); render(); } });
+$("nextWk").addEventListener("click", () => { if (week < NEXT_MON && canLeave()) { week = addDays(week, 7); render(); } });
 $("hist").addEventListener("click", e => {
   const b = e.target.closest("button[data-week]");
   if (!b || !canLeave()) return;
