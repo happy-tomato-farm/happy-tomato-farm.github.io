@@ -87,6 +87,17 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 }
 .freq button[aria-pressed="true"]{background:var(--night);border-color:var(--night);color:#fff}
 
+/* ===== ② 日射の値の種類（外・ハウス内）の切りかえ ===== */
+.basis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.basis button{
+  min-height:46px; border-radius:14px; cursor:pointer; padding:4px 6px;
+  border:2px solid var(--line); background:var(--card-sub); color:var(--muted);
+  font:inherit; font-size:14px; font-weight:800; line-height:1.3;
+}
+.basis button[aria-pressed="true"]{background:var(--night);border-color:var(--night);color:#fff}
+.field .sublabel{display:block;font-size:13.5px;font-weight:800;color:var(--muted);margin:14px 0 6px}
+.field .sublabel.first{margin-top:0}
+
 /* ===== ⑤ 閉めた時刻の記録 ===== */
 .rec{margin-top:16px;padding-top:14px;border-top:2px dashed var(--line)}
 .rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -267,9 +278,22 @@ footer a{color:var(--muted)}
   </div>
 
   <div class="field">
-    <label for="target">② 日平均気温の目標</label>
+    <label for="rad">② 日平均気温の目標（その日の日射から決める）</label>
+    <span class="sublabel first">その日の日射量</span>
     <div class="row">
       <!-- 数字の欄でも type="number" は使わない（上下の矢印で値が変わる・小数点が打てなくなるため） -->
+      <input id="rad" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
+      <span class="unit">MJ/m²</span>
+    </div>
+    <!-- 入れた日射が外（宇都宮）の値か、ハウス内（アグリネット）の値か。ハウス内なら透過率で割って外の値に直す -->
+    <div class="basis" id="radBasis" role="group" aria-label="日射の値の種類">
+      <button type="button" data-basis="out">外（宇都宮）の値</button>
+      <button type="button" data-basis="in">ハウス内（アグリネット）</button>
+    </div>
+    <p class="hint" id="radHint"></p>
+    <p class="err" id="radErr" hidden></p>
+    <label class="sublabel" for="target">日平均気温の目標</label>
+    <div class="row">
       <input id="target" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next">
       <span class="unit">℃</span>
     </div>
@@ -372,6 +396,17 @@ footer a{color:var(--muted)}
 <details>
   <summary>計算の考え方と決まりごと</summary>
   <div class="doc">
+    <h3>日平均の目標（日射から決める）</h3>
+    <p>その日の日射量（外・宇都宮の値）から、「日射と日平均気温（RTR）」の表（トマト栽培の最適気温と日射量のプロジェクト）の④シートの線で目標を決めます（2026年11月21日から）。</p>
+    <div class="eq">目標 ＝ 16.2℃ と（13.325 ＋ 0.2875 × 日射 MJ/m²）の大きいほう</div>
+    <ul>
+      <li>10 MJ/m² で16.2℃、18 MJ/m² で18.5℃を通る線です（日射1 MJ/m²あたり約0.29℃）。下限は16.2℃、上限はありません（春の晴れの日は20℃前後になります）</li>
+      <li>日射の欄が空のときは、その日の<b>快晴の日射量</b>を使います。潅水アプリと同じ式です：1分ごとの全天日射（直達＋散乱）を1日分足したもの。大気の透過率は 0.7185 ＋ 0.1429 cos(2πJ/365) ＋ 0.0400 sin(2πJ/365)（宇都宮の晴れた日の実測から当てはめた値。J は1月1日からの日数）。例：11月21日 12.5、12月21日 11.4、1月20日 13.5、3月20日 22.7 MJ/m²</li>
+      <li>線は宇都宮の<b>外の日射</b>が基準です。アグリネット（ハウス内）の値を入れるときは「ハウス内」を押してください。ハウスの透過率（0.678、季節で0.64〜0.72）で割って外の値に直します。直さずに入れると約0.64倍の値になり、目標が低く出ます</li>
+      <li>目標の欄に数字を入れると、その値で計算します（日射から決めた値より優先）。日射の欄を書き換えると、目標の欄は空にもどって日射から決め直します</li>
+      <li>作業計画の週の目標は、参考として並べます</li>
+    </ul>
+
     <h3>夜に必要な平均温度</h3>
     <p>1日（今日の日の出〜明日の日の出）の平均が目標になるように、夜の分を逆算します。</p>
     <div class="eq">夜の必要平均 ＝（目標 × 1日の長さ − 日中平均 × 昼の長さ）÷ 夜の長さ</div>
@@ -380,7 +415,25 @@ footer a{color:var(--muted)}
       <li>日中平均 × 昼の長さ … 日中にもう確保できた分</li>
       <li>残りを夜の長さで割ると、夜に必要な平均になります</li>
     </ul>
-    <p>夜の平均は<b>設定温度</b>で数えています。暖房が止まっている時間（日没直後など）はハウスが設定より暖かいので、実際の平均はこれより少し高くなります。</p>
+    <p>夜に必要な平均は<b>実際の室温</b>の平均です。4段の設定の平均ではなく、次の「実際の夜の平均の見込み」がこれに届くように4段を選びます（2026年11月21日から。それまでは設定の平均で数えていたので、実際の日平均が目標より高くなりがちでした）。</p>
+
+    <h3>実際の夜の平均の見込み</h3>
+    <p>アプリどおりに設定しても、実際の夜の平均は4段の設定の平均より高くなります。中央の記録の13夜（11月3〜16日）では平均0.64℃（夜によって0.1〜1.7℃）高く、日平均では約0.36℃の上振れでした。わけは3つです。</p>
+    <ul>
+      <li>段を下げたあと、室温が新しい設定まで下がるのに1〜2時間半かかる（地面の表面にためた熱が少しずつ出てくる）</li>
+      <li>暖房が入り切りしている間も、2〜4段目では記録の温度が設定より平均0.5〜1℃高い（暖房が点く瞬間の記録の温度が、設定ちょうど〜設定＋1℃）。1段目はほぼ設定どおりです</li>
+      <li>外気が設定に近い暖かい夜は、暖房がほとんど動かず、設定より1.5〜3℃高いまま浮いている</li>
+    </ul>
+    <p>予報がある日（今日・明日）は、日没から朝まで室温を1分ずつ追って見込みます。</p>
+    <div class="eq">次の1分の室温 ＝ 今の室温 − 逃げる熱 × 60秒 ÷（熱容量 × 4）。ただし「その段の設定＋入り切りの上振れ」より下には下がらない</div>
+    <ul>
+      <li>逃げる熱は⑤と同じ式（屋根・側面・すき間、空と地面の放射、カーテンを閉めた状態の倍率）です。外気は鹿沼めやす、カーテンは⑤の目安の時刻に閉めるとして数えます。床から出てくる熱は、晴れ・くもりとも10 W/m² にします</li>
+      <li>熱容量を⑤（約29 MJ/K、空気と作物）の4倍にするのは、段を下げたあとの数時間は、地面の表面（2 cmほど）も一緒に冷えるためです。⑤の止まり（数十分）は空気と作物だけで合います</li>
+      <li>入り切りの上振れは1段目0℃、2〜4段目0.5℃。日没の室温は③の日中平均−3.5℃（1段目の設定より低ければ1段目の設定）とします</li>
+      <li>この4つの値（熱容量の倍率・床の熱・入り切りの上振れ・日没の室温）は、記録の13夜に合わせました。1夜ずつ伏せて残りの夜で合わせ、伏せた夜を当てた外れの平均は0.22℃でした。一律に0.6℃足すだけなら0.32℃、何もしなければ0.64℃です。合わせる前の⑤の式のままでは、晴れの夜は段を下げるとすぐ設定まで下がる見込みになり、0.48℃外れていました</li>
+      <li>予報が無い日（今日・明日以外）や、予報が朝まで無い夜は、4段の平均に0.6℃を足して見込みます</li>
+      <li>11月の中央の記録だけで合わせた値です。12月以降や東の記録がたまったら、合わせ直します</li>
+    </ul>
 
     <h3>4段の時刻</h3>
     <ul>
@@ -397,7 +450,7 @@ footer a{color:var(--muted)}
       <li>4段目は13℃以上（3〜5月は14℃以上）</li>
       <li>となりの段との差は2℃まで（1時間半で2℃以内、1時間で3℃を超えない）</li>
       <li>1〜3段目は下げる一方。上げ直すのは4段目だけ</li>
-      <li>目標を満たす組み合わせの中から、<b>前半ができるだけ高い</b>ものを選びます</li>
+      <li>実際の夜の平均の見込みが必要な平均に届く組み合わせのうち、こえる幅が小さいもの（いちばん小さいもの＋0.25℃以内）から、<b>前半ができるだけ高い</b>ものを選びます</li>
       <li>16℃にしても届かない日は、全段16℃にして不足分を表示します（曇天日は無理に上げない）</li>
     </ul>
 
@@ -512,6 +565,27 @@ const RULE = {
   // （天気・ハウス・月ごとでも 77〜82%。東の曇雨天だけ 67% だが、外れたのは管理の違う 2020〜2022年度で、直近3年度は 86〜94%）
   spreadK: 1.48,
   spreadMinDays: 5,                        // 同じ天気の日がこれより少ないと、ばらつきが当てにならないので振れ幅を出さない
+
+  // ---- 日平均の目標を日射から決める（2026-11-21 から。Dropbox「生物環境物理学\日射と日平均気温（RTR）.xlsx」の④シート）----
+  // 目標 ＝ minC と（baseC ＋ slopeC × 外の日射 [MJ/m²]）の大きいほう。10 MJ で16.2℃・18 MJ で18.5℃を通る線。上限は無し（ユーザー決定）
+  rtr: { baseC: 13.325, slopeC: 0.2875, minC: 16.2 },
+  // 快晴の日の外の日射（潅水アプリ core/solar.py の daily_radiation_mj と同じ式・同じ値。大気の透過率は宇都宮の晴れた日の実測から当てはめた式）
+  clearDay: { tauMean: 0.7185, tauCos: 0.1429, tauSin: 0.0400, diffuse: 0.3, altM: 150, solarConstW: 1360 },
+  radMaxMJ: 40,                            // 日射の欄に入れられる上限 [MJ/m²]
+  radBasisKey: "htf_yaon_radbasis",        // 日射の欄が「外」か「ハウス内」か。この端末に覚えさせる
+};
+
+/* ---- 実際の夜の平均の見込み（④。2026-11-21 から。出どころは画面下「計算の考え方」）----
+   アプリどおりに設定しても、実際の夜の平均は4段の設定の平均より高くなる（中央の記録13夜で平均 +0.64℃）。
+   予報がある日は、日没から朝まで室温を1分ずつ追う：室温 −＝ 逃げる熱（⑤と同じ式）× 60秒 ÷（熱容量 × capK）、
+   ただし「その段の設定＋cycleC」より下には下げない。下の4つの値は記録の13夜（2026-11-03〜16、中央）に合わせた。
+   1夜ずつ伏せて当てた外れの平均 0.22℃（一律 +0.6℃ なら 0.32℃、何もしなければ 0.64℃）。12月以降・東の記録がたまったら合わせ直す */
+const NIGHT = {
+  capK: 4,               // 熱容量の倍率。段を下げたあとの数時間は地面の表面も一緒に冷えるので、空気と作物（約29 MJ/K）の4倍で追う
+  floorW: 10,            // 床（地面）から出てくる熱 [W/m²]。晴れ・くもりとも
+  cycleC: [0, 0.5, 0.5, 0.5],   // 暖房が入り切りしている間の平均 − 設定 [℃]（1〜4段目）。2〜4段目は暖房が点く瞬間の記録の温度が設定前後〜＋1℃
+  sunsetBelowDayC: 3.5,  // 日没の室温 ＝ ③の日中平均 − この値（1段目の設定より低ければ1段目の設定）
+  flatC: 0.6,            // 予報が無い日に、4段の平均に足す分（記録13夜の平均 +0.64℃）
 };
 
 /* 天気の分け方（晴天指数 ＝ 宇都宮の日射量 ÷ 快晴時の計算値） */
@@ -690,6 +764,25 @@ function sunTimes(date) {
   return { rise: t0 - half, set: t0 + half };
 }
 
+/* 快晴の日の、外の1日の積算日射 [MJ/m²]（潅水アプリ core/solar.py の daily_radiation_mj と同じ式。1分ごとの全天日射を足す）。
+   直達 ＝ 太陽定数 × τ^m × 太陽の高さの sin、散乱 ＝ 0.3 ×（1 − τ^m）× 太陽定数 × 太陽の高さの sin。m は大気路程（気圧 ÷ 101.3 ÷ 太陽の高さの sin） */
+function clearDayMJ(date) {
+  const g = sunGeometry(date), K = RULE.clearDay, a = 2 * Math.PI * g.J / 365;
+  const tau = K.tauMean + K.tauCos * Math.cos(a) + K.tauSin * Math.sin(a);   // 快晴の大気の透過率（冬ほど高い）
+  const pa = 101.3 * Math.pow(1 - 2.25577e-5 * K.altM, 5.25588);            // 気圧 [kPa]
+  const sLat = Math.sin(RULE.latDeg * D2R), cLat = Math.cos(RULE.latDeg * D2R);
+  let joule = 0;
+  for (let m = 1; m <= 1440; m++) {                                         // 0:01〜24:00 の1分ずつ（潅水アプリと同じ数え方）
+    const cosZ = sLat * Math.sin(g.dec) + cLat * Math.cos(g.dec) * Math.cos(15 * (m / 60 - g.t0) * D2R);
+    if (cosZ <= 0) continue;                                                // 太陽が地平線の下
+    const tm = Math.pow(tau, pa / (101.3 * cosZ));                          // 直達光が大気を通り抜ける割合
+    joule += (K.solarConstW * tm * cosZ + K.diffuse * (1 - tm) * K.solarConstW * cosZ) * 60;
+  }
+  return joule / 1e6;
+}
+/* 外の日射 [MJ/m²] → 日平均の目標 [℃]（RULE.rtr の線。下限あり・上限なし） */
+const rtrTargetC = radMJ => Math.max(RULE.rtr.minC, RULE.rtr.baseC + RULE.rtr.slopeC * radMJ);
+
 /* 年度（8月〜翌7月）の始まりの年と、8月1日からの日数 */
 const seasonStartYear = d => d.getMonth() + 1 >= 8 ? d.getFullYear() : d.getFullYear() - 1;
 const seasonDay = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(seasonStartYear(d), 7, 1)) / 86400000);
@@ -771,51 +864,84 @@ function stageTimes(sunset, nextRise) {
   return [s1, s2, s3, s4];
 }
 
+/* 4段の設定の平均（夜の時間のうち各段が受け持つ長さで重み付け） */
+const setAvgOf = (weights, T) => T.reduce((s, t, i) => s + t * weights[i], 0) / weights.reduce((a, b) => a + b, 0);
+
 /* 4段の温度を決める。
-   夜の時間（日の入り〜日の出）のうち各段が受け持つ長さで重み付けした平均が、必要な平均 need 以上になる組み合わせから、
+   実際の夜の平均の見込み meanOf(4段) が、必要な平均 need 以上になる組み合わせから、
    ・目標をこえる幅が小さいもの（最小＋0.25℃以内）にしぼり
-   ・その中で 1段目 → 2段目 → 3段目 の順に高いもの（前半を高く）を選ぶ */
-function chooseTemps(need, weights, floorC) {
+   ・その中で 1段目 → 2段目 → 3段目 の順に高いもの（前半を高く）を選ぶ。
+   見込みは4段の平均より下にはならない（室温は設定を割らないとみなす）ので、4段の平均が
+   「必要な平均（いちばん低い組み合わせより低ければその平均）＋1℃」をこえる組み合わせは、見込みを計算しない（軽くするため） */
+function chooseTemps(need, weights, floorC, meanOf) {
   const temps = [];
   for (let t = RULE.minC; t <= RULE.maxC + 1e-9; t += RULE.stepC) temps.push(Math.round(t * 10) / 10);
-  const W = weights.reduce((a, b) => a + b, 0);
-  const avgOf = T => T.reduce((s, t, i) => s + t * weights[i], 0) / W;
   const cands = [];
   for (const a of temps) for (const b of temps) for (const c of temps) for (const d of temps) {
     if (b > a || c > b) continue;                                // 1〜3段目は下げる一方
     if (a - b > RULE.maxJumpC || b - c > RULE.maxJumpC) continue;
     if (Math.abs(d - c) > RULE.maxJumpC) continue;               // 4段目への上げ下げも2℃まで
     if (d < floorC) continue;                                    // 結露防止の下限
-    cands.push({ T: [a, b, c, d], avg: avgOf([a, b, c, d]) });
+    cands.push({ T: [a, b, c, d], avg: setAvgOf(weights, [a, b, c, d]) });
   }
-  const top = { T: [RULE.maxC, RULE.maxC, RULE.maxC, RULE.maxC], avg: RULE.maxC };
-  if (need > top.avg + 1e-9) return { ...top, reached: false };  // 16℃でも届かない
-  const ok = cands.filter(c => c.avg >= need - 1e-9);
-  const best = Math.min(...ok.map(c => c.avg));
-  const near = ok.filter(c => c.avg <= best + RULE.pickToleranceC + 1e-9);
-  near.sort((x, y) => (y.T[0] - x.T[0]) || (y.T[1] - x.T[1]) || (y.T[2] - x.T[2]) || (x.avg - y.avg));
+  const topT = [RULE.maxC, RULE.maxC, RULE.maxC, RULE.maxC];
+  const top = { T: topT, avg: RULE.maxC, mean: meanOf(topT) };
+  if (need > top.mean + 1e-9) return { ...top, reached: false };  // 16℃でも届かない
+  const lim = Math.max(need, Math.min(...cands.map(c => c.avg))) + 1;
+  const ok = cands.filter(c => c.avg <= lim + 1e-9).map(c => ({ ...c, mean: meanOf(c.T) })).filter(c => c.mean >= need - 1e-9);
+  if (!ok.length) throw new Error("必要な平均 " + need.toFixed(2) + "℃ に届く4段の組み合わせが見つかりません");
+  const best = Math.min(...ok.map(c => c.mean));
+  const near = ok.filter(c => c.mean <= best + RULE.pickToleranceC + 1e-9);
+  near.sort((x, y) => (y.T[0] - x.T[0]) || (y.T[1] - x.T[1]) || (y.T[2] - x.T[2]) || (x.mean - y.mean));
   return { ...near[0], reached: true };
 }
 
-/* 全体の計算。入力（数値）→ 結果（数値）。画面に出す文はここでは作らない */
-function compute({ date, targetC, dayAvgC }) {
-  const today = sunTimes(date);
-  const tomorrow = sunTimes(addDays(date, 1));
+/* その日の夜の枠（日付だけで決まる）：日の出・日の入、4段の開始時刻と各段の長さ、4段目の下限 */
+function nightFrame(date) {
+  const today = sunTimes(date), tomorrow = sunTimes(addDays(date, 1));
   const sunset = today.set, nextRise = tomorrow.rise + 24;
-  const dayH = today.set - today.rise;
-  const nightH = nextRise - sunset;
-  const totalH = dayH + nightH;                       // 今日の日の出〜明日の日の出（ほぼ24時間）
-  const needC = (targetC * totalH - dayAvgC * dayH) / nightH;
   const starts = stageTimes(sunset, nextRise);
   // 各段が夜の中で受け持つ長さ（1段目は日の入りから、4段目は日の出まで）
   const edges = [sunset, starts[1], starts[2], starts[3], nextRise];
-  const weights = [0, 1, 2, 3].map(i => edges[i + 1] - edges[i]);
-  const floorC = RULE.springMonths.includes(date.getMonth() + 1) ? RULE.floorSpringC : RULE.floorC;
-  const pick = chooseTemps(needC, weights, floorC);
-  const predictC = (dayAvgC * dayH + pick.avg * nightH) / totalH;
-  return { rise: today.rise, sunset, nextRise, dayH, nightH, needC, starts, weights, floorC,
-           temps: pick.T, nightAvgC: pick.avg, reached: pick.reached, predictC,
-           shortC: targetC - predictC };
+  return { rise: today.rise, sunset, nextRise, dayH: today.set - today.rise, nightH: nextRise - sunset, starts,
+           weights: [0, 1, 2, 3].map(i => edges[i + 1] - edges[i]),
+           floorC: RULE.springMonths.includes(date.getMonth() + 1) ? RULE.floorSpringC : RULE.floorC };
+}
+
+/* 実際の夜の平均の見込み [℃]。model は見込み方：
+   { kind: "flat" } 4段の平均 ＋ NIGHT.flatC（予報が無い日）／{ kind: "sim", env } 室温を1分ずつ追う（env は nightEnv の係数） */
+function nightMeanOf(model, f, temps, dayAvgC) {
+  if (model.kind === "flat") return setAvgOf(f.weights, temps) + NIGHT.flatC;
+  if (model.kind === "sim") return simNightMean(model.env, f, temps, dayAvgC);
+  throw new Error("夜の平均の見込み方の名前が違います: " + model.kind);
+}
+
+/* 日没から朝まで室温を1分ずつ追って、夜の平均を出す。
+   日没の室温 ＝ 日中平均 − NIGHT.sunsetBelowDayC（1段目の設定より低ければ1段目の設定）。
+   次の1分 ＝ 今 −（A × 今 − B）× 60秒 ÷（熱容量 × NIGHT.capK）。ただし「その段の設定 ＋ NIGHT.cycleC」より下には下げない
+   （そこまで下がったら暖房が入り切りして、平均はそこに保たれるとみなす） */
+function simNightMean(env, f, temps, dayAvgC) {
+  const C = heatCapOf("doc") * NIGHT.capK;
+  let T = Math.max(temps[0], dayAvgC - NIGHT.sunsetBelowDayC), sum = 0, i = 0;
+  for (let k = 0; k < env.n; k++) {
+    const h = f.sunset + k / 60;
+    while (i < 3 && f.starts[i + 1] <= h + 1e-9) i++;            // 時刻 h の段
+    sum += T;
+    T = Math.max(T - (env.A[k] * T - env.B[k]) * 60 / C, temps[i] + NIGHT.cycleC[i]);
+  }
+  return sum / env.n;
+}
+
+/* 全体の計算。入力（数値）→ 結果（数値）。画面に出す文はここでは作らない。
+   model は実際の夜の平均の見込み方（nightMeanOf を参照）。4段は、この見込みが夜に必要な平均に届くように選ぶ */
+function compute({ date, targetC, dayAvgC }, model = { kind: "flat" }) {
+  const f = nightFrame(date);
+  const totalH = f.dayH + f.nightH;                   // 今日の日の出〜明日の日の出（ほぼ24時間）
+  const needC = (targetC * totalH - dayAvgC * f.dayH) / f.nightH;
+  const pick = chooseTemps(needC, f.weights, f.floorC, T => nightMeanOf(model, f, T, dayAvgC));
+  const predictC = (dayAvgC * f.dayH + pick.mean * f.nightH) / totalH;
+  return { ...f, targetC, dayAvgC, model, needC, temps: pick.T, nightAvgC: pick.avg, nightMeanC: pick.mean,
+           reached: pick.reached, predictC, shortC: targetC - predictC };
 }
 
 /* ---- カーテン（⑤）の計算 ----
@@ -1177,11 +1303,10 @@ function tempaPlan(tab, luxH, predMin, predLong) {
 }
 
 /* 4段の温度を差し替えた結果（⑤のボタンで一番低い段を上げたとき）。夜の平均・日平均の見込み・不足も計算し直す */
-function withStageTemps(r, temps) {
-  const W = r.weights.reduce((a, b) => a + b, 0);
-  const avg = temps.reduce((s, t, i) => s + t * r.weights[i], 0) / W;
-  const dP = (avg - r.nightAvgC) * r.nightH / (r.dayH + r.nightH);
-  return { ...r, temps, nightAvgC: avg, predictC: r.predictC + dP, shortC: r.shortC - dP };
+function withStageTemps(r, temps, model = r.model) {
+  const mean = nightMeanOf(model, r, temps, r.dayAvgC);
+  const predictC = (r.dayAvgC * r.dayH + mean * r.nightH) / (r.dayH + r.nightH);
+  return { ...r, model, temps, nightAvgC: setAvgOf(r.weights, temps), nightMeanC: mean, predictC, shortC: r.targetC - predictC };
 }
 
 /* 一番低い段（2・3段目のうち）を何℃にすれば収まるか。luxH はラクソスを閉める時刻（変えない）。
@@ -1204,9 +1329,9 @@ function raiseOptions(fc, date, r, vkey, fromH, luxH, predMin, predLong) {
   return { idx, from: r.temps[idx[0]], x, y, cap };
 }
 
-/* カーテンの目安をまとめて出す。wxClear は③で快晴を選んでいるか（日中の予報が無いときの代わり）、
-   predMin は止まっている時間の見込みの上限（選んだ「何分に1回」から決まる） */
-function curtainPlan(date, r, fc, wxClear, predMin) {
+/* カーテンの目安の下ごしらえ：計算を始める時刻、その時刻の外気、暖房が動き出す見込み。
+   予報にこの夜が無ければ { noForecast: true } */
+function closeSetup(date, r, fc) {
   const month = date.getMonth() + 1;
   // 計算を始める時刻：日没。ただし予報がそれより後から始まるとき（17時の発表は18時から）は、予報の始まりから
   const firstH = (fc.temps[0].t - date.getTime()) / 3600000;
@@ -1234,29 +1359,104 @@ function curtainPlan(date, r, fc, wxClear, predMin) {
   const startT = start ? ceil5(start.p75 !== null ? start.p75 : start.p50) : null;
   const noStart = late || start ? null
     : startWhy.why === "range" ? { h: null, why: "range", lastH: startWhy.lastH } : { h: null, why: "noheat" };
+  return { fromH, late, o, sky, dT, margin, start, startWhy, startT, noStart };
+}
+
+/* 閉める時刻（式 vkey）：{ luxous, tempa }。su は closeSetup の結果、predMin は選んだ間隔の見込みの上限 */
+function closePlan(date, r, fc, predMin, vkey, su) {
   const predLong = Math.max(CURTAIN.longGap.predMin, predMin);   // 一番低い段・下げた直後の上限（選んだ間隔より短くはしない）
+  if (su.noStart) return { luxous: su.noStart, tempa: su.noStart };
+  const tab = nightTable(fc, date, r, vkey, su.fromH);
+  if (tab.range) { const x = { h: null, why: "range", lastH: tab.lastH }; return { luxous: x, tempa: x }; }
+  const lux = luxousPlan(tab, predMin, predLong, su.late ? -Infinity : su.startT);
+  if (lux.h === null) return { luxous: lux, tempa: { h: null, why: "lux" } };
+  return { luxous: { ...lux, rawH: lux.h, h: ceil15(lux.h), safeH: lux.safeH !== null ? ceil15(lux.safeH) : null },
+           tempa: tempaPlan(tab, lux.h, predMin, predLong) };
+}
+
+/* カーテンの目安をまとめて出す。wxClear は③で快晴を選んでいるか（日中の予報が無いときの代わり）、
+   predMin は止まっている時間の見込みの上限（選んだ「何分に1回」から決まる） */
+function curtainPlan(date, r, fc, wxClear, predMin) {
+  const month = date.getMonth() + 1;
+  const su = closeSetup(date, r, fc);
+  if (su.noForecast) return su;
+  const predLong = Math.max(CURTAIN.longGap.predMin, predMin);
   // 既定の式（床の熱を実測に合わせた）で出す時刻と、参考の式（資料どおり）で出す時刻
-  const plan = vkey => {
-    if (noStart) return { luxous: noStart, tempa: noStart };
-    const tab = nightTable(fc, date, r, vkey, fromH);
-    if (tab.range) { const x = { h: null, why: "range", lastH: tab.lastH }; return { luxous: x, tempa: x }; }
-    const lux = luxousPlan(tab, predMin, predLong, late ? -Infinity : startT);
-    if (lux.h === null) return { luxous: lux, tempa: { h: null, why: "lux" } };
-    return { luxous: { ...lux, rawH: lux.h, h: ceil15(lux.h), safeH: lux.safeH !== null ? ceil15(lux.safeH) : null },
-             tempa: tempaPlan(tab, lux.h, predMin, predLong) };
-  };
-  const { luxous, tempa } = plan(CURTAIN.variantMain);
-  const ref = plan(CURTAIN.variantRef);
+  const { luxous, tempa } = closePlan(date, r, fc, predMin, CURTAIN.variantMain, su);
+  const ref = closePlan(date, r, fc, predMin, CURTAIN.variantRef, su);
   // 一番低い段を何℃にすれば収まるか：1時間を超える注意を出す夜と、一番低い段で選んだ間隔を外れる夜だけ
   const raise = luxous.h !== null && (luxous.caution || (luxous.low && luxous.low.min > predMin))
-    ? raiseOptions(fc, date, r, CURTAIN.variantMain, fromH, luxous.rawH, predMin, predLong) : null;
-  const c5 = crossTime(fc, date, r, CURTAIN.luxousK, fromH);
-  const c8 = crossTime(fc, date, r, CURTAIN.tempaK, fromH);
+    ? raiseOptions(fc, date, r, CURTAIN.variantMain, su.fromH, luxous.rawH, predMin, predLong) : null;
+  const c5 = crossTime(fc, date, r, CURTAIN.luxousK, su.fromH);
+  const c8 = crossTime(fc, date, r, CURTAIN.tempaK, su.fromH);
   // 日中（9〜15時）の予報に「晴」があるか。予報が残っていなければ③の天気で代える
   const day = fc.weather.filter(x => x.t0 >= msAt(date, 9) && x.t0 < msAt(date, 15));
   const sunnyDay = day.length ? day.some(x => x.w.includes("晴")) : wxClear;
-  return { fromH, late, o, sky, dT, margin, start, startWhy, luxous, tempa, ref, raise, predMin, c5, c8,
+  return { fromH: su.fromH, late: su.late, o: su.o, sky: su.sky, dT: su.dT, margin: su.margin, start: su.start, startWhy: su.startWhy,
+           luxous, tempa, ref, raise, predMin, c5, c8,
            caution: CURTAIN.humidMonths.includes(month) && sunnyDay };
+}
+
+/* ---- ④ 実際の夜の平均の見込み（予報とカーテンの目安から） ---- */
+
+/* ⑤の目安（既定の式）から、時刻 h のカーテンの状態（"open"／"lux"／"both"）を返す関数を作る。閉めない・出せないときは開けたまま */
+function curtainStateFn(cp) {
+  const L = cp.luxous.h, P = cp.tempa.h !== null && cp.tempa.periods ? cp.tempa.periods : [];
+  return h => P.some(q => q.close <= h + 1e-9 && (q.open === null || h < q.open - 1e-9)) ? "both"
+    : L !== null && L !== undefined && h >= L - 1e-9 ? "lux" : "open";
+}
+
+/* 夜の1分ごとの「逃げる熱 [W] ＝ A × 室温 − B」の係数（日没から n 分）。
+   ⑤の止まりの見込みと同じ式（屋根・側面・すき間、空と地面の放射、閉めた状態はカーテンの倍率で割る）。床の熱だけ NIGHT.floorW。
+   外気は鹿沼のめやす（予報が始まる前は最初の予報、切れたら最後の予報のまま）、雲量・風は予報、カーテンは stateAt(時刻) */
+function nightEnv(fc, date, f, stateAt) {
+  const month = date.getMonth() + 1, p = CURTAIN.phys, n = Math.round(f.nightH * 60);
+  const A = new Float64Array(n), B = new Float64Array(n);
+  const first = kanumaAt(fc, fc.temps[0].t, month);
+  let to = null;
+  for (let k = 0; k < n; k++) {
+    const h = f.sunset + k / 60, ms = msAt(date, h);
+    const o = kanumaAt(fc, ms, month);
+    to = o !== null ? o : to !== null ? to : first;
+    const b = fc.weather.find(x => x.t0 <= ms && ms < x.t1);
+    const c = cloudOf(b ? b.w : ""), wind = windOf(b && b.windRange), st = stateAt(h);
+    const kk = offKOf(CURTAIN.variantMain, st, c, month);
+    const ur = HOUSE.roof * p.hRoof * (1 - HOUSE.fr[st]), us = HOUSE.side * p.hSide, uv = HOUSE.total * p.hVent;
+    A[k] = (ur + us + uv) / kk;
+    B[k] = (ur * (to - eqShiftK(to, c, wind, 1)) + us * (to - eqShiftK(to, c, wind, 0.5)) + uv * to + p.floorM2 * NIGHT.floorW) / kk;
+  }
+  return { n, A, B };
+}
+
+/* ④の4段を決める。予報 fc があれば、⑤のカーテンの目安（既定の式）で夜の室温を追って実際の夜の平均を見込む（sim）。
+   無ければ4段の平均＋記録の上振れ（flat）。カーテンの目安は4段で変わるので、4段が変わらなくなるまで（3回まで）繰り返す。
+   sim にできなかったときは flat の結果に why（"noForecast"／"range"／"error"）を付けて返す */
+function planNight(g, fc, predMin) {
+  let r = compute(g, { kind: "flat" });
+  if (!fc) return r;
+  const flat = r;
+  try {
+    const simFor = rr => {
+      const su = closeSetup(g.date, rr, fc);
+      if (su.noForecast) return { why: "noForecast" };
+      const cp = closePlan(g.date, rr, fc, predMin, CURTAIN.variantMain, su);
+      if (cp.luxous.h === null && cp.luxous.why === "range") return { why: "range" };
+      return { model: { kind: "sim", env: nightEnv(fc, g.date, rr, curtainStateFn(cp)) } };
+    };
+    for (let k = 0; k < 3; k++) {
+      const s = simFor(r);
+      if (!s.model) return { ...flat, why: s.why };
+      const r2 = compute(g, s.model);
+      if (r2.temps.join() === r.temps.join()) return r2;   // 4段が変わらなければ、カーテンの目安もこの4段のもの
+      r = r2;
+    }
+    // 3回で落ち着かなければ、最後の4段のカーテンの目安で見込みだけ計算し直す（4段はそのまま）
+    const s = simFor(r);
+    return s.model ? withStageTemps(r, r.temps, s.model) : { ...flat, why: s.why };
+  } catch (e) {
+    // 予報から見込めなかった理由を画面に出し、記録の平均（flat）で続ける
+    return { ...flat, why: "error", whyMsg: e.message || String(e) };
+  }
 }
 
 /* 予報の表の行：日没の直前の予報から、日の出の直後の予報まで（3時間ごと）。
@@ -1457,7 +1657,12 @@ let freq = CURTAIN.freqDefault;   // ⑤ 暖房が少なくとも何分に1回�
 // ⑤のボタンで一番低い段を上げたとき { sig, temps }。sig は元の4段（日付・ハウス・時刻・温度）で、変われば取り消す。端末には覚えさせない
 let raise = null;
 const raiseSig = (g, r0) => ymd(g.date) + "|" + house + "|" + r0.starts.join(",") + "|" + r0.temps.join(",");
+// ④に出している元の4段（⑤のボタンで上げる前）と、そのときの入力。⑤のボタンはこれを元に上げる
+let lastPlan = null;
+// ②の日射の欄が「外（宇都宮）」"out" か「ハウス内（アグリネット）」"in" か
+let radBasis = "out";
 try { const h = localStorage.getItem(LS_KEY); if (h === "中央" || h === "東") house = h; } catch (e) { /* 覚えられない端末では毎回 中央 から */ }
+try { const b = localStorage.getItem(RULE.radBasisKey); if (b === "out" || b === "in") radBasis = b; } catch (e) { /* 覚えられない端末では毎回 外 から */ }
 try { const f = localStorage.getItem(CURTAIN.freqKey); if (CURTAIN.freqs.some(x => x.key === f)) freq = f; } catch (e) { /* 覚えられない端末では毎回 既定 から */ }
 $("freqBtns").innerHTML = CURTAIN.freqs.map(x => '<button type="button" data-freq="' + x.key + '">' + x.label + "</button>").join("");
 const qs = new URLSearchParams(location.search);
@@ -1478,13 +1683,23 @@ function gather() {
   const out = { date, errors: {} };
   if (!date) return out;
 
+  // ② 日射 → 目標。日射の欄が空なら快晴の値。ハウス内の値は透過率で割って外の値に直す
+  const clearMJ = clearDayMJ(date), tauIn = coverTauOf(dayOfYear(date));
+  const rIn = parseNum($("rad").value);
+  out.clearMJ = clearMJ; out.tauIn = tauIn; out.radIn = rIn;
+  if (Number.isNaN(rIn) || (rIn !== null && (rIn < 0 || rIn > RULE.radMaxMJ))) out.errors.rad = "0〜" + RULE.radMaxMJ + " の数字で入れてください";
+  else {
+    out.radTyped = rIn !== null;
+    out.radOutMJ = rIn === null ? clearMJ : radBasis === "in" ? rIn / tauIn : rIn;
+    out.rtrC = rtrTargetC(out.radOutMJ);
+  }
+  // 作業計画の週の目標は参考に並べるだけ
   const pw = planWeekOf(date, PLAN);
-  const planT = pw && typeof pw.week.temp_avg === "number" ? pw.week.temp_avg : null;
+  out.plan = pw; out.planT = pw && typeof pw.week.temp_avg === "number" ? pw.week.temp_avg : null;
   const tIn = parseNum($("target").value);
-  out.plan = pw; out.planT = planT;
   if (Number.isNaN(tIn) || (tIn !== null && (tIn < 10 || tIn > 25))) out.errors.target = "10〜25 の数字で入れてください";
   else if (tIn !== null) { out.targetC = tIn; out.targetFrom = "入力"; }
-  else if (planT !== null) { out.targetC = planT; out.targetFrom = "作業計画"; }
+  else if (out.rtrC !== undefined) { out.targetC = out.rtrC; out.targetFrom = "日射"; }
 
   const hn = heinenOf(date, house, HEINEN);
   const dIn = parseNum($("dayavg").value);
@@ -1497,16 +1712,24 @@ function gather() {
 }
 
 function renderHints(g) {
-  // ② 目標
-  if (!g.date) { $("targetHint").textContent = ""; }
-  else if (!PLAN) {
-    $("targetHint").textContent = "作業計画のデータを読めませんでした。目標を入れてください。";
-  } else if (g.planT !== null) {
-    $("targetHint").innerHTML = "作業計画 第" + esc(g.plan.week.week_no) + "週（" + esc(g.plan.week.date) + "〜）は <b>" + c1(g.planT) + "℃</b>。空欄ならこの値で計算します。";
-  } else {
-    $("targetHint").textContent = "この週は作業計画に目標がありません。入れてください。";
+  // ② 日射と目標
+  if (!g.date) { $("radHint").textContent = ""; $("targetHint").textContent = ""; $("rad").placeholder = ""; $("target").placeholder = ""; }
+  else {
+    const inClear = g.clearMJ * g.tauIn;      // 快晴の日のハウス内の値
+    $("rad").placeholder = c1(radBasis === "in" ? inClear : g.clearMJ);
+    $("radHint").innerHTML = !g.radTyped
+      ? "快晴なら外 <b>" + c1(g.clearMJ) + " MJ/m²</b>（ハウス内なら約" + c1(inClear) + "）。潅水アプリと同じ式です。空欄の間は快晴の値で目標を出します。曇りの日は日射の見込みか実績を入れてください。"
+      : radBasis === "in"
+      ? "ハウス内 " + c1(g.radIn) + " ÷ 透過率 " + g.tauIn.toFixed(2) + " ＝ 外 <b>" + c1(g.radOutMJ) + " MJ/m²</b> として目標を出しています（快晴ならハウス内 " + c1(inClear) + "）。"
+      : "入れた値（外）で目標を出しています（快晴なら " + c1(g.clearMJ) + "）。アグリネットの値なら「ハウス内」を押してください。";
+    const R = RULE.rtr;
+    const ref = g.planT !== null ? "参考：作業計画 第" + esc(g.plan.week.week_no) + "週（" + esc(g.plan.week.date) + "〜）は " + c1(g.planT) + "℃。" : "";
+    $("targetHint").innerHTML = g.rtrC === undefined ? ref
+      : g.targetFrom === "入力"
+      ? "入れた目標で計算しています（日射 " + c1(g.radOutMJ) + " MJ/m² から決めた値は " + c1(g.rtrC) + "℃）。日射の欄を書き換えると、この欄は空にもどって日射から決め直します。" + ref
+      : "日射 " + c1(g.radOutMJ) + " MJ/m²（外）から決めた目標は <b>" + c1(g.rtrC) + "℃</b>（" + R.minC + "℃ と " + R.baseC + "＋" + R.slopeC + "×日射 の大きいほう）。空欄ならこの値で計算します。" + ref;
+    $("target").placeholder = g.rtrC !== undefined ? c1(g.rtrC) : "";
   }
-  $("target").placeholder = g.planT !== null && g.planT !== undefined ? c1(g.planT) : "";
 
   // ③ 日中平均：天気別の平年値ボタンと説明
   const hn = g.heinen;
@@ -1535,21 +1758,37 @@ function renderHints(g) {
   $("dayavg").placeholder = hn && hn[wx].mean !== null ? c1(hn[wx].mean) : "";
   $("calcLink").href = "../nicchu/" + (g.date ? "?d=" + ymd(g.date) : "");
 
+  $("radErr").hidden = !g.errors.rad; $("radErr").textContent = g.errors.rad || "";
   $("targetErr").hidden = !g.errors.target; $("targetErr").textContent = g.errors.target || "";
   $("dayErr").hidden = !g.errors.day; $("dayErr").textContent = g.errors.day || "";
 }
 
 const STAGE_WHY = ["転流を進める（日の入りから4時間）", "転流の残りを送る", "呼吸の消耗を抑える", "朝の結露を防ぐ"];
 
+/* 選んだ日が今日か明日か（気象庁の予報があるのはこの2日だけ） */
+function nearDay(d) {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return ymd(d) === ymd(t) || ymd(d) === ymd(addDays(t, 1));
+}
+/* ④・⑤で使う予報。今日・明日なら読み始め、読めていればそのデータ。まだ・読めない・ほかの日は null */
+function forecastFor(g) {
+  if (!g.date || !nearDay(g.date)) return null;
+  if (FC.state === "idle") loadForecast();
+  return FC.state === "ok" ? FC.data : null;
+}
+
 function renderResult(g) {
   const box = $("result");
+  lastPlan = null;
   if (!g.date) { box.innerHTML = '<p class="err">日付を入れてください</p>'; return null; }
   if (g.targetC === undefined || g.dayAvgC === undefined) {
     box.innerHTML = '<p class="hint">②と③がそろうと、ここに設定が出ます。</p>'; return null;
   }
+  const F = CURTAIN.freqs.find(x => x.key === freq);   // ⑤で選んでいる「何分に1回」（カーテンの目安に使う）
   let r0;
-  try { r0 = compute(g); }
+  try { r0 = planNight(g, forecastFor(g), F.predMin); }
   catch (e) { box.innerHTML = '<p class="err">' + esc(e.message) + "</p>"; return null; }
+  lastPlan = { g, r0 };
   // ⑤のボタンで一番低い段を上げていれば、その温度で（元の4段が変わったら、上げたのは取り消す）
   if (raise && raise.sig !== raiseSig(g, r0)) raise = null;
   const r = raise ? withStageTemps(r0, raise.temps) : r0;
@@ -1563,7 +1802,21 @@ function renderResult(g) {
     '<span class="temp num">' + t.toFixed(1) + "<small>℃</small></span></li>").join("");
 
   const dayTag = g.dayFrom !== "入力" ? '<span class="tag">' + esc(g.dayFrom) + "の平年値で試算</span>" : "";
-  const tTag = g.targetFrom === "作業計画" ? '<span class="tag">作業計画</span>' : "";
+  const tTag = g.targetFrom === "日射" ? '<span class="tag">日射から</span>' : "";
+  // 実際の夜の平均の見込み方の説明
+  const sim = r.model.kind === "sim";
+  const flatWhy = !nearDay(g.date) ? "予報があるのは今日と明日だけなので、"
+    : FC.state === "loading" || FC.state === "idle" ? "気象庁の予報を読んでいます（読めたら見込み直します）。それまでは、"
+    : FC.state === "error" ? "予報を読めなかったので、"
+    : r0.why === "noForecast" ? "この夜の予報がまだ無いので、"
+    : r0.why === "range" ? "予報が朝まで無いので、"
+    : r0.why === "error" ? "予報から見込めなかったので（" + esc(r0.whyMsg) + "）、" : "";
+  const modelNote = '<p class="hint">' + (sim
+    ? "実際の夜の平均は、段を下げたあと室温が下がりきるまでの分と、暖房が入り切りしている間の上振れ（2〜4段目は設定＋" + NIGHT.cycleC[1] +
+      "℃）を、気象庁の予報と⑤のカーテンの目安（" + esc(F.label) + "）で1分ずつ追って見込んでいます（4段の平均より +" + c1(r.nightMeanC - r.nightAvgC) + "℃）。"
+    : flatWhy + "実際の夜の平均は、4段の平均に記録の上振れ +" + NIGHT.flatC + "℃ を足して見込んでいます。") +
+    "4段は、この見込みが夜に必要な平均に届くように選んでいます。</p>";
+  const mTag = '<span class="tag">' + (sim ? "予報から" : "記録の平均から") + "</span>";
   let tail;
   // 0.1℃に丸めて0になる差（0.05℃未満）は「届いた」とみなす
   if (r.shortC >= 0.05) {
@@ -1572,7 +1825,7 @@ function renderResult(g) {
   } else {
     tail = '<p class="ok">目標の日平均 ' + c1(g.targetC) + "℃ に届く設定です" + (r.reached ? "。" : "（全段16℃の上限で、ほぼ目標どおり）。") + "</p>";
     // 日中が暖かく、夜の必要平均が設定の下限より低い日
-    if (r.nightAvgC - r.needC > 0.5) {
+    if (r.nightMeanC - r.needC > 0.5) {
       tail += '<p class="hint">日中が暖かかったので、夜の必要平均は ' + c1(r.needC) + "℃ です。設定は下限（11℃、4段目は" + r.floorC + "℃）までしか下げないため、日平均は目標を " + c1(r.predictC - g.targetC) + "℃ 上回ります。</p>";
     }
   }
@@ -1595,10 +1848,11 @@ function renderResult(g) {
     (raise ? '<button type="button" class="undo" id="undoRaise">元の設定（' + r0.temps.map(t => t.toFixed(1)).join("・") + "℃）にもどす</button>" : "") +
     '<div class="summary">' +
       '<div class="kv"><span class="k">夜に必要な平均</span><span class="v num">' + c1(r.needC) + "℃</span></div>" +
-      '<div class="kv"><span class="k">この設定での夜の平均</span><span class="v num">' + c1(r.nightAvgC) + "℃</span></div>" +
+      '<div class="kv"><span class="k">4段の設定の平均</span><span class="v num">' + c1(r.nightAvgC) + "℃</span></div>" +
+      '<div class="kv"><span class="k">実際の夜の平均の見込み' + mTag + '</span><span class="v num">' + c1(r.nightMeanC) + "℃</span></div>" +
       '<div class="kv"><span class="k">日平均の見込み（目標 ' + c1(g.targetC) + "℃）" + tTag + '</span><span class="v num">' + c1(r.predictC) + "℃</span></div>" +
       '<div class="kv"><span class="k">計算に使った日中平均' + dayTag + '</span><span class="v num">' + c1(g.dayAvgC) + "℃</span></div>" +
-    "</div>" + spreadNote + tail;
+    "</div>" + modelNote + spreadNote + tail;
   $("resTitle").innerHTML = "④ 暖房機に入れる設定（" + esc(house) + "）";
   return r;
 }
@@ -2001,6 +2255,7 @@ function renderYears(g) {
 function render() {
   document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.house === house)));
   document.querySelectorAll("#freqBtns button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.freq === freq)));
+  document.querySelectorAll("#radBasis button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.basis === radBasis)));
   const g = gather();
   renderHints(g);
   const r = renderResult(g);
@@ -2029,7 +2284,8 @@ $("today").addEventListener("click", () => { $("date").value = ymd(new Date()); 
 $("curtain").addEventListener("click", e => {
   const b = e.target.closest("button[data-raise]");
   if (!b) return;
-  const g = gather(), r0 = compute(g), T = Number(b.dataset.raise), idx = b.dataset.idx.split(",").map(Number);
+  if (!lastPlan) throw new Error("④の設定が出ていないので、段を上げられません");
+  const { g, r0 } = lastPlan, T = Number(b.dataset.raise), idx = b.dataset.idx.split(",").map(Number);
   if (!Number.isFinite(T) || idx.some(i => !(i >= 0 && i < r0.temps.length))) throw new Error("上げる温度・段が読めません: " + b.dataset.raise + " / " + b.dataset.idx);
   raise = { sig: raiseSig(g, r0), temps: r0.temps.map((t, i) => (idx.includes(i) ? T : t)) };
   render();
@@ -2065,9 +2321,20 @@ $("wxBtns").addEventListener("click", e => {
 });
 ["date", "target", "dayavg"].forEach(id => $(id).addEventListener("input", render));
 $("date").addEventListener("change", render);
+/* ② 日射を書き換えたら、目標の欄を空にして日射から決め直す（ユーザー決定：日射を変えたら目標も合わせて設定し直す） */
+$("rad").addEventListener("input", () => { $("target").value = ""; render(); });
+/* ② 日射の値の種類（外・ハウス内）。端末に覚えさせる。日射の欄に値があれば、目標も決め直す */
+$("radBasis").addEventListener("click", e => {
+  const b = e.target.closest("button[data-basis]");
+  if (!b) return;
+  radBasis = b.dataset.basis;
+  try { localStorage.setItem(RULE.radBasisKey, radBasis); } catch (e2) { /* 覚えられなくても計算はできる */ }
+  if ($("rad").value.trim() !== "") $("target").value = "";
+  render();
+});
 
 /* 上下キーで欄を移動する（値は変えない） */
-const order = ["date", "target", "dayavg"];
+const order = ["date", "rad", "target", "dayavg"];
 order.forEach((id, i) => $(id).addEventListener("keydown", e => {
   if (id === "date") return;                       // 日付の欄は上下キーで日を送るのが標準なので触らない
   if (e.key === "ArrowDown" && i < order.length - 1) { e.preventDefault(); $(order[i + 1]).focus(); }
