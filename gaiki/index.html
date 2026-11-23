@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#C62828">
+<title>外気温｜ハッピートマトファーム</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='38' r='22' fill='%23C62828'/%3E%3Cpath d='M32 20 L22 10 M32 20 L42 10 M32 20 L32 6' stroke='%232E6B33' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<style>
+/* 色はアプリ一覧（top.html）とそろえてある */
+:root{
+  --paper:#FFFFFF; --ink:#12180F; --muted:#5C6857; --rule:#C6CFC0;
+  --tomato:#C62828; --leaf:#2E6B33; --tint:#F4F7F1; --sun:#B7791F; --sky:#2F6FB2;
+}
+[hidden]{display:none !important}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:-apple-system,"Segoe UI","Noto Sans JP","Hiragino Kaku Gothic ProN",Roboto,sans-serif;
+  font-size:16px; line-height:1.6;
+  max-width:600px; margin:0 auto; padding:0 16px 60px;
+}
+.back{
+  display:flex; align-items:center; min-height:46px; text-decoration:none;
+  font-size:15px; font-weight:700; color:var(--sky);
+}
+h1{font-size:23px;font-weight:800;margin:4px 0 2px}
+.sub{font-size:13px;color:var(--muted);margin:0 0 14px}
+
+/* いまの値 */
+.ima{
+  border:2px solid var(--rule); border-radius:18px; padding:16px 16px 12px;
+  background:var(--tint);
+}
+.ima .lbl{font-size:13px;color:var(--muted);font-weight:700}
+.ima .big{font-size:52px;font-weight:800;line-height:1.1;letter-spacing:-.01em}
+.ima .big small{font-size:24px;font-weight:700;margin-left:2px}
+.ima .row{display:flex;gap:18px;flex-wrap:wrap;margin-top:6px;font-size:16px}
+.ima .row b{font-size:20px}
+.ima .when{margin-top:8px;font-size:13px;color:var(--muted)}
+.ima .when.ng{color:var(--tomato);font-weight:700}
+
+/* 鹿沼との差 */
+.sa{margin-top:12px;border-left:5px solid var(--sky);background:#EEF4FB;padding:10px 14px;border-radius:0 12px 12px 0}
+.sa .v{font-size:22px;font-weight:800}
+.sa .note{font-size:13px;color:var(--muted)}
+
+h2{font-size:17px;margin:26px 0 8px;font-weight:800}
+
+/* 期間の切り替え。指で押しやすい大きさ */
+.kikan{display:flex;gap:10px;margin:18px 0 4px}
+.kikan button{
+  flex:1; min-height:46px; font:inherit; font-size:16px; font-weight:700;
+  border:2px solid var(--rule); background:#fff; color:var(--ink); border-radius:12px; cursor:pointer;
+}
+.kikan button.on{border-color:var(--tomato);background:#FBE9E9;color:var(--tomato)}
+
+canvas{display:block;width:100%;height:auto;border:1px solid var(--rule);border-radius:12px;background:#fff}
+.hanrei{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);margin:6px 2px 0}
+.hanrei i{display:inline-block;width:22px;height:4px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.hanrei i.obi{height:10px;opacity:.5}
+.chu{font-size:12.5px;color:var(--muted);margin:4px 2px 0}
+
+/* 機器の様子 */
+.kiki{border:2px solid var(--rule);border-radius:14px;padding:12px 14px;font-size:15px}
+.kiki .hyo{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin-top:6px}
+.kiki .hyo span:nth-child(odd){color:var(--muted);font-size:13.5px}
+.jo{font-weight:800}
+.jo.ok{color:var(--leaf)} .jo.chu2{color:var(--sun)} .jo.ng{color:var(--tomato)}
+
+/* 数値の表（たたんでおく） */
+details{margin-top:12px;border:1px solid var(--rule);border-radius:12px;padding:0 12px}
+details summary{min-height:46px;display:flex;align-items:center;font-weight:700;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:10px}
+th,td{padding:5px 4px;text-align:right;border-bottom:1px solid #E5EAE1;font-variant-numeric:tabular-nums}
+th{font-size:12.5px;color:var(--muted);font-weight:700}
+td:first-child,th:first-child{text-align:left}
+
+.err{margin-top:14px;padding:10px 12px;border-radius:12px;background:#FBE9E9;color:var(--tomato);font-weight:700;font-size:14px}
+.foot{margin-top:24px;font-size:13px;color:var(--muted);border-top:1px solid var(--rule);padding-top:12px}
+</style>
+</head>
+<body>
+
+<a class="back" href="../">‹ アプリ一覧</a>
+<h1>🌡️ 外気温</h1>
+<p class="sub">家のそばの通風筒で測った外気（1分ごとに測り、10分ごとに記録）</p>
+
+<div class="err" id="err" hidden></div>
+
+<section class="ima">
+  <div class="lbl">いまの外気</div>
+  <div class="big" id="imaT">--<small>℃</small></div>
+  <div class="row">
+    <span>湿度 <b id="imaRh">--</b> %</span>
+    <span>露点 <b id="imaTd">--</b> ℃</span>
+  </div>
+  <div class="when" id="imaWhen">読み込み中…</div>
+</section>
+
+<section class="sa" id="saBox" hidden>
+  <div class="note" id="saWhen"></div>
+  <div class="v" id="saV"></div>
+  <div class="note" id="saKanuma"></div>
+</section>
+
+<div class="kikan" role="group" aria-label="グラフの期間">
+  <button type="button" data-h="24">24時間</button>
+  <button type="button" data-h="72">3日</button>
+</div>
+
+<h2>気温</h2>
+<canvas id="cvT" width="660" height="340"></canvas>
+<div class="hanrei">
+  <span><i style="background:#C62828"></i>ここ（10分の平均）</span>
+  <span><i class="obi" style="background:#C62828"></i>10分の中の最低〜最高</span>
+  <span><i style="background:#6B7280"></i>鹿沼アメダス</span>
+</div>
+<p class="chu">縦軸は見やすい範囲に合わせて伸び縮みします（0℃から始まっていません）。</p>
+
+<h2>湿度</h2>
+<canvas id="cvRh" width="660" height="260"></canvas>
+<div class="hanrei">
+  <span><i style="background:#2F6FB2"></i>ここ（10分の平均）</span>
+  <span><i style="background:#6B7280"></i>鹿沼アメダス</span>
+</div>
+
+<details>
+  <summary>数値の表（1時間ごと）</summary>
+  <div id="hyo"></div>
+</details>
+
+<h2>機器の様子</h2>
+<section class="kiki" id="kiki">読み込み中…</section>
+
+<p class="foot">
+  1分ごとに自動で読み直します。<br>
+  記録は 2026-11-23 17:00 から（それより前は部屋の中での試し）。<br>
+  露点は湿度と気温から出した値（Magnus の式）。ここまで冷えると結露が始まる温度です。
+</p>
+
+<script>
+"use strict";
+/* =========================================================================
+   外気温のページ
+   ・共通の Apps Script（want=gaiki）から 10分値といまの値を読む
+   ・気象庁のアメダス（鹿沼）の10分値を読み、並べて描く
+   入力欄は無い。開いている間は1分ごとに読み直す。
+   ========================================================================= */
+
+/* 白画面にしないため、どこで落ちても画面に理由を出す */
+function kakuErr(msg){
+  var e = document.getElementById("err");
+  e.hidden = false;
+  e.textContent = msg;
+}
+window.onerror = function(m, src, line){ kakuErr("表示できませんでした: " + m + "（" + line + "行）"); };
+
+var API = "https://script.google.com/macros/s/AKfycbzYkVlVngoC6CXf9HKPlfnFbJHs5lrarw2J9dLjdqaqvdVQFIN15aMr5EyNSA8tj1UU/exec";
+var AMEDAS = "https://www.jma.go.jp/bosai/amedas/data/";
+var KANUMA = "41271";                       // 鹿沼アメダスの地点番号
+var HONBAN = "2026-11-23 17:00";            // これより前の行は部屋の中での試しなので出さない
+
+/* 色は JavaScript に直に書く（CSS の変数を経由すると、読めなかったとき黙って前の色になるため） */
+var IRO = {
+  koko:   "#C62828",                         // ここの気温
+  obi:    "rgba(198,40,40,0.16)",            // 10分の中の最低〜最高の帯
+  kanuma: "#6B7280",                         // 鹿沼
+  rh:     "#2F6FB2",                         // ここの湿度
+  jiku:   "#5C6857",
+  sen:    "#E5EAE1"
+};
+
+var MIN = 60 * 1000;
+var jotai = { kikan: 24, rows: [], now: null, kanuma: {}, kanumaYonda: 0 };
+
+/* --- 期間ボタン。選んだ期間は端末が覚える（使えない端末では覚えないだけ） --- */
+try { var k = Number(localStorage.getItem("htf_gaiki_kikan")); if (k === 24 || k === 72) jotai.kikan = k; } catch (e) {}
+document.querySelectorAll(".kikan button").forEach(function(b){
+  b.addEventListener("click", function(){
+    jotai.kikan = Number(b.dataset.h);
+    try { localStorage.setItem("htf_gaiki_kikan", String(jotai.kikan)); } catch (e) {}
+    yomu(true);
+  });
+});
+function botanWoNaosu(){
+  document.querySelectorAll(".kikan button").forEach(function(b){
+    b.classList.toggle("on", Number(b.dataset.h) === jotai.kikan);
+  });
+}
+
+/* --- 時刻の道具 --- */
+// "2026-11-23 17:10" → Date（日本時間の端末を前提にする）
+function idToDate(id){
+  var m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(id);
+  if (!m) return null;
+  return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+}
+function nibai(n){ return (n < 10 ? "0" : "") + n; }
+function hhmm(d){ return nibai(d.getHours()) + ":" + nibai(d.getMinutes()); }
+function mdhh(d){ return (d.getMonth() + 1) + "/" + d.getDate() + " " + d.getHours() + "時"; }
+function amedasKey(d){            // アメダスの時刻の書き方 20261123164000
+  return "" + d.getFullYear() + nibai(d.getMonth() + 1) + nibai(d.getDate()) + nibai(d.getHours()) + nibai(d.getMinutes()) + "00";
+}
+
+/* 露点（℃）。Magnus の式（係数は Sonntag 1990 の 17.62・243.12）。
+   湿度が 0 以下のときは出せないので null */
+function roten(t, rh){
+  if (!(rh > 0)) return null;
+  var g = Math.log(rh / 100) + 17.62 * t / (243.12 + t);
+  return 243.12 * g / (17.62 - g);
+}
+
+/* --- 読み込み --- */
+function yomu(kanumaMo){
+  botanWoNaosu();
+  var days = jotai.kikan === 72 ? 4 : 2;      // 境目の分も含めて1日多めに読む
+  var p1 = fetch(API + "?want=gaiki&days=" + days)
+    .then(function(r){ if (!r.ok) throw new Error("記録の読み込みに失敗（HTTP " + r.status + "）"); return r.json(); })
+    .then(function(j){
+      if (!j.ok) throw new Error("記録の読み込みに失敗: " + (j.error || "理由不明"));
+      jotai.rows = (j.gaiki || []).filter(function(r){ return String(r.id) >= HONBAN; });
+      jotai.now = j.now;
+    });
+  // 鹿沼は10分ごとにしか増えないので、10分たったときか期間を変えたときだけ読む
+  var p2 = (kanumaMo || Date.now() - jotai.kanumaYonda > 10 * MIN) ? kanumaWoYomu() : Promise.resolve();
+  Promise.all([p1, p2]).then(function(){
+    document.getElementById("err").hidden = true;
+    egaku();
+  }).catch(function(e){
+    kakuErr(String(e.message || e));
+    egaku();                                     // 読めた分だけでも描く
+  });
+}
+
+/* 鹿沼アメダスの10分値。3時間ごとのファイル（YYYYMMDD_HH.json）に分かれているので、期間の分を全部読む */
+function kanumaWoYomu(){
+  return fetch(AMEDAS + "latest_time.txt").then(function(r){ return r.text(); }).then(function(s){
+    var saigo = new Date(s.trim());
+    var hajime = new Date(saigo.getTime() - (jotai.kikan + 3) * 60 * MIN);
+    var files = [];
+    var d = new Date(hajime.getFullYear(), hajime.getMonth(), hajime.getDate(), Math.floor(hajime.getHours() / 3) * 3);
+    while (d <= saigo) {
+      files.push("" + d.getFullYear() + nibai(d.getMonth() + 1) + nibai(d.getDate()) + "_" + nibai(d.getHours()));
+      d = new Date(d.getTime() + 3 * 60 * MIN);
+    }
+    return Promise.all(files.map(function(f){
+      return fetch(AMEDAS + "point/" + KANUMA + "/" + f + ".json")
+        .then(function(r){ return r.ok ? r.json() : {}; })
+        .catch(function(){ return {}; });          // 1つ読めなくても、ほかは描く
+    }));
+  }).then(function(list){
+    var kanuma = {};
+    list.forEach(function(o){
+      Object.keys(o).forEach(function(key){
+        var v = o[key];
+        kanuma[key] = {
+          t:  (v.temp && v.temp[1] === 0) ? v.temp[0] : null,          // [値, 品質]。品質 0 が正常
+          rh: (v.humidity && v.humidity[1] === 0) ? v.humidity[0] : null
+        };
+      });
+    });
+    jotai.kanuma = kanuma;
+    jotai.kanumaYonda = Date.now();
+  }).catch(function(e){
+    // 鹿沼が読めなくても、ここの値は出す
+    console.warn("鹿沼が読めませんでした", e);
+  });
+}
+
+/* --- 画面に出す --- */
+function egaku(){
+  try {
+    imaWoKaku();
+    saWoKaku();
+    var owari = Date.now();
+    var hajime = owari - jotai.kikan * 60 * MIN;
+    var rows = jotai.rows.map(function(r){
+      return { d: idToDate(String(r.id)), t: +r.t, rh: +r.rh, tmin: +r.tmin, tmax: +r.tmax, n: +r.n, rssi: +r.rssi };
+    }).filter(function(r){ return r.d && r.d.getTime() >= hajime; });
+    var kan = Object.keys(jotai.kanuma).sort().map(function(key){
+      var d = new Date(+key.substr(0, 4), +key.substr(4, 2) - 1, +key.substr(6, 2), +key.substr(8, 2), +key.substr(10, 2));
+      return { d: d, t: jotai.kanuma[key].t, rh: jotai.kanuma[key].rh };
+    }).filter(function(k){ return k.d.getTime() >= hajime; });
+
+    senGraph(document.getElementById("cvT"), hajime, owari, rows, kan, "t");
+    senGraph(document.getElementById("cvRh"), hajime, owari, rows, kan, "rh");
+    hyoWoKaku(rows);
+    kikiWoKaku();
+  } catch (e) {
+    kakuErr("表示できませんでした: " + (e.message || e));
+  }
+}
+
+function imaWoKaku(){
+  var n = jotai.now;
+  var w = document.getElementById("imaWhen");
+  if (!n) { w.textContent = "まだ届いていません"; return; }
+  document.getElementById("imaT").innerHTML = (+n.t).toFixed(1) + "<small>℃</small>";
+  document.getElementById("imaRh").textContent = (+n.rh).toFixed(0);
+  var td = roten(+n.t, +n.rh);
+  document.getElementById("imaTd").textContent = td === null ? "--" : td.toFixed(1);
+  var fun = Math.round((Date.now() - n.at) / MIN);
+  var d = new Date(n.at);
+  if (fun >= 5) {
+    w.className = "when ng";
+    w.textContent = hhmm(d) + " に届いた値（" + fun + "分前）。5分以上届いていません。機器の電源・電波を確かめてください";
+  } else {
+    w.className = "when";
+    w.textContent = hhmm(d) + " に届いた値（" + (fun <= 0 ? "1分以内" : fun + "分前") + "）";
+  }
+}
+
+/* 鹿沼の最新の10分値と、同じ時刻のここの10分値を比べる */
+function saWoKaku(){
+  var box = document.getElementById("saBox");
+  var keys = Object.keys(jotai.kanuma).filter(function(k){ return jotai.kanuma[k].t !== null; }).sort();
+  if (!keys.length || !jotai.rows.length) { box.hidden = true; return; }
+  var koko = {};
+  jotai.rows.forEach(function(r){ koko[amedasKey(idToDate(String(r.id)))] = +r.t; });
+  for (var i = keys.length - 1; i >= 0; i--) {
+    if (koko[keys[i]] !== undefined) {
+      var k = keys[i];
+      var d = new Date(+k.substr(0, 4), +k.substr(4, 2) - 1, +k.substr(6, 2), +k.substr(8, 2), +k.substr(10, 2));
+      var sa = koko[k] - jotai.kanuma[k].t;
+      box.hidden = false;
+      document.getElementById("saWhen").textContent = hhmm(d) + " の比較（鹿沼アメダスとの差）";
+      document.getElementById("saV").textContent = (sa >= 0 ? "+" : "") + sa.toFixed(1) + " ℃　" +
+        (Math.abs(sa) < 0.15 ? "ほぼ同じ" : sa < 0 ? "ここが低い" : "ここが高い");
+      document.getElementById("saKanuma").textContent = "ここ " + koko[k].toFixed(1) + " ℃ ／ 鹿沼 " + jotai.kanuma[k].t.toFixed(1) + " ℃";
+      return;
+    }
+  }
+  box.hidden = true;
+}
+
+/* 目盛りの間隔を、幅に応じて 1・2・5・10 から選ぶ */
+function kizami(haba){
+  var c = [0.5, 1, 2, 5, 10, 20];
+  for (var i = 0; i < c.length; i++) if (haba / c[i] <= 6) return c[i];
+  return 20;
+}
+
+/* 折れ線グラフ（気温か湿度）。key は "t" か "rh" */
+function senGraph(cv, hajime, owari, rows, kan, key){
+  var ctx = cv.getContext("2d");
+  var W = cv.width, H = cv.height;
+  var L = 74, R = 16, T = 18, B = 52;           // 余白（左は目盛りの数字のぶん広め）
+  ctx.clearRect(0, 0, W, H);
+
+  // 縦の範囲を決める
+  var lo, hi;
+  if (key === "rh") { lo = 0; hi = 100; }
+  else {
+    var vals = [];
+    rows.forEach(function(r){ vals.push(r.tmin, r.tmax); });
+    kan.forEach(function(k){ if (k.t !== null) vals.push(k.t); });
+    vals = vals.filter(function(v){ return isFinite(v); });
+    if (!vals.length) { ctx.font = "24px sans-serif"; ctx.fillStyle = IRO.jiku; ctx.fillText("まだ記録がありません", L, H / 2); return; }
+    lo = Math.floor(Math.min.apply(null, vals) - 0.5);
+    hi = Math.ceil(Math.max.apply(null, vals) + 0.5);
+    if (hi - lo < 4) { var m = (hi + lo) / 2; lo = Math.floor(m - 2); hi = Math.ceil(m + 2); }
+  }
+  var step = key === "rh" ? 20 : kizami(hi - lo);
+  lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+
+  function x(t){ return L + (t - hajime) / (owari - hajime) * (W - L - R); }
+  function y(v){ return T + (hi - v) / (hi - lo) * (H - T - B); }
+
+  // 横の目盛り線と数字
+  ctx.font = "22px sans-serif";
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (var v = lo; v <= hi + 1e-9; v += step) {
+    ctx.strokeStyle = IRO.sen; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(L, y(v)); ctx.lineTo(W - R, y(v)); ctx.stroke();
+    ctx.fillStyle = IRO.jiku;
+    ctx.fillText((step < 1 ? v.toFixed(1) : String(Math.round(v))) + (key === "rh" ? "%" : "℃"), L - 8, y(v));
+  }
+  // 0℃ の線は少し濃く（霜・凍結の目安）
+  if (key === "t" && lo < 0 && hi > 0) {
+    ctx.strokeStyle = "#9AA5C4"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(L, y(0)); ctx.lineTo(W - R, y(0)); ctx.stroke();
+  }
+
+  // 時刻の目盛り（24時間なら3時間ごと、3日なら12時間ごと）
+  var kankaku = (jotai.kikan === 72 ? 12 : 3) * 60 * MIN;
+  var d0 = new Date(hajime); d0.setMinutes(0, 0, 0);
+  var t0 = d0.getTime();
+  while (new Date(t0).getHours() % (kankaku / 60 / MIN) !== 0 || t0 < hajime) t0 += 60 * MIN;
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (var tt = t0; tt <= owari; tt += kankaku) {
+    var dd = new Date(tt);
+    ctx.strokeStyle = dd.getHours() === 0 ? "#B6C0B0" : IRO.sen; ctx.lineWidth = dd.getHours() === 0 ? 2 : 1;
+    ctx.beginPath(); ctx.moveTo(x(tt), T); ctx.lineTo(x(tt), H - B); ctx.stroke();
+    ctx.fillStyle = IRO.jiku;
+    ctx.fillText(dd.getHours() === 0 ? (dd.getMonth() + 1) + "/" + dd.getDate() : dd.getHours() + "時", x(tt), H - B + 10);
+  }
+
+  // 20分より離れた点はつながない（記録が途切れたところを線でごまかさないため）
+  function sen(points, iro, haba, tensen){
+    ctx.strokeStyle = iro; ctx.lineWidth = haba; ctx.lineJoin = "round";
+    ctx.setLineDash(tensen ? [10, 7] : []);
+    ctx.beginPath();
+    var mae = null;
+    points.forEach(function(p){
+      if (p.v === null || !isFinite(p.v)) { mae = null; return; }
+      var px = x(p.t), py = y(p.v);
+      if (mae === null || p.t - mae > 20 * MIN) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      mae = p.t;
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // 鹿沼（下に描く）
+  sen(kan.map(function(k){ return { t: k.d.getTime(), v: k[key] }; }), IRO.kanuma, 3, true);
+
+  if (key === "t") {
+    // 10分の中の最低〜最高の帯。10分の区切りごとに、その10分の幅に塗る
+    ctx.fillStyle = IRO.obi;
+    rows.forEach(function(r){
+      var t1 = r.d.getTime();
+      ctx.fillRect(x(t1 - 10 * MIN), y(r.tmax), Math.max(1, x(t1) - x(t1 - 10 * MIN)), Math.max(1, y(r.tmin) - y(r.tmax)));
+    });
+    sen(rows.map(function(r){ return { t: r.d.getTime(), v: r.t }; }), IRO.koko, 4, false);
+  } else {
+    sen(rows.map(function(r){ return { t: r.d.getTime(), v: r.rh }; }), IRO.rh, 4, false);
+  }
+
+  // いちばん新しい10分値に丸印（点が1つだけのときも見えるように）
+  var last = rows[rows.length - 1];
+  if (last && isFinite(last[key])) {
+    ctx.fillStyle = key === "t" ? IRO.koko : IRO.rh;
+    ctx.beginPath(); ctx.arc(x(last.d.getTime()), y(last[key]), 7, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // 枠
+  ctx.strokeStyle = IRO.jiku; ctx.lineWidth = 1.5;
+  ctx.strokeRect(L, T, W - L - R, H - T - B);
+}
+
+/* 1時間ごとの数値の表（正時の10分値）。新しい順 */
+function hyoWoKaku(rows){
+  var ue = rows.filter(function(r){ return r.d.getMinutes() === 0; }).slice().reverse();
+  if (!ue.length) { document.getElementById("hyo").innerHTML = "<p>まだ記録がありません。</p>"; return; }
+  var h = "<table><tr><th>時刻</th><th>ここ℃</th><th>鹿沼℃</th><th>差</th><th>湿度%</th></tr>";
+  ue.forEach(function(r){
+    var k = jotai.kanuma[amedasKey(r.d)];
+    var kt = (k && k.t !== null) ? k.t : null;
+    var sa = kt === null ? "" : ((r.t - kt >= 0 ? "+" : "") + (r.t - kt).toFixed(1));
+    h += "<tr><td>" + mdhh(r.d) + "</td><td>" + r.t.toFixed(1) + "</td><td>" + (kt === null ? "–" : kt.toFixed(1)) +
+         "</td><td>" + sa + "</td><td>" + r.rh.toFixed(0) + "</td></tr>";
+  });
+  document.getElementById("hyo").innerHTML = h + "</table>";
+}
+
+/* 機器の様子：最後の10分値の時刻・受け取れた回数・電波の強さ */
+function kikiWoKaku(){
+  var el = document.getElementById("kiki");
+  var r = jotai.rows[jotai.rows.length - 1];
+  if (!r) { el.textContent = "まだ10分値が届いていません。"; return; }
+  var d = idToDate(String(r.id));
+  var okure = Math.round((Date.now() - d.getTime()) / MIN);
+  var hyoka, cls;
+  if (okure > 25) { hyoka = "10分値が " + okure + " 分届いていません（窓際のマイコンか Wi-Fi を確かめてください）"; cls = "ng"; }
+  else if (+r.n < 8) { hyoka = "途切れあり（10分で " + r.n + " 回しか受け取れていません）"; cls = "chu2"; }
+  else if (+r.rssi < -85) { hyoka = "電波が弱め（" + r.rssi + " dBm）"; cls = "chu2"; }
+  else { hyoka = "順調"; cls = "ok"; }
+  el.innerHTML = '<div class="jo ' + cls + '">' + hyoka + '</div>' +
+    '<div class="hyo">' +
+    '<span>最後の10分値</span><span>' + hhmm(d) + '（' + okure + '分前）</span>' +
+    '<span>受け取れた回数</span><span>' + r.n + ' 回（10回が満点）</span>' +
+    '<span>電波の強さ</span><span>' + r.rssi + ' dBm（−85 より弱いと途切れやすい）</span>' +
+    '<span>プログラム</span><span>' + (r.ver || "") + '</span>' +
+    '</div>';
+}
+
+yomu(true);
+setInterval(function(){ yomu(false); }, 60 * 1000);
+</script>
+</body>
+</html>
