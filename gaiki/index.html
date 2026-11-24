@@ -474,7 +474,27 @@ function kikiWoKaku(){
     '<span>受け取れた回数</span><span>' + r.n + ' 回（10回が満点）</span>' +
     '<span>電波の強さ</span><span>' + r.rssi + ' dBm（−85 より弱いと途切れやすい）</span>' +
     '<span>プログラム</span><span>' + (r.ver || "") + '</span>' +
+    shindanGyo() +
     '</div>';
+}
+
+/* 窓のマイコンの中の様子（mado-2 から、いまの値と一緒に届く）。
+   10分値が止まったときに、どこで詰まっているかを見るためのもの */
+function shindanGyo(){
+  var n = jotai.now;
+  if (!n || n.clk === null || n.clk === undefined) return "";
+  // マイコンの時計 − こちらの時刻（送るのにかかる数秒ぶん、マイナスに出る）
+  var zure = Math.round(n.clk - n.at / 1000);
+  var h = '<span>マイコンの時計</span><span>' + (Math.abs(zure) <= 15 ? "合っている" : "ずれ " + zure + " 秒") +
+          '（合わせ直し ' + (n.hosei || 0) + ' 回）</span>' +
+          '<span>送れずにたまっている</span><span>' + (n.q || 0) + ' 行' + (n.f ? '（続けて ' + n.f + ' 回失敗）' : '') + '</span>' +
+          '<span>起動してから</span><span>' + Math.floor((n.up || 0) / 60) + ' 時間 ' + ((n.up || 0) % 60) + ' 分</span>';
+  if (n.sute) h += '<span>捨てた10分値</span><span>' + n.sute + ' 行</span>';
+  if (n.err) {
+    var e = String(n.err).replace(/[&<>]/g, function(c){ return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; });
+    h += '<span>最後の失敗</span><span style="word-break:break-all">' + e + '</span>';
+  }
+  return h;
 }
 
 yomu(true);
