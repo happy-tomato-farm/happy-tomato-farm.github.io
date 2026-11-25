@@ -229,8 +229,8 @@ const PHOTOS = {"p1": {"box": [30, 770, 1400, 1060], "src": "data:image/jpeg;bas
    小さな道具（どれも値を返すだけで、画面や保存には触らない）
    ========================================================================= */
 const HOUSE = {
-  west:  { name: "西", side: "左側", big: "組合液肥2号 <span class=\"nw\">4.2 L</span>", small: "シンプルK <span class=\"nw\">12 L</span>", kai: "2回半" },
-  south: { name: "南", side: "右側", big: "組合液肥2号 <span class=\"nw\">2.1 L</span> ＋ <span class=\"nw\">水 2.1 L</span>（2倍に薄める）", small: "シンプルK <span class=\"nw\">6 L</span>", kai: "1回半" },
+  west:  { name: "西", side: "左側", big: "シンプルK <span class=\"nw\">12 L</span>", small: "組合液肥2号 <span class=\"nw\">4.2 L</span>", kai: "2回半" },
+  south: { name: "南", side: "右側", big: "シンプルK <span class=\"nw\">6 L</span>", small: "組合液肥2号 <span class=\"nw\">2.1 L</span> ＋ <span class=\"nw\">水 2.1 L</span>（2倍に薄める）", kai: "1回半" },
 };
 const OPEN  = t => `<span class="op o">${t || "開ける"}</span>`;
 const CLOSE = t => `<span class="op c">${t || "閉じる"}</span>`;
@@ -351,11 +351,11 @@ function secPrep(c){
       S("w", "<b>西用</b>（左の2つ）に液肥を入れる", [`大きい容器：<b>${HOUSE.west.big}</b>`, `小さい容器：<b>${HOUSE.west.small}</b>`]),
       S("s", "<b>南用</b>（右の2つ）に液肥を入れる", [`大きい容器：<b>${HOUSE.south.big}</b>`, `小さい容器：<b>${HOUSE.south.small}</b>`]),
     ], fig("p1", [
-      { t: ["西・大きい容器", "組合液肥2号 4.2L"], at: [330, 830], k: "n" },
-      { t: ["南・大きい容器", "組合液肥2号 2.1L", "＋水 2.1L"], at: [1090, 850], k: "n" },
-      { t: ["西・小さい容器", "シンプルK 12L"], at: [420, 1770], k: "n" },
-      { t: ["南・小さい容器", "シンプルK 6L"], at: [1110, 1770], k: "n" },
-    ], CAP.youki, { fs: 0.041 }) + warn("シンプルKのほうが量は多いが、<b>小さい容器で合っている</b>")));
+      { t: ["西・大きい容器", "シンプルK 12L"], at: [330, 830], k: "n" },
+      { t: ["南・大きい容器", "シンプルK 6L"], at: [1090, 850], k: "n" },
+      { t: ["西・小さい容器", "組合液肥2号 4.2L"], at: [420, 1770], k: "n" },
+      { t: ["南・小さい容器", "組合液肥2号 2.1L", "＋水 2.1L"], at: [1110, 1770], k: "n" },
+    ], CAP.youki, { fs: 0.041 })));
   }
   groups.push(G([S("sv", `<b>南ハウス</b>：一番西の潅水バルブを${CLOSE()}<span class="nophoto">写真なし</span>`, ["毎回"])]));
   groups.push(eki
@@ -380,10 +380,10 @@ function ekiGroups(h){
        + fig("p2", [AT.te("② 液肥バルブを閉じる → 吸う", "c")], CAP.te)
        + warn("液肥バルブは<b>閉じると吸う</b>（逆にしない）")),
     G([
-      S("e3", `<b>組合液肥（大きい容器）→ シンプルK（小さい容器）</b>の順に吸わせる`),
+      S("e3", `<b>組合液肥（小さい容器）→ シンプルK（大きい容器）</b>の順に吸わせる`),
     ], fig("p1", [
-      { t: "先：組合液肥", at: big, k: "n" },
-      { t: "後：シンプルK", at: small, k: "n" },
+      { t: "先：組合液肥", at: small, k: "n" },
+      { t: "後：シンプルK", at: big, k: "n" },
     ], `${HOUSE[h].name}用の容器（${HOUSE[h].side}）`, { crop, fs: 0.065, mw: 250 })),
     G([
       S("e4", "最後に吸いづらくなったら、容器に<b>水を適量足して薄め</b>、残りまで吸わせる"),
@@ -563,7 +563,7 @@ function draw(){
     </ul></div>
     <div class="box red"><h2>間違えやすいところ</h2><ul class="dots">
       ${eki ? `<li><b>液肥バルブ（下のハンドル）</b>は、${CLOSE()}と吸う。吸い終わったら${OPEN()}</li>
-      <li>大きい容器＝組合液肥、小さい容器＝シンプルK</li>` : ""}
+      <li>大きい容器＝シンプルK、小さい容器＝組合液肥</li>` : ""}
       <li><b>ポンプのスイッチ</b>は、下＝スタート、上＝終了</li>
       <li><b>大元バルブ</b>は、西＝2回半、南＝1回半</li>
       <li>最後の潅水が終わる2〜3分前に、<b>元栓（銅色レバー）</b>を${OPEN()}（開けっぱなし・凍結防止）</li>
