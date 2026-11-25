@@ -307,6 +307,7 @@ mark{background:color-mix(in srgb,var(--sun) 35%,transparent);color:inherit;padd
          after, afterTitle? }      … 最後の囲み（関連・直したときの注意など）
    ・別のページの本（リンクだけ）
        { id, kind:"slide", icon, title, sub, meta, href }
+       kind を "tejun" にすると「作業の手順」の棚に並ぶ（潅水マニュアルなど。href があれば別ページに飛ぶ）
 
    id は URL の # に入る（#ec で直接開ける）。英小文字にする。
    チェックした場所は端末に覚えさせる（id と項目の key で区別）。
@@ -361,6 +362,14 @@ const K = {
 };
 
 const MANUALS = [
+  {
+    /* 中身は別ページ（正本は nishiminami\src.html。build.py で写真を埋め込む） */
+    id: "nishiminami", kind: "tejun", icon: "🚿",
+    title: "潅水マニュアル（西・南）",
+    sub: "バルブの開け閉め・液肥の吸わせ方を写真で",
+    meta: "手順 1〜5・タイマー付き・2026-11-25 更新",
+    href: "nishiminami/",
+  },
   {
     id: "ec", kind: "tejun", icon: "🧪",
     title: "EC計の使い方",
@@ -2586,12 +2595,13 @@ const $ = s => document.querySelector(s);
 /* ===== 一覧 ===== */
 function card(m){
   // 手順書は「手順 A〜F」のように、最初と最後のまとまりの記号で数を見せる
-  const meta = m.kind === "tejun"
+  const meta = m.href ? m.meta
+    : m.kind === "tejun"
     ? `手順 ${m.parts[0].label}〜${m.parts[m.parts.length - 1].label}・${m.time}・${m.updated} 更新`
     : m.kind === "kaisetsu"
       ? `全${m.chapters.length}章・${m.time}・${m.updated} 更新`
       : m.meta;
-  const href = m.kind === "slide" ? m.href : `#${m.id}`;
+  const href = m.href || `#${m.id}`;
   return `<a class="card k-${m.kind}" href="${href}">
       <span class="ic" aria-hidden="true">${m.icon}</span>
       <span class="tx"><span class="tt">${m.title}</span>
@@ -2741,7 +2751,7 @@ function applyChecks(id){
 /* ===== 画面の切り替え。URL の # で決める（#ec なら EC計の手順書） ===== */
 function route(){
   const id = decodeURIComponent(location.hash.slice(1));
-  const m = MANUALS.find(x => x.id === id && (x.kind === "tejun" || x.kind === "kaisetsu"));
+  const m = MANUALS.find(x => x.id === id && !x.href);   // 別ページの本は、ここでは開かない
   const back = $("#back");
   if(m){
     if(m.kind === "kaisetsu") drawKaisetsu(m); else drawDoc(m);
