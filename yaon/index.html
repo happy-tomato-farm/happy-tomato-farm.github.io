@@ -180,6 +180,31 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 .stage .why{display:block;font-size:12.5px;color:var(--muted);font-weight:700;line-height:1.4}
 .stage .temp{font-size:34px;font-weight:800;color:var(--night);line-height:1}
 .stage .temp small{font-size:17px}
+/* ④ 単日と調整を並べるとき（2列） */
+.stages.two .stage{grid-template-columns:auto 1fr auto auto;gap:4px 10px}
+.stages.two .stage .temp{font-size:24px;text-align:right;min-width:58px}
+.stages.two .stage .temp small{font-size:13px}
+.stages.two .stage .when{font-size:19px;white-space:nowrap}
+.stages.two .stage .no{width:34px;height:34px;font-size:15px}
+.stage .temp.off{color:var(--muted);opacity:.55}
+.stage.head{padding:2px 4px 0;border-bottom:0}
+.stage .th{font-size:12px;font-weight:800;color:var(--muted);text-align:right;min-width:64px;line-height:1.3}
+.stage .th.on{color:var(--night)}
+.cmp{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}
+.cmp th,.cmp td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line-soft)}
+.cmp th:first-child,.cmp td:first-child{text-align:left;font-weight:700;color:var(--muted)}
+.cmp th{font-size:12.5px;color:var(--muted)}
+.cmp td.on{font-weight:800;color:var(--ink)}
+.cmp td.off{color:var(--muted)}
+.cmp th.on{color:var(--night)}
+.pickvar{margin-top:12px}
+/* いまの見込み（④と⑤の間） */
+.now-cur{display:inline-block;font-size:12px;font-weight:800;border-radius:var(--r-chip);padding:1px 9px;margin-left:6px;
+         vertical-align:2px;background:var(--night);color:#fff}
+.now-refresh{width:100%;margin-top:12px;min-height:48px;border-radius:14px;cursor:pointer;
+             border:2px solid var(--night);background:var(--card);color:var(--night);font:inherit;font-size:16px;font-weight:800}
+.now-day{width:100%;margin-top:10px;min-height:48px;border-radius:14px;cursor:pointer;
+         border:2px solid var(--night);background:var(--night);color:#fff;font:inherit;font-size:16px;font-weight:800}
 
 .summary{margin-top:12px;display:grid;gap:8px}
 .kv{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
@@ -208,6 +233,7 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
 .ct .time.none{font-size:16px;color:var(--muted)}
 .ct .time.ng{color:var(--warn)}
 .ct .name.sm{font-size:16px}
+.ct .time.mid{font-size:22px}
 /* 一番低い段を上げるボタン（⑤）と、元にもどすボタン（④） */
 .raise{display:grid;gap:8px;margin-top:10px}
 .raise button,.undo{
@@ -319,6 +345,12 @@ footer a{color:var(--muted)}
 <section class="card" aria-live="polite">
   <h2 id="resTitle">④ 暖房機に入れる設定</h2>
   <div id="result"></div>
+</section>
+
+<!-- いまの見込み（選んだ日の夜の間に開いたときだけ出す）。いまのカーテン・設定・外気から、暖房が止まってから次に点くまでを見込む -->
+<section class="card" id="nowCard" aria-live="polite" hidden>
+  <h2 id="nowTitle">いまの見込み</h2>
+  <div id="nowBox"></div>
 </section>
 
 <section class="card" aria-live="polite">
@@ -435,6 +467,18 @@ footer a{color:var(--muted)}
       <li>11月の中央の記録だけで合わせた値です。12月以降や東の記録がたまったら、合わせ直します</li>
     </ul>
 
+    <h3>前日のブレの調整（④の「調整」）</h3>
+    <p>前日の実際の日平均が前日の目標からずれた分を、今日の目標で取り戻します（2026年11月26日から）。④には「単日」（今日の目標だけ）と「調整」を並べ、どちらで設定するかをボタンで選びます。⑤のカーテンの目安と記録は、選んだほうの4段で出します。</p>
+    <div class="eq">今日の調整 ＝ −（前日の実際の日平均 − 前日の目標）、ただし ±1℃ まで</div>
+    <ul>
+      <li>前日の実際の日平均は、作業日誌の写し（パソコンの作業記録から自動で写した数字）の平均気温です。<b>0時〜24時の平均</b>なので、このアプリの1日（日の出〜翌日の出）とは少しずれます（11月の5分値で平均0.14℃、最大0.4℃）</li>
+      <li>前日の目標は、<b>前日の実際の日射</b>（作業日誌のハウス日射量 ÷ 透過率）から、②と同じ線で決め直した値です。前日にアプリが出した目標（快晴の日射）で数えると、曇りの日の不足（11月は−1.5〜−2.5℃）を翌日に取り戻そうとして、「曇天日は無理に上げない」方針と逆になるためです</li>
+      <li>前日に「調整」の4段で設定していたら（記録に残る調整の幅）、前日の目標にその幅も足します。取り戻しが二重にならないためです。前日の記録が無いときは、単日で設定したとして数えます</li>
+      <li>±1℃までにするのは、とても暗い日（下限16.2℃にも届かず、11月は−1.1〜−1.7℃）の翌日に上げすぎないためです</li>
+      <li>前日の日平均か日射が作業日誌にまだ無い日（前日の分は翌朝に入ります）は、調整を出しません</li>
+      <li>11月（1〜25日・中央）で数えると、前日の実際の日射で決め直した目標との差は平均−0.20℃、ばらつき±0.64℃でした（快晴の目標との差は平均−0.52℃、±0.95℃）</li>
+    </ul>
+
     <h3>4段の時刻</h3>
     <ul>
       <li>1段目：日の入り（30分単位に丸める）から4時間。転流がいちばん盛んな時間です</li>
@@ -488,8 +532,18 @@ footer a{color:var(--muted)}
     <p>外気の予報は気象庁の地域時系列予報（気温は宇都宮の地点、天気・風は栃木県南部。3時間ごと）を使い、間を直線でつないでいます。予報があるのは今日と明日だけです。読んだ予報は1時間この端末に覚えさせ、その間は読み直しません。</p>
     <p>出典：気象庁ホームページ（地域時系列予報）のデータを加工して作成。</p>
 
+    <h3>いまの見込み（④と⑤の間）</h3>
+    <p>選んだ日の夜（日の入り〜翌日の出）の間に開くと出ます（2026年11月26日から）。0時を過ぎて①が今日のままなら、前の夜にするボタンが出ます。</p>
+    <ul>
+      <li>いまの設定は、この夜の記録の4段（無ければ④）から、いまのカーテンは記録のタイマー時刻（無ければ⑤の目安）から出します。暖房がいま動いているかは、アグリネットを外から読めないので分かりません</li>
+      <li>いまの外気は外気温の観測器の値（30分以内のもの。家のそば）、無ければ鹿沼めやすです。天気と風は気象庁の予報（栃木県南部）です</li>
+      <li>開けたまま・ラクソスだけ・2層の3通りで、暖房が止まってから次に点くまでの分を、⑤と同じ式で出し、選んだ間隔（一番低い段の間と、段を下げてから2時間は1時間）と比べます。長すぎるときに開けられるのはテンパだけです（ラクソスは閉めたら朝まで開けない決まり）</li>
+      <li>確かめ（11/23〜25 の3夜・中央、止まり52回）：実際と±10分（または±30%）以内に入ったのは、観測器の外気で65%、鹿沼アメダスで63%でした。2層は見込み約20分に対して実際約15分（実際÷見込み0.7）、ラクソスだけは見込み27〜34分・実際40分、段を下げた直後は見込み16〜40分に対して実際は4回中3回が85〜100分でした。5分値で数えているので、実際の分にも1回ごとに±5分ほどの幅があります</li>
+      <li>夜の観測器は、鹿沼アメダスより平均0.6〜0.7℃高く出ました（10〜90%で−0.1〜+1.9℃）</li>
+    </ul>
+
     <h3>翌朝にカーテンを開ける時刻（⑤の下）</h3>
-    <p>翌朝が晴れの予報（日の出から3時間がすべて「晴」）のときだけ出します。くもり・雨の朝は日射の見込みの幅が大きいためです。朝はテンパ → ラクソスの順に開けます。どちらもタイマーに合わせて15分単位に切り上げます。</p>
+    <p>朝はテンパ → ラクソスの順に開けます。どちらもタイマーに合わせて15分単位に切り上げます。翌朝が晴れの予報（日の出から3時間がすべて「晴」）でないときも、<b>快晴だったと仮定した時刻</b>を出します（2026年11月26日から。それまでは晴れの朝だけ）。そのときは、日射は快晴の式、雲は「晴」とみなし、外気は予報のまま計算します。晴れ間が出なければ日射の熱は見込みより少ないので、開けると室温が下がりやすくなります。</p>
     <ul>
       <li><b>テンパ</b>：開けて増える日射の熱が、開けて増える逃げる熱を上回った時刻（熱の分かれ目）。単価を入れると、テンパを開けて増える光合成から見積もった果実の金額も足して、いちばん得な時刻を出します</li>
       <li><b>ラクソス</b>：開けてよい幅の中の最後の15分。幅の始まりは「その時刻に開けても、日射の熱が逃げる熱に追いつくまでに、室温が設定−1℃（暖房が点く温度）を下回らない」最初の時刻、終わりは「ラクソスを閉めたままだと室温が設定＋1℃に届く」時刻です。開けたときの室温は、ラクソスを閉めたままの見込み（日射の熱が逃げる熱に届くまでは暖房が入り切りしているので設定温度とし、そこから上がり方を追う）で、開けたあとは屋根を全部開けた状態で、熱容量29 MJ/Kで1分ずつ室温を追います。幅の最初ではなく最後にするのは、閉めたまま室温が上がり始めた直後は、暖房の入り切りの名残で室温が設定±1℃のどこにいるか分からず、低いほうにいると開けたときに暖房が点くおそれがあるためです。幅の中に15分の区切りが無いとき（テンパを開けるのが遅いときも）は、設定−1℃を下回らない最初の15分にします（暖房が点かないほうを優先）。2026-11-11 から（それまでは「設定温度のまま、屋根を開けても日射の熱が逃げる熱に届く時刻」と「設定＋2℃」で決めていて、晴れの朝に待ちすぎていました）</li>
@@ -572,6 +626,10 @@ const RULE = {
   // 快晴の日の外の日射（潅水アプリ core/solar.py の daily_radiation_mj と同じ式・同じ値。大気の透過率は宇都宮の晴れた日の実測から当てはめた式）
   clearDay: { tauMean: 0.7185, tauCos: 0.1429, tauSin: 0.0400, diffuse: 0.3, altM: 150, solarConstW: 1360 },
   radMaxMJ: 40,                            // 日射の欄に入れられる上限 [MJ/m²]
+  // ---- 前日のブレを今日で調整する（2026-11-26 から。ユーザー決定）----
+  // 前日の目標は「前日の実際の日射（作業日誌のハウス日射量 ÷ 透過率）から RTR の線で決め直した値 ＋ 前日に使った調整」。
+  // 今日の調整 ＝ −（前日の実際の日平均 − 前日の目標）を ±prevAdjMaxC に丸める（とても暗い日の翌日に上げすぎないため）
+  prevAdjMaxC: 1,
   radBasisKey: "htf_yaon_radbasis",        // 日射の欄が「外」か「ハウス内」か。この端末に覚えさせる
 };
 
@@ -782,6 +840,28 @@ function clearDayMJ(date) {
 }
 /* 外の日射 [MJ/m²] → 日平均の目標 [℃]（RULE.rtr の線。下限あり・上限なし） */
 const rtrTargetC = radMJ => Math.max(RULE.rtr.minC, RULE.rtr.baseC + RULE.rtr.slopeC * radMJ);
+
+/* ① 前日のブレから、今日の目標に足す調整 [℃] を出す（2026-11-26 から）。
+   nisshiRows は作業日誌の写し（日付 → { tC 中央の日平均, tE 東の日平均（どちらも0〜24時）, sol ハウス日射量 MJ/m² }）、
+   recRows は記録（「日付|ハウス」→ { adj 前日に使った調整。空なら単日 }。読めていなければ null）。
+   前日の目標 ＝ rtrTargetC(前日のハウス日射量 ÷ 透過率) ＋ 前日に使った調整
+   今日の調整 ＝ −（前日の実際 − 前日の目標）を ±RULE.prevAdjMaxC に丸め、0.1℃単位にする。
+   作業日誌に前日の日平均か日射が無ければ null（調整は出さない） */
+function prevDayAdjust(date, houseName, nisshiRows, recRows) {
+  const p = addDays(date, -1), key = houseName === "中央" ? "tC" : "tE";
+  const n = nisshiRows[ymd(p)];
+  if (!n || typeof n[key] !== "number" || typeof n.sol !== "number") return null;
+  const outMJ = n.sol / coverTauOf(dayOfYear(p));                 // ハウス内 → 外（②の「ハウス内」と同じ直し方）
+  const rec = recRows ? recRows[ymd(p) + "|" + houseName] : undefined;
+  const usedTxt = rec && rec.adj !== undefined && rec.adj !== null ? String(rec.adj).trim() : "";
+  const used = usedTxt === "" ? 0 : Number(usedTxt);
+  if (!Number.isFinite(used)) throw new Error("前日（" + ymd(p) + "）の記録の調整の幅が読めません: " + usedTxt);
+  const rtrP = rtrTargetC(outMJ), targetP = rtrP + used, dev = n[key] - targetP;
+  const raw = -dev, adj = Math.round(Math.max(-RULE.prevAdjMaxC, Math.min(RULE.prevAdjMaxC, raw)) * 10) / 10;
+  return { prev: p, actual: n[key], sol: n.sol, outMJ, rtrP, used, recKnown: !!rec, recRead: !!recRows, targetP, dev, adj,
+           capped: Math.abs(raw) > RULE.prevAdjMaxC + 1e-9 };
+}
+const signed1 = v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1);   // +0.3 / −0.5 の形
 
 /* 年度（8月〜翌7月）の始まりの年と、8月1日からの日数 */
 const seasonStartYear = d => d.getMonth() + 1 >= 8 ? d.getFullYear() : d.getFullYear() - 1;
@@ -1571,11 +1651,12 @@ function luxOpenDip(env, k, T0, month) {
   return null;
 }
 
-/* 翌朝に開ける時刻の目安。晴れの朝（日の出から clearCheckH 時間の予報がすべて「晴」）だけ出す。
+/* 翌朝に開ける時刻の目安。晴れの朝（日の出から clearCheckH 時間の予報がすべて「晴」）でないときも、快晴だったと仮定して出す
+   （2026-11-26 から。それまでは晴れの朝だけ出していた）。
    price は { tomato 円/kg, oil 円/L }（無ければ null。そのときテンパは熱だけで決める）
-   戻り値 { rise, sp, to, price, tempa: { h, energyH, photo },
+   戻り値 { rise, sp, to, price, assumed（快晴と仮定した朝か）, w（その朝の予報の天気）, tempa: { h, energyH, photo },
             luxous: { h, okH（開けても設定−1℃を下回らない最初の時刻）, riseH（閉めたまま設定＋1℃に届く時刻）, openC, minC, over } }
-   出せないときは { why: "range"（予報が足りない）| "cloudy"（晴れの朝でない）, w } */
+   出せないときは { why: "range"（予報が足りない） } */
 function morningPlan(date, r, fc, price) {
   const M = CURTAIN.morning, F = CURTAIN.phys.floorM2, step = CURTAIN.stepMin / 60;
   const mDate = addDays(date, 1), month = mDate.getMonth() + 1, g = sunGeometry(mDate);
@@ -1583,7 +1664,9 @@ function morningPlan(date, r, fc, price) {
   const lastMs = fc.weather.length ? Math.max(...fc.weather.map(x => x.t1)) : -Infinity;
   if (msAt(date, rise + M.clearCheckH) > lastMs) return { why: "range" };
   const blocks = fc.weather.filter(x => x.t1 > msAt(date, rise) && x.t0 < msAt(date, rise + M.clearCheckH));
-  if (!blocks.length || !blocks.every(x => x.w.includes("晴"))) return { why: "cloudy", w: [...new Set(blocks.map(x => x.w))] };
+  // 晴れの朝でなくても、快晴だったと仮定して出す（2026-11-26 ユーザー依頼）。そのときは雲を「晴」とみなす（日射はいつも快晴の式）。外気は予報のまま
+  const assumed = !blocks.length || !blocks.every(x => x.w.includes("晴"));
+  const words = [...new Set(blocks.map(x => x.w))];
   const sp = r.temps[3];                                   // 朝の設定温度（④の4段目）
   const tau = coverTauOf(g.J);
   const yenPerJ = price ? price.oil / (M.oilMJPerL * 1e6 * M.heaterEff) : 0;   // 暖房の熱 1J ぶんの重油代 [円]
@@ -1592,7 +1675,7 @@ function morningPlan(date, r, fc, price) {
     const ms = msAt(date, h), to = kanumaAt(fc, ms, month);
     if (to === null) return null;
     const b = fc.weather.find(x => x.t0 <= ms && ms < x.t1);
-    return { to, c: cloudOf(b ? b.w : ""), wind: windOf(b && b.windRange), S: clearSkyW(g, h - 24) * clearKAt(h - 24) * tau };
+    return { to, c: assumed ? cloudOf("晴") : cloudOf(b ? b.w : ""), wind: windOf(b && b.windRange), S: clearSkyW(g, h - 24) * clearKAt(h - 24) * tau };
   };
   // テンパ：5分ごと
   let tE = null, tP = null;
@@ -1628,7 +1711,7 @@ function morningPlan(date, r, fc, price) {
     .filter(s => kOf(s) < env.length && okAt(kOf(s)));
   const inWin = riseH === null ? [] : okSlots.filter(s => s <= riseH + 1e-9);
   const luxH = inWin.length ? inWin[inWin.length - 1] : okSlots.length ? okSlots[0] : null;
-  return { rise, sp, to: env[0].to, price: !!price,
+  return { rise, sp, to: env[0].to, price: !!price, assumed, w: words,
            tempa: { h: tem, energyH: tE !== null ? ceil15(tE) : null, photo: tP !== null },
            luxous: { h: luxH, last: inWin.length > 0, okH: hOf(kOk), riseH,
                      openC: luxH !== null ? Tc[kOf(luxH)] : null, minC: luxH !== null ? minAt(kOf(luxH)) : null,
@@ -1659,6 +1742,8 @@ let raise = null;
 const raiseSig = (g, r0) => ymd(g.date) + "|" + house + "|" + r0.starts.join(",") + "|" + r0.temps.join(",");
 // ④に出している元の4段（⑤のボタンで上げる前）と、そのときの入力。⑤のボタンはこれを元に上げる
 let lastPlan = null;
+// ④で「単日」「調整」のどちらで設定するか。sig は「日付|ハウス」で、変わったら選び直し（null は自動：記録があればそれ、無ければ調整）
+let pickVar = { sig: "", adj: null };
 // ②の日射の欄が「外（宇都宮）」"out" か「ハウス内（アグリネット）」"in" か
 let radBasis = "out";
 try { const h = localStorage.getItem(LS_KEY); if (h === "中央" || h === "東") house = h; } catch (e) { /* 覚えられない端末では毎回 中央 から */ }
@@ -1765,10 +1850,11 @@ function renderHints(g) {
 
 const STAGE_WHY = ["転流を進める（日の入りから4時間）", "転流の残りを送る", "呼吸の消耗を抑える", "朝の結露を防ぐ"];
 
-/* 選んだ日が今日か明日か（気象庁の予報があるのはこの2日だけ） */
+/* 選んだ日の夜に予報が使えるか：今日・明日（気象庁の予報があるのはこの2日だけ）。
+   0時〜正午は、いま過ごしている前の日の夜も（2026-11-26 から。0時を過ぎて「いまの見込み」を見るため） */
 function nearDay(d) {
-  const t = new Date(); t.setHours(0, 0, 0, 0);
-  return ymd(d) === ymd(t) || ymd(d) === ymd(addDays(t, 1));
+  const now = new Date(), t = new Date(now.getTime()); t.setHours(0, 0, 0, 0);
+  return ymd(d) === ymd(t) || ymd(d) === ymd(addDays(t, 1)) || (now.getHours() < 12 && ymd(d) === ymd(addDays(t, -1)));
 }
 /* ④・⑤で使う予報。今日・明日なら読み始め、読めていればそのデータ。まだ・読めない・ほかの日は null */
 function forecastFor(g) {
@@ -1785,21 +1871,60 @@ function renderResult(g) {
     box.innerHTML = '<p class="hint">②と③がそろうと、ここに設定が出ます。</p>'; return null;
   }
   const F = CURTAIN.freqs.find(x => x.key === freq);   // ⑤で選んでいる「何分に1回」（カーテンの目安に使う）
-  let r0;
-  try { r0 = planNight(g, forecastFor(g), F.predMin); }
-  catch (e) { box.innerHTML = '<p class="err">' + esc(e.message) + "</p>"; return null; }
-  lastPlan = { g, r0 };
+  const fc = forecastFor(g);
+  // ① 前日のブレ：作業日誌の写しと記録（前日に使った調整）を読んでから出す
+  if (NISSHI.state === "idle") loadNisshi();
+  if (REC.state === "idle") loadRecords();
+  const recReady = REC.state === "ok" || REC.state === "error";
+  let adj = null, rS, rA = null;
+  try {
+    if (NISSHI.state === "ok" && recReady) adj = prevDayAdjust(g.date, house, NISSHI.rows, REC.state === "ok" ? REC.rows : null);
+    rS = planNight(g, fc, F.predMin);
+    if (adj) rA = planNight({ ...g, targetC: g.targetC + adj.adj }, fc, F.predMin);
+  } catch (e) { box.innerHTML = '<p class="err">' + esc(e.message) + "</p>"; return null; }
+  // どちらで設定するか：押したほう。押していなければ、この夜の記録があればその選び方、無ければ調整
+  const sig = ymd(g.date) + "|" + house;
+  if (pickVar.sig !== sig) pickVar = { sig, adj: null };
+  const saved = REC.rows[sig];
+  const useAdj = !!rA && (pickVar.adj !== null ? pickVar.adj : saved ? String(saved.adj || "").trim() !== "" : true);
+  const g0 = useAdj ? { ...g, targetC: g.targetC + adj.adj } : g, r0 = useAdj ? rA : rS;
+  lastPlan = { g: g0, r0, adj, useAdj };
   // ⑤のボタンで一番低い段を上げていれば、その温度で（元の4段が変わったら、上げたのは取り消す）
-  if (raise && raise.sig !== raiseSig(g, r0)) raise = null;
+  if (raise && raise.sig !== raiseSig(g0, r0)) raise = null;
   const r = raise ? withStageTemps(r0, raise.temps) : r0;
 
+  // 4段の表。調整があれば「単日」「調整」の2列で、選んだほうを濃く出す（⑤で上げた段は選んだほうだけ）
+  const two = !!rA;
+  const colS = two && !useAdj ? r.temps : rS.temps, colA = two ? (useAdj ? r.temps : rA.temps) : null;
+  const cell = (t, on) => '<span class="temp num' + (two && !on ? " off" : "") + '">' + t.toFixed(1) + "<small>℃</small></span>";
   const ends = [r.starts[1], r.starts[2], r.starts[3], r.nextRise];
-  const rows = r.temps.map((t, i) =>
+  const head = !two ? "" : '<li class="stage head"><span></span><span></span>' +
+    '<span class="th' + (useAdj ? "" : " on") + '">単日</span><span class="th' + (useAdj ? " on" : "") + '">調整 ' + signed1(adj.adj) + "℃</span></li>";
+  const rows = head + r.temps.map((t, i) =>
     '<li class="stage"><span class="no">' + (i + 1) + "</span>" +
     '<span><span class="when num">' + hhmm(r.starts[i]) + " から</span>" +
     '<span class="why">' + STAGE_WHY[i] + '・<span style="white-space:nowrap">' + hm(ends[i] - r.starts[i]) + "</span>" +
       (t !== r0.temps[i] ? '<span class="tag">⑤で上げた（元 ' + r0.temps[i].toFixed(1) + "℃）</span>" : "") + "</span></span>" +
-    '<span class="temp num">' + t.toFixed(1) + "<small>℃</small></span></li>").join("");
+    (two ? cell(colS[i], !useAdj) + cell(colA[i], useAdj) : cell(t, true)) + "</li>").join("");
+  // 前日のブレの説明
+  const md = d => (d.getMonth() + 1) + "/" + d.getDate();
+  const pd = addDays(g.date, -1);
+  const adjNote = NISSHI.state === "loading" || NISSHI.state === "idle" || (NISSHI.state === "ok" && !recReady)
+    ? '<p class="hint">作業日誌の写しを読んでいます（前日のブレの調整）…</p>'
+    : NISSHI.state === "error" ? '<p class="hint">' + esc(NISSHI.error) + "。前日のブレの調整は出していません。</p>"
+    : !adj ? '<p class="hint">前日（' + md(pd) + "）の日平均か日射が作業日誌にまだ無いので、前日のブレの調整は出していません（前日の分は翌朝に入ります）。</p>"
+    : '<p class="hint">調整：前日（' + md(adj.prev) + "）の実際の日平均 " + c1(adj.actual) + "℃（作業日誌、0〜24時）− 前日の目標 " + c1(adj.targetP) +
+      "℃（前日の日射 ハウス " + c1(adj.sol) + " → 外 " + c1(adj.outMJ) + " MJ/m² から " + c1(adj.rtrP) + "℃" +
+      (adj.used !== 0 ? "＋前日に使った調整 " + signed1(adj.used) + "℃" : "") + "）＝ " + signed1(adj.dev) + "℃。" +
+      "今日の目標に <b>" + signed1(adj.adj) + "℃</b> 足したのが「調整」です" +
+      (adj.capped ? "（差は " + signed1(adj.dev) + "℃ でしたが、±" + RULE.prevAdjMaxC + "℃ までにしています）" : "（±" + RULE.prevAdjMaxC + "℃まで）") + "。" +
+      (!adj.recRead ? "記録を読めなかったので、前日は単日で設定したとして数えています。"
+        : !adj.recKnown ? "前日の記録が無いので、前日は単日で設定したとして数えています。" : "") + "</p>";
+  const pickBtns = !two ? "" :
+    '<div class="basis pickvar" role="group" aria-label="どちらで設定するか">' +
+      '<button type="button" data-pick="single" aria-pressed="' + !useAdj + '">単日で設定する</button>' +
+      '<button type="button" data-pick="adj" aria-pressed="' + useAdj + '">調整で設定する</button></div>' +
+    '<p class="hint">⑤のカーテンの目安と記録は、選んだほう（いまは<b>' + (useAdj ? "調整" : "単日") + "</b>）の4段で出します。</p>";
 
   const dayTag = g.dayFrom !== "入力" ? '<span class="tag">' + esc(g.dayFrom) + "の平年値で試算</span>" : "";
   const tTag = g.targetFrom === "日射" ? '<span class="tag">日射から</span>' : "";
@@ -1823,17 +1948,17 @@ function renderResult(g) {
     tail = '<div class="short">目標まで ' + c1(r.shortC) + "℃ 足りません" +
       "<small>夜を16℃にしても、日平均は " + c1(r.predictC) + "℃ どまりです。曇天日は無理に上げず、このまま様子を見ます。</small></div>";
   } else {
-    tail = '<p class="ok">目標の日平均 ' + c1(g.targetC) + "℃ に届く設定です" + (r.reached ? "。" : "（全段16℃の上限で、ほぼ目標どおり）。") + "</p>";
+    tail = '<p class="ok">' + (two ? (useAdj ? "調整" : "単日") + "の" : "") + "目標の日平均 " + c1(g0.targetC) + "℃ に届く設定です" + (r.reached ? "。" : "（全段16℃の上限で、ほぼ目標どおり）。") + "</p>";
     // 日中が暖かく、夜の必要平均が設定の下限より低い日
     if (r.nightMeanC - r.needC > 0.5) {
-      tail += '<p class="hint">日中が暖かかったので、夜の必要平均は ' + c1(r.needC) + "℃ です。設定は下限（11℃、4段目は" + r.floorC + "℃）までしか下げないため、日平均は目標を " + c1(r.predictC - g.targetC) + "℃ 上回ります。</p>";
+      tail += '<p class="hint">日中が暖かかったので、夜の必要平均は ' + c1(r.needC) + "℃ です。設定は下限（11℃、4段目は" + r.floorC + "℃）までしか下げないため、日平均は目標を " + c1(r.predictC - g0.targetC) + "℃ 上回ります。</p>";
     }
   }
   // 平年値で試算しているときだけ：日中平均が振れ幅の端だったら、夜に必要な平均がどこまで動くか
   const sp = g.dayFrom !== "入力" && g.heinen ? g.heinen[wx] : null;
   let spreadNote = "";
   if (sp && sp.lo !== null) {
-    const needAt = d => (g.targetC * (r.dayH + r.nightH) - d * r.dayH) / r.nightH;   // compute() の needC と同じ式
+    const needAt = d => (g0.targetC * (r.dayH + r.nightH) - d * r.dayH) / r.nightH;   // compute() の needC と同じ式
     // 設定の範囲（11〜16℃）の外なら、そのことを添える
     const needTxt = d => {
       const n = needAt(d);
@@ -1843,16 +1968,29 @@ function renderResult(g) {
       "、上の端（" + c1(sp.hi) + "℃）なら " + needTxt(sp.hi) + " です（日中が1℃違うと、夜は約" +
       c1(r.dayH / r.nightH) + "℃違う）。アグリネットの値が出たら③に入れてください。</p>";
   }
+  // まとめ：調整があれば「単日」「調整」を並べた表（選んだほうは⑤で上げた分も入れた値）
+  const rSx = two && !useAdj ? r : rS, rAx = two ? (useAdj ? r : rA) : null;
+  const cmpRow = (k, f) => "<tr><td>" + k + '</td><td class="' + (useAdj ? "off" : "on") + '">' + f(rSx, g) + '</td><td class="' + (useAdj ? "on" : "off") + '">' +
+    f(rAx, { ...g, targetC: g.targetC + adj.adj }) + "</td></tr>";
+  const summary = two
+    ? '<table class="cmp num"><tr><th></th><th class="' + (useAdj ? "" : "on") + '">単日</th><th class="' + (useAdj ? "on" : "") + '">調整 ' + signed1(adj.adj) + "</th></tr>" +
+        cmpRow("日平均の目標" + tTag, (x, gg) => c1(gg.targetC) + "℃") +
+        cmpRow("夜に必要な平均", x => c1(x.needC) + "℃") +
+        cmpRow("4段の設定の平均", x => c1(x.nightAvgC) + "℃") +
+        cmpRow("実際の夜の平均の見込み" + mTag, x => c1(x.nightMeanC) + "℃") +
+        cmpRow("日平均の見込み", x => c1(x.predictC) + "℃") + "</table>" +
+      '<div class="summary"><div class="kv"><span class="k">計算に使った日中平均' + dayTag + '</span><span class="v num">' + c1(g.dayAvgC) + "℃</span></div></div>"
+    : '<div class="summary">' +
+        '<div class="kv"><span class="k">夜に必要な平均</span><span class="v num">' + c1(r.needC) + "℃</span></div>" +
+        '<div class="kv"><span class="k">4段の設定の平均</span><span class="v num">' + c1(r.nightAvgC) + "℃</span></div>" +
+        '<div class="kv"><span class="k">実際の夜の平均の見込み' + mTag + '</span><span class="v num">' + c1(r.nightMeanC) + "℃</span></div>" +
+        '<div class="kv"><span class="k">日平均の見込み（目標 ' + c1(g.targetC) + "℃）" + tTag + '</span><span class="v num">' + c1(r.predictC) + "℃</span></div>" +
+        '<div class="kv"><span class="k">計算に使った日中平均' + dayTag + '</span><span class="v num">' + c1(g.dayAvgC) + "℃</span></div>" +
+      "</div>";
   box.innerHTML =
-    '<ul class="stages">' + rows + "</ul>" +
+    '<ul class="stages' + (two ? " two" : "") + '">' + rows + "</ul>" +
     (raise ? '<button type="button" class="undo" id="undoRaise">元の設定（' + r0.temps.map(t => t.toFixed(1)).join("・") + "℃）にもどす</button>" : "") +
-    '<div class="summary">' +
-      '<div class="kv"><span class="k">夜に必要な平均</span><span class="v num">' + c1(r.needC) + "℃</span></div>" +
-      '<div class="kv"><span class="k">4段の設定の平均</span><span class="v num">' + c1(r.nightAvgC) + "℃</span></div>" +
-      '<div class="kv"><span class="k">実際の夜の平均の見込み' + mTag + '</span><span class="v num">' + c1(r.nightMeanC) + "℃</span></div>" +
-      '<div class="kv"><span class="k">日平均の見込み（目標 ' + c1(g.targetC) + "℃）" + tTag + '</span><span class="v num">' + c1(r.predictC) + "℃</span></div>" +
-      '<div class="kv"><span class="k">計算に使った日中平均' + dayTag + '</span><span class="v num">' + c1(g.dayAvgC) + "℃</span></div>" +
-    "</div>" + modelNote + spreadNote + tail;
+    pickBtns + adjNote + summary + modelNote + spreadNote + tail;
   $("resTitle").innerHTML = "④ 暖房機に入れる設定（" + esc(house) + "）";
   return r;
 }
@@ -1881,8 +2019,7 @@ function loadForecast() {
 
 function renderCurtain(g, r) {
   const box = $("curtain");
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const near = g.date && (ymd(g.date) === ymd(today) || ymd(g.date) === ymd(addDays(today, 1)));
+  const near = g.date && nearDay(g.date);   // 今日・明日（0時〜正午は前の日の夜も）
   if (!r) { box.innerHTML = '<p class="hint">④の設定が出ると、ここに目安が出ます。</p>'; return null; }
   if (!near) { box.innerHTML = '<p class="hint">気象庁の予報があるのは今日と明日だけです。日付を今日か明日にすると、目安が出ます。</p>'; return null; }
   if (FC.state === "idle") loadForecast();
@@ -2028,6 +2165,156 @@ function renderCurtain(g, r) {
   return p;
 }
 
+/* ---- いまの見込み（③。2026-11-26 から）----
+   選んだ日の夜の間に開いたとき、いまの設定・カーテン・外気・天気から、暖房が止まってから次に点くまでの分を見込み、
+   選んだ間隔（⑤のボタン）と比べる。暖房がいま動いているかはアプリには分からない（アグリネットに外から読む口が無い） */
+
+/* 記録の時刻「17:30」→ その日の0時からの時間（正午より前は翌日なので +24）。空・読めなければ null */
+function recHour(s) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || "").trim());
+  if (!m) return null;
+  const h = Number(m[1]) + Number(m[2]) / 60;
+  return h < 12 ? h + 24 : h;
+}
+/* 記録の4段「16:30 15.5 / 20:30 13.5 / 00:30 12 / 04:30 13」→ [{ h, c }]。形がちがえば null */
+function recStages(s) {
+  const parts = String(s || "").split("/").map(x => x.trim().split(/\s+/));
+  if (parts.length !== 4) return null;
+  const st = parts.map(([t, c]) => ({ h: recHour(t), c: Number(c) }));
+  return st.every(x => x.h !== null && Number.isFinite(x.c)) ? st : null;
+}
+/* 記録のタイマー時刻から、時刻 h のカーテンの状態を返す関数（ラクソスは閉めたら朝まで、テンパは閉めた区間） */
+function recStateFn(x) {
+  const L = recHour(x.luxous), T = recHour(x.tempa), TO = recHour(x.tempaOpen), T2 = recHour(x.tempa2);
+  return h => ((T !== null && h >= T - 1e-9 && (TO === null || h < TO - 1e-9)) || (T2 !== null && h >= T2 - 1e-9)) ? "both"
+    : L !== null && h >= L - 1e-9 ? "lux" : "open";
+}
+
+/* いまの見込み（入力 → 値だけ）。date はその夜の日付、nowH はその日の0時からの時間、stages は [{ h, c }]、
+   stateAt(h) はカーテンの状態、to はいまの外気 [℃]、fc は予報（雲・風。無ければ null で「くもり・風1 m/s」とみなす）、
+   predMin は選んだ間隔の見込みの上限 [分]。一番低い段の間と、段を下げてから2時間は、⑤と同じく1時間（longGap）以内でよいとする */
+const STATE_ORDER = ["open", "lux", "both"];
+const STATE_NAME = { open: "開けたまま", lux: "ラクソスだけ（1層）", both: "ラクソス＋テンパ（2層）" };
+function nowPlan(date, nowH, stages, stateAt, to, fc, predMin) {
+  const month = date.getMonth() + 1;
+  const idx = stages.reduce((k, s, i) => (s.h <= nowH + 1e-9 ? i : k), 0);
+  const sp = stages[idx].c, lo = Math.min(...stages.map(s => s.c));
+  const low = sp === lo && sp < stages[0].c;                        // 一番低い段（1段目より下げた段のうち、いちばん低い）
+  const prev = idx > 0 ? stages[idx - 1].c : null;
+  const drop = prev !== null && sp < prev && nowH - stages[idx].h < 2
+    ? { h: stages[idx].h, from: prev, to: sp, minAgo: Math.round((nowH - stages[idx].h) * 60) } : null;
+  const ms = msAt(date, nowH);
+  const b = fc ? fc.weather.find(x => x.t0 <= ms && ms < x.t1) : null;
+  const c = cloudOf(b ? b.w : ""), wind = windOf(b && b.windRange);
+  const off = Object.fromEntries(STATE_ORDER.map(s => [s, offMinPhys(s, sp, to, c, wind, month, CURTAIN.variantMain)]));
+  const limit = low || drop ? Math.max(CURTAIN.longGap.predMin, predMin) : predMin;
+  const cur = stateAt(nowH), ci = STATE_ORDER.indexOf(cur);
+  const ok = off[cur] <= limit;
+  const more = ok && ci < 2 && off[STATE_ORDER[ci + 1]] <= limit ? STATE_ORDER[ci + 1] : null;   // もう1枚閉めても収まるか
+  return { idx, sp, low, drop, w: b ? b.w : "", windDir: b ? b.windDir : "", windRange: b ? b.windRange : "", off, limit, cur, ok, more };
+}
+
+/* 外気温の観測器（ロガー）のいまの値（共通の Apps Script の gaikiNow。1分ごとに届く） */
+let GK = { state: "idle", now: null, at: 0, error: "" };
+function loadGaiki() {
+  GK = { ...GK, state: "loading" };
+  fetch(REC_API + "?want=gaiki&days=1")
+    .then(res => { if (!res.ok) throw new Error("外気温の観測器の値を読めませんでした（応答 " + res.status + "）"); return res.json(); })
+    .then(j => {
+      const n = j && j.now;
+      if (!j.ok || !n || typeof n.t !== "number" || typeof n.at !== "number") throw new Error("外気温の観測器の、いまの値がありません");
+      GK = { state: "ok", now: { t: n.t, at: n.at }, at: Date.now(), error: "" };
+    })
+    .catch(e => { GK = { state: "error", now: null, at: Date.now(), error: e.message || String(e) }; })
+    .then(render);
+}
+const GK_FRESH_MIN = 30;     // 観測器の値がこれより古ければ使わない（鹿沼めやすにする）
+const GK_RELOAD_MIN = 10;    // 開いたまま10分たったら読み直す
+
+function renderNow(g, r, p) {
+  const card = $("nowCard"), box = $("nowBox");
+  if (!g.date || !r) { card.hidden = true; return null; }
+  const nowH = (Date.now() - g.date.getTime()) / 3600000;
+  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+  const md = d => (d.getMonth() + 1) + "/" + d.getDate();
+  // いまが前の夜（0時〜日の出）なのに①が今日のとき：前の夜にするボタンだけ出す
+  if (nowH < r.rise && ymd(g.date) === ymd(today0)) {
+    const yd = addDays(g.date, -1);
+    card.hidden = false;
+    $("nowTitle").textContent = "いまの見込み";
+    box.innerHTML = '<p class="hint">いまは ' + md(yd) + " の夜です（0時〜日の出）。①の日付をその夜にすると、いまのカーテン・設定・外気から、暖房が何分ごとに点く見込みかが出ます。</p>" +
+      '<button type="button" class="now-day" id="nowPrevDay">' + md(yd) + " の夜にする</button>";
+    return null;
+  }
+  if (nowH < r.sunset || nowH >= r.nextRise) { card.hidden = true; return null; }
+  card.hidden = false;
+  $("nowTitle").textContent = "いまの見込み（" + hhmm(nowH) + "）";
+  if (GK.state === "idle" || (GK.state !== "loading" && Date.now() - GK.at > GK_RELOAD_MIN * 60000)) loadGaiki();
+  const F = CURTAIN.freqs.find(x => x.key === freq);
+  const month = g.date.getMonth() + 1;
+  // いまの設定：この夜の記録の4段（無ければ④）
+  const rec = REC.rows[ymd(g.date) + "|" + house];
+  const recSt = rec ? recStages(rec.stages) : null;
+  const stages = recSt || r.starts.map((h, i) => ({ h, c: r.temps[i] }));
+  const srcSt = recSt ? "この夜の記録" : "④";
+  // いまのカーテン：この夜の記録のタイマー時刻（無ければ⑤の目安）
+  const hasPlan = p && !p.noForecast && p.luxous && p.tempa;
+  const stateAt = rec ? recStateFn(rec) : hasPlan ? curtainStateFn({ luxous: p.luxous, tempa: p.tempa }) : () => "open";
+  const srcCur = rec ? "記録" : hasPlan ? "⑤の目安" : "目安が無いので開けたままとして";
+  // いまの外気：観測器（30分以内の値）。無ければ鹿沼めやす（予報）
+  const fc = FC.state === "ok" ? FC.data : null;
+  const gkAge = GK.state === "ok" ? (Date.now() - GK.now.at) / 60000 : null;
+  let to = null, srcTo = "";
+  if (gkAge !== null && gkAge <= GK_FRESH_MIN) { to = GK.now.t; srcTo = "観測器・" + Math.max(0, Math.round(gkAge)) + "分前"; }
+  else if (fc && kanumaAt(fc, Date.now(), month) !== null) {
+    to = kanumaAt(fc, Date.now(), month);
+    srcTo = "鹿沼めやす（予報）。" + (GK.state === "loading" ? "観測器を読んでいます" : GK.state === "error" ? "観測器を読めない" : gkAge !== null ? "観測器の値が" + Math.round(gkAge) + "分前と古い" : "観測器なし");
+  }
+  const kv = (k, v) => '<div class="kv"><span class="k">' + k + '</span><span class="v num">' + v + "</span></div>";
+  const refresh = '<button type="button" class="now-refresh" id="nowRefresh">いまの値で見直す</button>' +
+    (GK.state === "error" ? '<p class="hint">' + esc(GK.error) + "</p>" : "");
+  if (to === null) {
+    box.innerHTML = '<p class="hint">いまの外気が分かりません（' + (GK.state === "loading" ? "観測器の値を読んでいます" : "観測器の値が無いか古く、予報もありません") +
+      "）。少し待ってから「いまの値で見直す」を押してください。</p>" + refresh;
+    return null;
+  }
+  const np = nowPlan(g.date, nowH, stages, stateAt, to, fc, F.predMin);
+  const minTxt = v => (v === Infinity ? "朝まで点かない" : "約" + Math.round(v) + "分");
+  const limTxt = np.limit === F.predMin ? F.label : CURTAIN.longGap.label + "に1回";
+  const why = np.drop ? "（段を下げてから2時間は1時間に1回でよい）" : np.low ? "（一番低い段は1時間に1回でよい）" : "";
+  const wind = np.windDir ? "・" + esc(np.windDir) + " " + esc(np.windRange.replace(" ", "〜")) + " m/s" : "";
+  const list = STATE_ORDER.map(s =>
+    '<li><span><span class="name sm">' + STATE_NAME[s] + (s === np.cur ? '<span class="now-cur">いま</span>' : "") + "</span>" +
+    '<span class="sub">' + (np.off[s] <= np.limit ? limTxt + "以内" : limTxt + "をこえる") + "</span></span>" +
+    '<span class="time mid num' + (np.off[s] > np.limit ? " ng" : "") + '">' + minTxt(np.off[s]) + "</span></li>").join("");
+  // 判定：いまの状態で選んだ間隔以内か。長すぎるときに開けられるのはテンパだけ（ラクソスは閉めたら朝まで開けない決まり）
+  const judge = np.ok
+    ? '<p class="ok">いまのカーテン（' + STATE_NAME[np.cur] + "）で妥当な見込みです。暖房は止まってから" + minTxt(np.off[np.cur]) + "で点く見込みで、" + limTxt + "以内" + why + "。" +
+      (np.more === "lux" ? "ラクソスを閉めても" + minTxt(np.off.lux) + "で、間隔以内の見込みです。" : np.more === "both" ? "テンパも閉めても" + minTxt(np.off.both) + "で、間隔以内の見込みです。" : "") + "</p>"
+    : '<div class="short">いまのカーテン（' + STATE_NAME[np.cur] + "）だと、暖房が止まりがちな見込みです（" + minTxt(np.off[np.cur]) + "）<small>" +
+      (np.cur === "both"
+        ? (np.off.lux <= np.limit ? "テンパを開ければ" + minTxt(np.off.lux) + "で、" + limTxt + "以内の見込みです。"
+           : "テンパを開けても" + minTxt(np.off.lux) + "の見込みです（ラクソスは閉めたら朝まで開けない決まり。開けたままなら" + minTxt(np.off.open) + "）。")
+        : np.cur === "lux" ? "ラクソスは閉めたら朝まで開けない決まりです（開けたままなら" + minTxt(np.off.open) + "）。"
+        : "開けたままでも止まりがちな、暖かい夜です。") + why + "</small></div>";
+  const dropNote = !np.drop ? "" :
+    '<p class="hint">' + hhmm(np.drop.h) + " に " + c1(np.drop.from) + "℃ から " + c1(np.drop.to) + "℃ へ下げて " + np.drop.minAgo + "分です。" +
+    "下げた直後は、上の見込みより長く（1〜1.5時間）止まることが多いです（11/23〜25 の記録で4回中3回）。上の見込みは、室温が新しい設定まで下がりきったあとの値です。</p>";
+  box.innerHTML =
+    '<div class="summary">' +
+      kv("いまの設定（" + srcSt + "・" + (np.idx + 1) + "段目）", c1(np.sp) + "℃") +
+      kv("いまのカーテン（" + srcCur + "）", STATE_NAME[np.cur]) +
+      kv("いまの外気（" + srcTo + "）", c1(to) + "℃") +
+      kv("天気・風（予報）", (np.w ? esc(np.w) : "予報なし（くもりとみなす）") + wind) +
+    "</div>" +
+    '<p class="freq-q" style="margin-top:14px">暖房が止まってから、次に点くまで（見込み）</p>' +
+    '<ul class="ct">' + list + "</ul>" + judge + dropNote +
+    '<p class="hint">見込みは⑤と同じ熱収支の式（' + CURTAIN.variants[CURTAIN.variantMain].label + "）です。11/23〜25 の3夜では、3回に2回が実際と±10分以内でした。" +
+    "晴れの夜の2層は、実際のほうが3割ほど短いことが多いです（見込み約20分 → 実際約15分）。暖房がいま動いているかはアプリには分からないので、設定は" + srcSt + "の4段から出しています。</p>" +
+    refresh;
+  return np;
+}
+
 /* ---- 翌朝に開ける時刻（晴れの朝の目安） ---- */
 
 /* 単価の欄 → { tomato, oil }。両方空欄なら null、読めない・範囲外なら { bad: true } */
@@ -2042,8 +2329,7 @@ function readPrice() {
    p は⑤の閉める時刻（テンパを夜中に開けたまま朝になる夜は、テンパの行を「開けたまま」にする） */
 function renderMorning(g, r, p) {
   const box = $("morningBox"), out = $("morning");
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const near = g.date && (ymd(g.date) === ymd(today) || ymd(g.date) === ymd(addDays(today, 1)));
+  const near = g.date && nearDay(g.date);   // 今日・明日（0時〜正午は前の日の夜も）
   if (!r || !near || FC.state !== "ok") { box.hidden = true; return null; }
   box.hidden = false;
   const md = addDays(g.date, 1);
@@ -2054,11 +2340,11 @@ function renderMorning(g, r, p) {
     out.innerHTML = '<p class="hint">翌朝の予報がまだありません（予報は約2日先まで）。予報が更新されたら（5時・11時・17時）開き直してください。</p>';
     return m;
   }
-  if (m.why === "cloudy") {
-    out.innerHTML = '<p class="hint">翌朝（日の出から' + CURTAIN.morning.clearCheckH + "時間）は晴れの予報ではありません（" + esc(m.w.join("・") || "予報なし") +
-      "）。くもり・雨の朝は日射の見込みの幅が大きいので、目安は出していません。</p>";
-    return m;
-  }
+  // 晴れの朝でないときも、快晴だったと仮定した時刻を出す（2026-11-26 から）
+  if (m.assumed) $("morningTitle").textContent = "翌朝（" + (md.getMonth() + 1) + "/" + md.getDate() + "）にカーテンを開ける時刻（快晴と仮定した目安）";
+  const assumedNote = !m.assumed ? "" :
+    '<div class="short">翌朝の予報は晴れではありません（' + esc(m.w.join("・") || "予報なし") + "）" +
+    "<small>快晴だったと仮定した時刻です（日射は快晴の式、雲は晴れとみなし、外気は予報のまま）。晴れ間が出なければ日射の熱は見込みより少ないので、開けると室温が下がりやすくなります。</small></div>";
   const kv = (k, v) => '<div class="kv"><span class="k">' + k + '</span><span class="v num">' + v + "</span></div>";
   const t = h => h !== null ? '<span class="time num">' + hhmm(h) + "</span>" : '<span class="time none">出せません</span>';
   const after = h => "日の出の" + Math.round((h - m.rise) * 60) + "分後";
@@ -2079,7 +2365,7 @@ function renderMorning(g, r, p) {
         dipTxt + lowTxt + "は割らない見込み。" + (L.okH !== null && L.okH < L.h - 1e-9 ? hhmm(L.okH) + " 以降なら、開けても割らない見込み" : "")
     : L.riseH === null ? "開けても室温が " + lowTxt + "を下回らない最初の時刻（" + after(L.h) + "）。閉めたままでも日の出から" + ML.scanH + "時間のうちに設定＋" + ML.luxRiseC + "℃に届かない見込み"
     : "開けても室温が " + lowTxt + "を下回らない最初の時刻（" + after(L.h) + "）。閉めたままだと " + riseTxt + "見込みで、少し超える（暖房が点かないほうを優先）";
-  out.innerHTML =
+  out.innerHTML = assumedNote +
     '<div class="summary">' +
       kv("翌朝の日の出", hhmm(m.rise)) + kv("朝の設定（④の4段目）", c1(m.sp) + "℃") + kv("日の出の外気（鹿沼めやす）", c1(m.to) + "℃") +
     "</div>" +
@@ -2092,7 +2378,7 @@ function renderMorning(g, r, p) {
     "</ul>" +
     (pr && pr.bad ? '<p class="hint ng">単価が読めません（トマト1〜5000円/kg・重油1〜1000円/L）。テンパは熱だけで出しています。</p>'
       : !pr ? '<p class="hint">テンパは熱だけで出しています。光合成も入れると、過去の晴れの朝ではこれより20〜30分早いほうが得でした。下に単価を入れると計算します。</p>' : "") +
-    '<p class="hint">晴れの朝の目安です（日射は快晴の式に、宇都宮の晴れの朝の実測の割合を掛けたもの）。タイマーに合わせて15分単位に切り上げています。</p>';
+    '<p class="hint">' + (m.assumed ? "快晴だったと仮定した目安" : "晴れの朝の目安") + "です（日射は快晴の式に、宇都宮の晴れの朝の実測の割合を掛けたもの）。タイマーに合わせて15分単位に切り上げています。</p>";
   return m;
 }
 
@@ -2100,8 +2386,24 @@ function renderMorning(g, r, p) {
 const REC_API = "https://script.google.com/macros/s/AKfycbzYkVlVngoC6CXf9HKPlfnFbJHs5lrarw2J9dLjdqaqvdVQFIN15aMr5EyNSA8tj1UU/exec";
 // idle → loading → ok / error。rows は「日付|ハウス」→ 記録。
 // merge は Apps Script が「送った欄だけ書き換える」新しい版か（古い版に開けた時刻だけ送ると、閉めた時刻が消えるため）。
-// t2 はテンパを夜中に開けた・閉め直した時刻の列がある版か（2026-11-09。無い版に送っても残らない）
-let REC = { state: "idle", rows: {}, error: "", merge: false, t2: false };
+// t2 はテンパを夜中に開けた・閉め直した時刻の列がある版か（2026-11-09。無い版に送っても残らない）。
+// adj は④で使った調整の幅の列がある版か（2026-11-26）
+let REC = { state: "idle", rows: {}, error: "", merge: false, t2: false, adj: false };
+const adjRec = v => (v >= 0 ? "+" : "-") + Math.abs(v).toFixed(1);   // 記録に入れる調整の幅（+0.3 / -0.5 の形）
+
+/* ① 作業日誌の写し（nisshi シート。前日の日平均気温〔0〜24時〕とハウス日射量）。開いたときに1回読む */
+let NISSHI = { state: "idle", rows: {}, error: "" };
+function loadNisshi() {
+  NISSHI = { state: "loading", rows: {}, error: "" };
+  fetch(REC_API + "?want=nisshi")
+    .then(res => { if (!res.ok) throw new Error("作業日誌の写しを読めませんでした（応答 " + res.status + "）"); return res.json(); })
+    .then(j => {
+      if (!j.ok || !Array.isArray(j.nisshi)) throw new Error("作業日誌の写しを読めませんでした（" + (j.error || "返事の形がちがいます") + "）");
+      NISSHI = { state: "ok", rows: Object.fromEntries(j.nisshi.map(x => [x.date, x])), error: "" };
+    })
+    .catch(e => { NISSHI = { state: "error", rows: {}, error: e.message || String(e) }; })
+    .then(render);
+}
 // 記録欄の状態。key は「日付|ハウス」。edited は打ちかけ（画面を描き直しても書き換えない）、sug はアプリの目安の控え
 const REC_FORM0 = { edited: false, sending: false, msg: "", ng: false, sug: {} };
 let recForm = { key: "", ...REC_FORM0 };
@@ -2118,7 +2420,7 @@ function normTime(s) {
 
 /* 記録をまとめて読む（開いたときに1回。1夜1ハウス1行なので軽い） */
 function loadRecords() {
-  REC = { state: "loading", rows: {}, error: "", merge: false, t2: false };
+  REC = { state: "loading", rows: {}, error: "", merge: false, t2: false, adj: false };
   fetch(REC_API + "?want=curtain")
     .then(res => { if (!res.ok) throw new Error("記録を読めませんでした（応答 " + res.status + "）"); return res.json(); })
     .then(j => {
@@ -2126,20 +2428,22 @@ function loadRecords() {
         throw new Error("記録を読めませんでした（" + (j.error || "スプレッドシート側の Apps Script がまだ新しくなっていないようです") + "）");
       }
       REC = { state: "ok", rows: Object.fromEntries(j.curtain.map(x => [x.id, x])), error: "",
-              merge: j.curtainMerge === true, t2: j.curtainTempa2 === true };
+              merge: j.curtainMerge === true, t2: j.curtainTempa2 === true, adj: j.curtainAdj === true };
     })
-    .catch(e => { REC = { state: "error", rows: {}, error: e.message || String(e), merge: false, t2: false }; })
+    .catch(e => { REC = { state: "error", rows: {}, error: e.message || String(e), merge: false, t2: false, adj: false }; })
     .then(render);
 }
 
 const recWhen = at => { const d = new Date(at); return (d.getMonth() + 1) + "/" + d.getDate() + " " + hhmm(d.getHours() + d.getMinutes() / 60); };
 const recShow = x => "ラクソス " + (x.luxous || "閉めない") + "・テンパ " + (x.tempa || "閉めない") +
   (x.tempaOpen || x.tempa2 ? "（夜中に " + (x.tempaOpen || "―") + " 開け・" + (x.tempa2 || "―") + " 閉め直し）" : "") +
-  (x.openTempa || x.openLuxous ? "、翌朝 テンパ " + (x.openTempa || "―") + "・ラクソス " + (x.openLuxous || "―") + " に開ける" : "");
+  (x.openTempa || x.openLuxous ? "、翌朝 テンパ " + (x.openTempa || "―") + "・ラクソス " + (x.openLuxous || "―") + " に開ける" : "") +
+  (String(x.adj || "").trim() ? "（④は調整 " + String(x.adj).trim() + "℃）" : "");
 
 /* 記録欄を描く。p は⑤の閉める時刻、m は翌朝に開ける時刻の計算結果（無いときは null）。
    夕方にタイマーへ入れる時刻（その夜に閉める・夜中に開け閉めする・翌朝に開ける）をまとめて1行に入れる（2026-11-10 から）。
-   記録があればその時刻、無ければ⑤の目安を入れておく（翌朝の目安は晴れの朝だけ。くもりの朝は空欄なので、タイマーに入れた時刻を打つ） */
+   記録があればその時刻、無ければ⑤の目安を入れておく（翌朝の目安は、くもりの予報の朝も快晴と仮定した時刻。2026-11-26 から）。
+   ④で選んだほう（単日・調整）の4段と、調整なら幅も一緒に送る（2026-11-26 から） */
 function renderRec(g, r, p, m) {
   const box = $("recBox");
   if (!g.date) { box.hidden = true; return; }
@@ -2149,7 +2453,9 @@ function renderRec(g, r, p, m) {
   const saved = REC.rows[key];
   if (recForm.key !== key) recForm = { key, ...REC_FORM0 };
   const sugText = x => !x ? "" : x.h !== null ? hhmm(x.h) : x.why === "range" ? "まだ出せない" : "閉めない";
-  const sugOpen = x => !m ? "" : m.why === "cloudy" ? "晴れの朝でない" : m.why ? "まだ出せない" : x.h !== null ? hhmm(x.h) : "出せない";
+  const sugOpen = x => !m ? "" : m.why ? "まだ出せない" : x.h !== null ? hhmm(x.h) : "出せない";
+  // ④で調整の4段を使っているなら、その幅（記録の列がある Apps Script のときだけ送る）
+  const usedAdj = lastPlan && lastPlan.useAdj && lastPlan.adj ? adjRec(lastPlan.adj.adj) : "";
   // テンパの夜中の開け閉め（区間が2つあるとき・1つ目が朝までないとき）
   const per = p && p.tempa.h !== null ? p.tempa.periods : [];
   const temOpenH = per[0] && per[0].open !== null ? per[0].open : null, tem2H = per[1] ? per[1].close : null;
@@ -2161,6 +2467,7 @@ function renderRec(g, r, p, m) {
     stages: r ? r.starts.map((s, i) => hhmm(s) + " " + r.temps[i]).join(" / ") : "",
     sugOpenTempa: temLastOpenH !== null ? hhmm(temLastOpenH) : sugOpen(m && m.tempa), sugOpenLuxous: sugOpen(m && m.luxous),
     sugTempaOpen: temOpenH !== null ? hhmm(temOpenH) : "", sugTempa2: tem2H !== null ? hhmm(tem2H) : "",
+    ...(REC.adj ? { adj: usedAdj } : {}),
   } };
   // 翌朝に開ける目安：ラクソスを閉めない夜は空。テンパは、夜中に開けたまま朝になる夜はその時刻（閉め直したあと夜中に開ける）か空
   const hm2 = h => (h === null || h === undefined ? "" : hhmm(h));
@@ -2187,9 +2494,11 @@ function renderRec(g, r, p, m) {
   const status = REC.state === "loading" ? "記録を読んでいます…"
     : REC.state === "error" ? REC.error
     : (saved ? "記録済み：" + recShow(saved) + "（" + recWhen(saved.at) + " に記録）。直して送ると上書きします。"
-       : "まだ記録していません。⑤の目安を入れてあるので、タイマーに入れた時刻に直して送ってください。空欄は「しない」、0時を過ぎた時刻もこの夜の分です。翌朝の目安は晴れの朝だけ入ります。") +
+       : "まだ記録していません。⑤の目安を入れてあるので、タイマーに入れた時刻に直して送ってください。空欄は「しない」、0時を過ぎた時刻もこの夜の分です。翌朝の目安は、くもりの予報の朝も快晴と仮定した時刻が入ります。") +
       "実際と違ったときは、①の日付をその夜の日付にして直して送ると上書きします。" +
-      (REC.t2 ? "" : "（テンパの夜中の開け閉めは、スプレッドシート側の Apps Script を新しくすると記録できます）");
+      "④の4段は" + (usedAdj ? "「調整 " + usedAdj + "℃」" : "「単日」") + "で記録します。" +
+      (REC.t2 ? "" : "（テンパの夜中の開け閉めは、スプレッドシート側の Apps Script を新しくすると記録できます）") +
+      (REC.state === "ok" && !REC.adj ? "（④で調整を使ったことは、スプレッドシート側の Apps Script を新しくすると記録できます。それまでは翌日の調整で、前日は単日として数えます）" : "");
   $("recMsg").textContent = recForm.msg || status;
   $("recMsg").className = "hint" + ((recForm.msg ? recForm.ng : REC.state === "error") ? " rec-ng" : "");
 }
@@ -2260,6 +2569,7 @@ function render() {
   renderHints(g);
   const r = renderResult(g);
   const p = renderCurtain(g, r);
+  renderNow(g, r, p);
   const m = renderMorning(g, r, p);
   renderRec(g, r, p, m);
   renderSun(g);
@@ -2291,9 +2601,27 @@ $("curtain").addEventListener("click", e => {
   render();
 });
 $("result").addEventListener("click", e => {
+  // ④「単日で設定する／調整で設定する」：⑤のカーテンと記録をそちらの4段で出す（⑤で上げた段は取り消す）
+  const pb = e.target.closest("button[data-pick]");
+  if (pb) {
+    pickVar = { ...pickVar, adj: pb.dataset.pick === "adj" };
+    raise = null;
+    render();
+    return;
+  }
   if (!e.target.closest("#undoRaise")) return;
   raise = null;
   render();
+});
+/* いまの見込み：観測器を読み直す・前の夜にする */
+$("nowBox").addEventListener("click", e => {
+  if (e.target.closest("#nowRefresh")) { loadGaiki(); render(); return; }
+  if (e.target.closest("#nowPrevDay")) {
+    const d = readDate();
+    if (!d) return;
+    $("date").value = ymd(addDays(d, -1));
+    render();
+  }
 });
 /* 記録欄：打ちはじめたら目安で書き換えない。欄を離れたら「1730」を「17:30」の形に直して見せる */
 ["recLux", "recTem", "recTemOpen", "recTem2", "recOpenTem", "recOpenLux"].forEach(id => {
