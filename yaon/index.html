@@ -211,6 +211,9 @@ h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.02em}
     background:var(--card-sub);border-radius:14px;padding:9px 14px}
 .kv .k{font-size:14px;color:var(--muted);font-weight:700}
 .kv .v{font-size:19px;font-weight:800}
+.kv .k small{display:block;font-size:12px;font-weight:600;margin-top:1px;line-height:1.4}
+.adjbox .kv .v{white-space:nowrap}
+.adjbox .kv.res .k,.adjbox .kv.res .v{color:var(--night)}
 .short{
   margin-top:12px;background:var(--warn-soft);color:var(--warn);
   border-radius:14px;padding:12px 14px;font-weight:800;line-height:1.6
@@ -844,7 +847,8 @@ const rtrTargetC = radMJ => Math.max(RULE.rtr.minC, RULE.rtr.baseC + RULE.rtr.sl
 /* ① 前日のブレから、今日の目標に足す調整 [℃] を出す（2026-11-26 から）。
    nisshiRows は作業日誌の写し（日付 → { tC 中央の日平均, tE 東の日平均（どちらも0〜24時）, sol ハウス日射量 MJ/m² }）、
    recRows は記録（「日付|ハウス」→ { adj 前日に使った調整。空なら単日 }。読めていなければ null）。
-   前日の目標 ＝ rtrTargetC(前日のハウス日射量 ÷ 透過率) ＋ 前日に使った調整
+   前日の目標 ＝ rtrTargetC(前日のハウス日射量 ÷ 透過率) ＋ 前日に使った調整（0.1℃に丸める。実際の日平均も0.1℃きざみなので、
+   画面に出す2つの数字の引き算とずれが食い違わないように。2026-11-26 から）
    今日の調整 ＝ −（前日の実際 − 前日の目標）を ±RULE.prevAdjMaxC に丸め、0.1℃単位にする。
    作業日誌に前日の日平均か日射が無ければ null（調整は出さない） */
 function prevDayAdjust(date, houseName, nisshiRows, recRows) {
@@ -856,7 +860,8 @@ function prevDayAdjust(date, houseName, nisshiRows, recRows) {
   const usedTxt = rec && rec.adj !== undefined && rec.adj !== null ? String(rec.adj).trim() : "";
   const used = usedTxt === "" ? 0 : Number(usedTxt);
   if (!Number.isFinite(used)) throw new Error("前日（" + ymd(p) + "）の記録の調整の幅が読めません: " + usedTxt);
-  const rtrP = rtrTargetC(outMJ), targetP = rtrP + used, dev = n[key] - targetP;
+  const round1 = v => Math.round(v * 10) / 10;
+  const rtrP = rtrTargetC(outMJ), targetP = round1(rtrP + used), dev = round1(n[key] - targetP);
   const raw = -dev, adj = Math.round(Math.max(-RULE.prevAdjMaxC, Math.min(RULE.prevAdjMaxC, raw)) * 10) / 10;
   return { prev: p, actual: n[key], sol: n.sol, outMJ, rtrP, used, recKnown: !!rec, recRead: !!recRows, targetP, dev, adj,
            capped: Math.abs(raw) > RULE.prevAdjMaxC + 1e-9 };
@@ -1913,13 +1918,22 @@ function renderResult(g) {
     ? '<p class="hint">作業日誌の写しを読んでいます（前日のブレの調整）…</p>'
     : NISSHI.state === "error" ? '<p class="hint">' + esc(NISSHI.error) + "。前日のブレの調整は出していません。</p>"
     : !adj ? '<p class="hint">前日（' + md(pd) + "）の日平均か日射が作業日誌にまだ無いので、前日のブレの調整は出していません（前日の分は翌朝に入ります）。</p>"
-    : '<p class="hint">調整：前日（' + md(adj.prev) + "）の実際の日平均 " + c1(adj.actual) + "℃（作業日誌、0〜24時）− 前日の目標 " + c1(adj.targetP) +
-      "℃（前日の日射 ハウス " + c1(adj.sol) + " → 外 " + c1(adj.outMJ) + " MJ/m² から " + c1(adj.rtrP) + "℃" +
-      (adj.used !== 0 ? "＋前日に使った調整 " + signed1(adj.used) + "℃" : "") + "）＝ " + signed1(adj.dev) + "℃。" +
-      "今日の目標に <b>" + signed1(adj.adj) + "℃</b> 足したのが「調整」です" +
-      (adj.capped ? "（差は " + signed1(adj.dev) + "℃ でしたが、±" + RULE.prevAdjMaxC + "℃ までにしています）" : "（±" + RULE.prevAdjMaxC + "℃まで）") + "。" +
-      (!adj.recRead ? "記録を読めなかったので、前日は単日で設定したとして数えています。"
-        : !adj.recKnown ? "前日の記録が無いので、前日は単日で設定したとして数えています。" : "") + "</p>";
+    // 前日の目標・実際・ずれ・今日の調整を1行ずつ（2026-11-26 から。それまでは注記の一文に入れていて目立たなかった）
+    : '<div class="summary adjbox">' +
+        '<div class="kv"><span class="k">前日（' + md(adj.prev) + "）の目標<small>前日の実際の日射（外 " + c1(adj.outMJ) + " MJ/m²）から" +
+          (adj.used !== 0 ? "＋前日に使った調整 " + signed1(adj.used) + "℃" : "") + '</small></span><span class="v num">' + c1(adj.targetP) + "℃</span></div>" +
+        '<div class="kv"><span class="k">前日の実際の日平均<small>作業日誌（0〜24時）</small></span><span class="v num">' + c1(adj.actual) + "℃</span></div>" +
+        '<div class="kv"><span class="k">ずれ（実際 − 目標）<small>' +
+          (adj.dev < 0 ? "目標より " + c1(-adj.dev) + "℃ 低かった" : adj.dev > 0 ? "目標より " + c1(adj.dev) + "℃ 高かった" : "目標どおり") +
+          '</small></span><span class="v num">' + signed1(adj.dev) + "℃</span></div>" +
+        '<div class="kv res"><span class="k">今日の目標に足す調整<small>' +
+          (adj.capped ? "ずれの逆。±" + RULE.prevAdjMaxC + "℃までにしています" : "ずれの逆（±" + RULE.prevAdjMaxC + "℃まで）") +
+          '</small></span><span class="v num">' + signed1(adj.adj) + "℃</span></div>" +
+      "</div>" +
+      '<p class="hint">前日の目標は、前日のハウスの日射 ' + c1(adj.sol) + " MJ/m² を透過率で外に直し、②と同じ線で決め直した値（" + c1(adj.rtrP) + "℃" +
+        (adj.used !== 0 ? "＋前日に使った調整" : "") + "）です。前日に画面に出ていた目標は予報や快晴の日射からなので、少し違うことがあります。" +
+        (!adj.recRead ? "記録を読めなかったので、前日は単日で設定したとして数えています。"
+          : !adj.recKnown ? "前日の記録が無いので、前日は単日で設定したとして数えています。" : "") + "</p>";
   const pickBtns = !two ? "" :
     '<div class="basis pickvar" role="group" aria-label="どちらで設定するか">' +
       '<button type="button" data-pick="single" aria-pressed="' + !useAdj + '">単日で設定する</button>' +
