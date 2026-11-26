@@ -254,6 +254,41 @@ mark{background:color-mix(in srgb,var(--sun) 35%,transparent);color:inherit;padd
 .fig .v-rb{fill:color-mix(in srgb,var(--tomato) 13%,var(--card));stroke:var(--tomato);stroke-width:1.5}
 .fig .v-soil{fill:color-mix(in srgb,#8B5E3C 22%,var(--card));stroke:#8B5E3C;stroke-width:1.5}
 .fig .v-tt{fill:var(--teal);font-size:12px;font-weight:800}
+/* アプリのつながりの図（PC で見る横長の図。#tsunagari）。本に wide:true を付けると幅を広げる */
+body.wide .wrap{max-width:1300px}
+.fig svg.tg{max-width:none}
+.tg .tg-ch{fill:var(--ink);font-size:14px;font-weight:800}
+.tg .tg-bt{fill:var(--ink);font-size:14.5px;font-weight:800}
+.tg .tg-t{fill:var(--ink);font-size:13px;font-weight:800}
+.tg .tg-s{fill:var(--muted);font-size:11px;font-weight:700}
+.tg .tg-mono{font-family:Consolas,"Cascadia Mono",monospace}
+.tg .tg-hub{fill:color-mix(in srgb,#2F7FD1 7%,var(--card));stroke:#2F7FD1;stroke-width:2}
+.tg .tg-git{fill:color-mix(in srgb,var(--leaf) 9%,var(--card));stroke:var(--leaf);stroke-width:2}
+.tg .tg-me{fill:color-mix(in srgb,var(--teal) 12%,var(--card));stroke:var(--teal);stroke-width:1.5}
+.tg .tg-share{fill:color-mix(in srgb,var(--sun) 18%,var(--card));stroke:var(--sun);stroke-width:1.8}
+.tg .tg-pc{fill:var(--card);stroke:#8B5E3C;stroke-width:1.5}
+.tg .tg-src{fill:color-mix(in srgb,#8B5E3C 11%,var(--card));stroke:#8B5E3C;stroke-width:1.5}
+.tg .tg-ext{fill:var(--card);stroke:var(--muted);stroke-width:1.3;stroke-dasharray:5 4}
+.tg .tg-sep{stroke:var(--line);stroke-width:1}
+.tg .tg-band{fill:transparent}
+.tg .tg-auto{fill:var(--tomato)}
+.tg .tg-autot{fill:#fff;font-size:10.5px;font-weight:800}
+.tg .tg-e{fill:none;stroke-width:2}
+.tg .tg-halo{fill:none;stroke:var(--card-sub);stroke-width:7}
+.tg .k-sheet{stroke:#2F7FD1} .tg .tg-h-sheet{fill:#2F7FD1}
+.tg .k-part{stroke:var(--leaf)} .tg .tg-h-part{fill:var(--leaf)}
+.tg .k-link{stroke:#8E5BD6;stroke-width:2.6} .tg .tg-h-link{fill:#8E5BD6}
+.tg .k-ext{stroke:var(--muted);stroke-dasharray:6 4} .tg .tg-h-ext{fill:var(--muted)}
+.tg .k-src{stroke:#8B5E3C} .tg .tg-h-src{fill:#8B5E3C}
+.tg .k-ref{stroke:var(--leaf);stroke-dasharray:2 4} .tg .tg-h-ref{fill:var(--leaf)}
+.tg .tg-e.hid{display:none}
+.tg.focus .tg-e.hid.on{display:inline;stroke-dasharray:4 3}
+.tg [data-id]{cursor:pointer}
+.tg .tg-n,.tg .tg-r,.tg .tg-e,.tg .tg-halo{transition:opacity .12s}
+.tg.focus .tg-n:not(.on),.tg.focus .tg-r:not(.on){opacity:.25}
+.tg.focus .tg-e:not(.on):not(.lg),.tg.focus .tg-halo{opacity:.07}
+.tg.focus .tg-e.on{stroke-width:3}
+.tg .tg-r.on .tg-band{fill:color-mix(in srgb,#2F7FD1 14%,transparent)}
 .fig .v-tr{fill:var(--tomato);font-size:12px;font-weight:800}
 .fig .v-tg{fill:var(--leaf);font-size:12px;font-weight:800}
 .fig .v-ty{fill:var(--sun);font-size:12px;font-weight:800}
@@ -304,7 +339,8 @@ mark{background:color-mix(in srgb,var(--sun) 35%,transparent);color:inherit;padd
          why,                      … この冊で分かること（最初に見える）
          chapters: [{label, title, sum, html}],
                                    … 章。たたんで並ぶ。html は下の K の部品で組む
-         after, afterTitle? }      … 最後の囲み（関連・直したときの注意など）
+         after, afterTitle?,       … 最後の囲み（関連・直したときの注意など）
+         wide?, onDraw? }          … wide:true で PC 向けに幅を広げる。onDraw は描いたあとに呼ぶ関数
    ・別のページの本（リンクだけ）
        { id, kind:"slide", icon, title, sub, meta, href }
        kind を "tejun" にすると「作業の手順」の棚に並ぶ（潅水マニュアルなど。href があれば別ページに飛ぶ）
@@ -360,6 +396,299 @@ const K = {
   /* 分数（式の中で使う） */
   fr: (a, b) => `<span class="fr"><span>${a}</span><span>${b}</span></span>`,
 };
+
+/* =========================================================================
+   アプリのつながりの図（#tsunagari。PC で見る前提の、横に広い1枚の図）。
+   ★アプリ・置き場・PC の仕組みが増えたら、下の TG に1行足すだけで描き直される。
+
+   TG.nodes … 箱。col は列（src 元データ / pc PCの仕組み / hub 置き場 / app アプリ / ext 別の置き場・外）
+              r は行の位置（0 が置き場のいちばん上の行。小数も可）
+              box:"sheet" はスプレッドシートの行、box:"part" は GitHub に置く部品の行
+              who:"share" はパートさんも見るアプリ、auto:true は PC が自分で動かすもの
+              span:[r1, r2] は縦に長い箱（線は相手の高さで水平に出る）
+   TG.edges … 線。[から, へ, 種類, 矢印]
+              種類 sheet 青（共通スプレッドシート）/ part 緑（PCで作る部品）/ link 紫（アプリからアプリへ数字を渡す）
+                   ext 灰の点線（外から読む）/ src 茶（PCの元データ）/ ref 点線（参考に並べるだけ）
+                   に ":hid" を付けると、ふだんは隠し、その箱にマウスを載せたときだけ出す（線が混み合うところ）
+              矢印 f＝「へ」の側 / r＝「から」の側 / b＝両方（読み書き）
+   ========================================================================= */
+const TG = {
+  nodes: [
+    /* ---- 置き場：共通のスプレッドシート（Apps Script 1本） ---- */
+    { id:"notes",   col:"hub", box:"sheet", r:0, t:"notes・kinds・replies", s:"ノートのカード・種類・返事" },
+    { id:"pests",   col:"hub", box:"sheet", r:1, t:"pests・zukan", s:"病害虫の記録・図鑑" },
+    { id:"shifts",  col:"hub", box:"sheet", r:2, t:"shifts", s:"シフト表（確定したきぼうも入る）" },
+    { id:"kibou",   col:"hub", box:"sheet", r:3, t:"people・kibou・kakutei ほか", s:"働く人・きぼう・確定・扶養・実働" },
+    { id:"ekihi",   col:"hub", box:"sheet", r:4, t:"ekihi", s:"液肥の記録（その日の量・倍率）" },
+    { id:"juyu",    col:"hub", box:"sheet", r:5, t:"juyu", s:"重油・加温機・グロウ（週ごと）" },
+    { id:"gaiki",   col:"hub", box:"sheet", r:6, t:"gaiki", s:"外気温の10分値" },
+    { id:"nisshi",  col:"hub", box:"sheet", r:7, t:"nisshi", s:"作業日誌の写し（日平均気温・日射・潅水）" },
+    { id:"shuryo",  col:"hub", box:"sheet", r:8, t:"shuryo", s:"収量（日・ハウスごと）" },
+    { id:"curtain", col:"hub", box:"sheet", r:9, t:"curtain", s:"カーテンを閉めた・開けた時刻" },
+    /* ---- 置き場：PC で作って GitHub に置く部品 ---- */
+    { id:"dataJs",    col:"hub", box:"part", r:11.5, t:"data.js", s:"過去の年度の収量" },
+    { id:"yaonJs",    col:"hub", box:"part", r:12.5, t:"yaon_heinen.js", s:"夜・日中の気温の平年値" },
+    { id:"nicchuJs",  col:"hub", box:"part", r:13.5, t:"nicchu_coef.js", s:"日中平均を出す月ごとの式" },
+    { id:"keikakuJs", col:"hub", box:"part", r:14.5, t:"keikaku_data.js", s:"作業計画の週の目標" },
+    { id:"co2Js",     col:"hub", box:"part", r:15.5, t:"co2_tenmado.js", s:"天窓・CO₂・気温の平年値" },
+    { id:"saibaiHtml",col:"hub", box:"part", r:16.5, t:"saibai の書き出し", s:"栽培記録の共有ページ（HTML）" },
+
+    /* ---- アプリ（ブラウザで開く） ---- */
+    { id:"note",     col:"app", r:0,    t:"ノート", s:"/note/", who:"share" },
+    { id:"byogai",   col:"app", r:1,    t:"病害虫の記録", s:"/byogai/", who:"share" },
+    { id:"shift",    col:"app", r:2,    t:"シフト表", s:"/shift/", who:"share" },
+    { id:"kibouApp", col:"app", r:3,    t:"シフトのきぼう", s:"/kibou/・管理 /kibou-kanri/", who:"share" },
+    { id:"ekihiApp", col:"app", r:4,    t:"液肥混入機レシピ", s:"/ekihi/" },
+    { id:"juyuApp",  col:"app", r:5,    t:"重油の記録", s:"/juyu/" },
+    { id:"gaikiApp", col:"app", r:6,    t:"外気温", s:"/gaiki/" },
+    { id:"shuryoApp",col:"app", r:8,    t:"収量記録", s:"/shuryo/（入力）" },
+    { id:"jisseki",  col:"app", r:9.75, t:"収量の実績", s:"/v-k7m2x9pq/", who:"share" },
+    { id:"yaonApp",  col:"app", r:12.5, t:"夜温設定", s:"/yaon/（カーテンの記録も）" },
+    { id:"nicchuApp",col:"app", r:13.5, t:"日中平均の計算", s:"/nicchu/" },
+    { id:"keikakuApp",col:"app",r:14.5, t:"今週のめやす", s:"/keikaku/", who:"share" },
+    { id:"co2App",   col:"app", r:15.5, t:"CO₂施用の収支", s:"/co2/" },
+    { id:"saibaiPage",col:"app",r:16.5, t:"栽培記録（共有版）", s:"/saibai/", who:"share" },
+
+    /* ---- 別の置き場・外 ---- */
+    { id:"kansui", col:"ext", r:4, t:"潅水のめやす", s:"Streamlit で動く", s2:"（GitHub の外）" },
+    { id:"jma",    col:"ext", span:[6, 13.5], t:"気象庁", s:"予報・アメダス", s2:"開くたびに読む" },
+
+    /* ---- PC の仕組み・機器 ---- */
+    { id:"shiftIn",  col:"pc", r:2, t:"シフト表の取り込み", s:"手で（shift-update）" },
+    { id:"line",     col:"pc", r:3, t:"LINE 公式アカウント", s:"名前の登録・リマインド" },
+    { id:"maikon",   col:"pc", r:6, t:"外気温のマイコン", s:"家の窓際・10分ごと", auto:true },
+    { id:"nisshiOkuru", col:"pc", r:7, t:"作業日誌の写し", s:"Excel を保存するたび", auto:true },
+    { id:"backup",   col:"pc", r:8, t:"収量バックアップ", s:"毎日21時・Dropbox へ控え", s2:"液肥・ノート・病害虫も控える", auto:true },
+    { id:"build",    col:"pc", span:[11.5, 15.5], t:"部品づくり（手で）", s:"年度や作業計画が変わったとき",
+      rows:[[11.5, "shuryo_export.py"], [12.5, "yaon_build.py"], [13.5, "nicchu_build.py"],
+            [14.5, "keikaku_build.py"], [15.5, "co2_build.py"]] },
+    { id:"saibaiApp",col:"pc", r:16.5, t:"栽培記録アプリ", s:"PC で開く（Flask）", s2:"重油・収量の控え・Excel を読む" },
+
+    /* ---- PC の元データ（Dropbox の作業記録フォルダ） ---- */
+    { id:"shiftXlsx",  col:"src", r:2, t:"シフト表 Excel", s:"過去のシフト" },
+    { id:"sagyouXlsx", col:"src", r:7, t:"作業記録 Excel（年度ごと）", s:"作業日誌・作業計画・追肥管理", s2:"→ 写し・部品づくり・栽培記録" },
+    { id:"shuryoXlsx", col:"src", r:11.5, t:"収量記録 Excel", s:"過去の年度" },
+    { id:"kishoCsv",   col:"src", r:12.75, t:"気象 CSV", s:"鹿沼・宇都宮の毎時" },
+    { id:"yonshu",     col:"src", r:14.25, t:"4週記録表・5分値CSV", s:"アグリネットから", s2:"→ 部品づくり・栽培記録" },
+  ],
+  edges: [
+    /* 共通スプレッドシート ⇔ アプリ */
+    ["notes","note","sheet","b"], ["pests","byogai","sheet","b"], ["shifts","shift","sheet","f"],
+    ["kibou","kibouApp","sheet","b"], ["ekihi","ekihiApp","sheet","b"], ["juyu","juyuApp","sheet","b"],
+    ["gaiki","gaikiApp","sheet","f"], ["shuryo","shuryoApp","sheet","b"], ["shuryo","jisseki","sheet","f"],
+    ["curtain","yaonApp","sheet","b"],
+    /* PC・機器 ⇔ 共通スプレッドシート */
+    ["shiftIn","shifts","sheet","f"], ["line","kibou","sheet","b"], ["maikon","gaiki","sheet","f"],
+    ["nisshiOkuru","nisshi","sheet","f"], ["shuryo","backup","sheet","f"],
+    ["ekihi","backup","sheet:hid","f"], ["notes","backup","sheet:hid","f"], ["pests","backup","sheet:hid","f"],
+    ["ekihi","nisshiOkuru","sheet:hid","f"], ["juyu","saibaiApp","sheet:hid","f"],
+    /* PC で作る部品 */
+    ["build","dataJs","part","f"], ["build","yaonJs","part","f"], ["build","nicchuJs","part","f"],
+    ["build","keikakuJs","part","f"], ["build","co2Js","part","f"], ["saibaiApp","saibaiHtml","part","f"],
+    ["backup","saibaiApp","part:hid","f"],
+    ["dataJs","jisseki","part","f"], ["yaonJs","yaonApp","part","f"], ["nicchuJs","nicchuApp","part","f"],
+    ["keikakuJs","keikakuApp","part","f"], ["keikakuJs","co2App","part","f"], ["keikakuJs","yaonApp","ref","f"],
+    ["co2Js","co2App","part","f"], ["saibaiHtml","saibaiPage","part","f"],
+    /* アプリからアプリへ数字を渡すリンク */
+    ["kansui","ekihiApp","link","f"], ["nicchuApp","yaonApp","link","f"],
+    /* 外から読む */
+    ["jma","gaikiApp","ext","f"], ["jma","yaonApp","ext","f"], ["jma","nicchuApp","ext","f"],
+    /* PC の元データ */
+    ["shiftXlsx","shiftIn","src","f"], ["sagyouXlsx","nisshiOkuru","src","f"],
+    ["shuryoXlsx","build","src","f"], ["kishoCsv","build","src","f"], ["yonshu","build","src","f"],
+    ["sagyouXlsx","build","src:hid","f"], ["sagyouXlsx","saibaiApp","src:hid","f"], ["yonshu","saibaiApp","src:hid","f"],
+  ],
+  /* ほかとつながっていないもの（図の下に並べるだけ） */
+  alone: [
+    ["消毒記録", "/shodoku/ ・別の Apps Script と Dropbox を使う"],
+    ["計算だけのページ", "湿度・日射予測・光合成・温度設定（使っていない）"],
+    ["マニュアル", "このページ /tebiki/ ・スライド /manual/"],
+    ["入口のページ", "アプリ一覧 / ・パートさん用 /minna/"],
+  ],
+};
+
+/* 図を描く。TG を受け取って SVG の文字列を返すだけ（画面には触らない） */
+function tgSvg(g){
+  const P = 44, TOP = 150;                         // 1行の高さと、0行目の中心の高さ
+  const COL = { src:[16,210], pc:[270,210], hub:[530,260], app:[850,200], ext:[1100,132] };
+  const ORDER = { src:0, pc:1, hub:2, app:3, ext:4 };
+  const W = 1248;
+  const py = r => TOP + r * P;
+  const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const byId = Object.fromEntries(g.nodes.map(n => [n.id, n]));
+  const hubRows = g.nodes.filter(n => n.col === "hub");
+  const sheetRows = hubRows.filter(n => n.box === "sheet");
+  const partRows = hubRows.filter(n => n.box === "part");
+  const firstPart = Math.min(...partRows.map(n => n.r));
+  const lastSheet = Math.max(...sheetRows.map(n => n.r));
+  const lastPart = Math.max(...partRows.map(n => n.r));
+
+  /* 箱の縦の範囲（span の箱は上下に長い） */
+  const vspan = n => {
+    if(n.col === "hub") return [py(n.r) - P / 2, py(n.r) + P / 2];
+    if(n.span) return [py(n.span[0]) - (n.rows ? 54 : 22), py(n.span[1]) + (n.rows ? 16 : 22)];
+    const h = n.s2 ? 50 : 36;
+    return [py(n.r) - h / 2, py(n.r) + h / 2];
+  };
+  /* 線をつなぐ点。縦長の箱は、相手の高さで水平に出る */
+  const anchor = (n, other, side) => {
+    const [x, w] = COL[n.col];
+    const [y0, y1] = vspan(n);
+    const oy = other.span ? (py(n.r)) : py(other.r);
+    const y = n.span ? Math.min(Math.max(oy, y0 + 12), y1 - 12) : py(n.r);
+    return [side === "R" ? x + w : x, y];
+  };
+
+  let defs = "", lines = "", halo = "", back = "", boxes = "", rows = "";
+  /* 矢印の頭。色ごとに1つずつ作る（id は図の外の矢印とぶつからない名前にする） */
+  ["sheet", "part", "link", "ext", "src", "ref"].forEach(k => {
+    defs += `<marker id="tg-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9"`
+         + ` markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" class="tg-h-${k}"/></marker>`;
+  });
+
+  /* ---- 線 ---- */
+  g.edges.forEach(([a, b, kind, dir]) => {
+    const A = byId[a], B = byId[b];
+    if(!A || !B) throw new Error(`図の線の相手が見つかりません: ${a} → ${b}`);
+    const [k, hid] = kind.split(":");
+    let d;
+    if(A.col === B.col){                            // 同じ列どうし：右側にふくらむ弧
+      const [x, w] = COL[A.col];
+      const xa = x + w, ya = py(A.r) + (A.r > B.r ? -10 : 10), yb = py(B.r) + (A.r > B.r ? 10 : -10);
+      d = `M${xa},${ya} C${xa + 34},${ya} ${xa + 34},${yb} ${xa},${yb}`;
+    }else{
+      const right = ORDER[A.col] < ORDER[B.col];
+      const [x1, y1] = anchor(A, B, right ? "R" : "L");
+      const [x2, y2] = anchor(B, A, right ? "L" : "R");
+      const mx = (x1 + x2) / 2;
+      d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+    }
+    const mk = `marker-end="url(#tg-${k})"` + (dir === "b" ? ` marker-start="url(#tg-${k})"` : "");
+    const mr = dir === "r" ? `marker-start="url(#tg-${k})"` : (dir === "n" ? "" : mk);
+    if(!hid) halo += `<path class="tg-halo" d="${d}"/>`;
+    lines += `<path class="tg-e k-${k}${hid ? " hid" : ""}" data-a="${a}" data-b="${b}" d="${d}" ${mr}/>`;
+  });
+
+  /* ---- 置き場の2つの大きな箱 ---- */
+  const [hx, hw] = COL.hub;
+  const sTop = py(0) - P / 2, sBot = py(lastSheet) + P / 2;
+  const pTop = py(firstPart) - P / 2, pBot = py(lastPart) + P / 2;
+  back += `<rect class="tg-hub" x="${hx}" y="${sTop - 46}" width="${hw}" height="${sBot - sTop + 50}" rx="12"/>`
+        + `<text class="tg-bt" x="${hx + 12}" y="${sTop - 24}">共通のスプレッドシート</text>`
+        + `<text class="tg-s" x="${hx + 12}" y="${sTop - 8}">Apps Script 1本・URL も1つ（Code.gs）</text>`
+        + `<rect class="tg-git" x="${hx}" y="${pTop - 46}" width="${hw}" height="${pBot - pTop + 50}" rx="12"/>`
+        + `<text class="tg-bt" x="${hx + 12}" y="${pTop - 24}">GitHub に置く部品</text>`
+        + `<text class="tg-s" x="${hx + 12}" y="${pTop - 8}">PC で作って送る（.js・書き出したページ）</text>`;
+  /* 確定したきぼうは、Apps Script がシフト表へ写す（シートの中の動き） */
+  const kb = byId.kibou, sf = byId.shifts;
+  if(kb && sf){
+    const xa = hx + hw - 14;
+    back += `<path class="tg-e k-sheet tg-in" data-a="kibou" data-b="shifts" d="M${xa},${py(kb.r) - 8} C${xa + 10},${py(kb.r) - 20} ${xa + 10},${py(sf.r) + 20} ${xa},${py(sf.r) + 8}" marker-end="url(#tg-sheet)"><title>確定したきぼうを、Apps Script がシフト表へ写す</title></path>`;
+  }
+  hubRows.forEach((n, i) => {
+    const y = py(n.r);
+    const sep = (n.r !== 0 && n.r !== firstPart) ? `<line class="tg-sep" x1="${hx + 8}" y1="${y - P / 2}" x2="${hx + hw - 8}" y2="${y - P / 2}"/>` : "";
+    rows += `${sep}<g class="tg-r" data-id="${n.id}"><rect class="tg-band" x="${hx + 2}" y="${y - P / 2 + 1}" width="${hw - 4}" height="${P - 2}"/>`
+         + `<text class="tg-t tg-mono" x="${hx + 12}" y="${y - 3}">${esc(n.t)}</text>`
+         + `<text class="tg-s" x="${hx + 12}" y="${y + 13}">${esc(n.s)}</text></g>`;
+  });
+
+  /* ---- ほかの箱 ---- */
+  g.nodes.filter(n => n.col !== "hub").forEach(n => {
+    const [x, w] = COL[n.col];
+    const [y0, y1] = vspan(n);
+    const cls = n.col === "app" ? (n.who === "share" ? "tg-share" : "tg-me")
+              : n.col === "ext" ? "tg-ext" : n.col === "src" ? "tg-src" : "tg-pc";
+    let h = `<g class="tg-n" data-id="${n.id}"><rect class="${cls}" x="${x}" y="${y0}" width="${w}" height="${y1 - y0}" rx="8"/>`;
+    if(n.rows){                                      // 部品づくり：中にスクリプトの名前を行ごとに並べる
+      h += `<text class="tg-t" x="${x + 10}" y="${y0 + 17}">${esc(n.t)}</text>`
+         + `<text class="tg-s" x="${x + 10}" y="${y0 + 32}">${esc(n.s)}</text>`;
+      n.rows.forEach(([r, name]) => {
+        h += `<text class="tg-s tg-mono" x="${x + w - 10}" y="${py(r) + 4}" text-anchor="end">${esc(name)} →</text>`;
+      });
+    }else if(n.span){
+      const cy = (y0 + y1) / 2;
+      h += `<text class="tg-t" x="${x + w / 2}" y="${cy - 10}" text-anchor="middle">${esc(n.t)}</text>`
+         + `<text class="tg-s" x="${x + w / 2}" y="${cy + 8}" text-anchor="middle">${esc(n.s)}</text>`
+         + (n.s2 ? `<text class="tg-s" x="${x + w / 2}" y="${cy + 24}" text-anchor="middle">${esc(n.s2)}</text>` : "");
+    }else{
+      const y = py(n.r);
+      const ty = n.s2 ? y - 9 : y - 3;
+      h += `<text class="tg-t" x="${x + 10}" y="${ty}">${esc(n.t)}</text>`
+         + `<text class="tg-s" x="${x + 10}" y="${ty + 15}">${esc(n.s)}</text>`
+         + (n.s2 ? `<text class="tg-s" x="${x + 10}" y="${ty + 29}">${esc(n.s2)}</text>` : "");
+      if(n.auto) h += `<rect class="tg-auto" x="${x + w - 40}" y="${y0 + 5}" width="34" height="17" rx="8"/>`
+                    + `<text class="tg-autot" x="${x + w - 23}" y="${y0 + 17.5}" text-anchor="middle">自動</text>`;
+    }
+    boxes += h + `</g>`;
+  });
+  /* 読むアプリがまだ無い行には、右に一言 */
+  sheetRows.concat(partRows).filter(n => !g.edges.some(e => (e[0] === n.id && byId[e[1]].col === "app") || (e[1] === n.id && byId[e[0]].col === "app")))
+    .forEach(n => { boxes += `<text class="tg-s" x="${COL.app[0]}" y="${py(n.r) + 4}">（読むアプリはまだ無い）</text>`; });
+
+  /* ---- 列の見出し ---- */
+  const head = [["src", "PC の元データ", "Dropbox の作業記録フォルダ"], ["pc", "PC の仕組み・機器", "赤い「自動」は勝手に動く"],
+                ["hub", "置き場", "スマホからも PC からも届く"], ["app", "アプリ（ブラウザ）", "オレンジ＝パートさんも見る"],
+                ["ext", "別の置き場・外", ""]]
+    .map(([c, t, s]) => `<text class="tg-ch" x="${COL[c][0]}" y="30">${t}</text><text class="tg-s" x="${COL[c][0]}" y="47">${s}</text>`).join("");
+
+  /* ---- ほかとつながっていないもの ---- */
+  const fy = pBot + 40;
+  let foot = `<rect class="tg-ext" x="16" y="${fy}" width="${W - 32}" height="74" rx="10"/>`
+           + `<text class="tg-t" x="30" y="${fy + 22}">ほかとつながっていないもの</text>`;
+  const fw = (W - 60) / g.alone.length;
+  g.alone.forEach(([t, s], i) => {
+    foot += `<text class="tg-t" x="${30 + fw * i}" y="${fy + 46}">${esc(t)}</text>`
+          + `<text class="tg-s" x="${30 + fw * i}" y="${fy + 63}">${esc(s)}</text>`;
+  });
+
+  /* ---- 色の見方 ---- */
+  const ly = fy + 108;
+  const lg = [["sheet", "共通スプレッドシートの読み書き（両矢印＝読み書き）"], ["part", "PC で作った部品を読む"],
+              ["link", "リンクで数字を渡す"], ["ext", "外から読む"], ["src", "PC の元データを読む"], ["ref", "参考に並べるだけ"]];
+  let leg = "";
+  lg.forEach(([k, t], i) => {
+    const x = 16 + (i % 3) * 410, y = ly + Math.floor(i / 3) * 24;
+    leg += `<path class="tg-e lg k-${k}" d="M${x},${y} H${x + 44}" marker-end="url(#tg-${k})"/>`
+         + `<text class="tg-s" x="${x + 54}" y="${y + 4}">${t}</text>`;
+  });
+  const H = ly + 40;
+
+  return `<svg class="tg" viewBox="0 0 ${W} ${H}" role="img" aria-label="アプリのつながりの図">`
+       + `<defs>${defs}</defs>${head}${back}${halo}${lines}${boxes}${rows}${foot}${leg}</svg>`;
+}
+
+/* マウスを載せた箱・行とつながる線だけを残し、ほかを薄くする（ほかの本では何もしない） */
+function tgHover(root){
+  const svg = root.querySelector("svg.tg");
+  if(!svg) return;
+  const off = () => { svg.classList.remove("focus"); svg.querySelectorAll(".on").forEach(x => x.classList.remove("on")); };
+  svg.addEventListener("mouseover", ev => {
+    const n = ev.target.closest("[data-id]");
+    if(!n){ off(); return; }
+    const id = n.dataset.id, near = new Set([id]);
+    svg.classList.add("focus");
+    svg.querySelectorAll(".tg-e[data-a]").forEach(e => {
+      const hit = e.dataset.a === id || e.dataset.b === id;
+      e.classList.toggle("on", hit);
+      if(hit){ near.add(e.dataset.a); near.add(e.dataset.b); }
+    });
+    svg.querySelectorAll("[data-id]").forEach(x => x.classList.toggle("on", near.has(x.dataset.id)));
+  });
+  svg.addEventListener("mouseleave", off);
+}
+
+/* 本文で使う数（図のデータから数えるので、行を足せば文も合う） */
+const TG_HUB_USERS = (() => {
+  const sheet = new Set(TG.nodes.filter(n => n.box === "sheet").map(n => n.id));
+  const users = new Set();
+  TG.edges.forEach(([a, b, k]) => {
+    if(!k.startsWith("sheet")) return;
+    if(sheet.has(a) && !sheet.has(b)) users.add(b);
+    if(sheet.has(b) && !sheet.has(a)) users.add(a);
+  });
+  return users.size;
+})();
 
 const MANUALS = [
   {
@@ -2548,6 +2877,37 @@ const MANUALS = [
          + "<br>関連：潅水のめやす（同じ葉の式）・夜温設定（朝にテンパを開ける時刻で同じ光合成の式を使う）。",
   },
   {
+    id: "tsunagari", kind: "kaisetsu", icon: "🗺️", wide: true, onDraw: tgHover,
+    title: "アプリのつながり",
+    sub: "どのアプリが、どの記録・ファイルを読むか（PC で見る図）",
+    time: "読むのに約5分",
+    updated: "2026-11-26",
+    why: "アプリが増えて、どれが何を読み書きしているかが分かりにくくなったので、1枚の図にしました。"
+       + "左から <b>PC の元データ → PC の仕組み → 置き場 → アプリ</b> の順に、記録が流れます。<br>"
+       + "<b>PC の画面で見る前提</b>の図です（スマホでは字が小さくなります）。",
+    chapters: [
+      { label: "1", title: "全体の地図", sum: "置き場を真ん中に、全部のアプリと PC の仕組み",
+        html:
+          K.pt("真ん中の青い箱が<b>共通のスプレッドシート</b>です。スマホのアプリも PC の仕組みも、ここを通って記録をやりとりします"
+            + `（いま <b>${TG_HUB_USERS}</b> の画面・仕組みがつながっています）。`
+            + "その下の緑の箱は、PC で作って GitHub に置く部品で、平年値や週の目標のように<b>めったに変わらない数字</b>です。<br>"
+            + "<b>箱や行にマウスを載せると、つながる線だけが残ります。</b>")
+          + K.fig(tgSvg(TG), "マウスを載せると、つながる線だけが残る（点線は、ふだんは隠している線）")
+          + K.imp("共通のスプレッドシートは Apps Script（<code>Code.gs</code>）1本で、URL も1つです。"
+            + "Code.gs を直したら「デプロイを管理 → 鉛筆 → 新バージョン」で出し直します。"
+            + "「新しいデプロイ」を押すと URL が変わり、<b>青い線が全部止まります</b>。")
+          + K.as("この図は 2026-11-26 時点のコードから起こしました。"
+            + "緑の部品（.js）は手で作り直すので、元の Excel を直しても<b>作り直すまでアプリには届きません</b>。<br>"
+            + "線が混み合うところ（収量バックアップが控えるほかの3枚、栽培記録アプリが読む重油・収量の控え・Excel など）は、"
+            + "ふだんは隠し、箱にマウスを載せたときだけ点線で出します。<br>"
+            + "アプリや置き場を足したら、<code>tebiki.html</code> の <code>TG</code> に1行足すと図が描き直されます。"),
+      },
+    ],
+    afterTitle: "これから",
+    after: "2章からは、置き場の行ごと（どのアプリが書き、どれが読むか）、PC で作る部品ごと（元のファイルと作り直す時期）、"
+         + "自動で動く仕組み、直すときの早見表を足す予定です。この図の形を見てもらってから書きます。",
+  },
+  {
     id: "handbook", kind: "slide", icon: "📕",
     title: "スタッフハンドブック",
     sub: "農園のこと・作業の基礎・勤務の決まり",
@@ -2720,6 +3080,7 @@ function drawKaisetsu(m){
   const all = open => document.querySelectorAll("#doc details.chap").forEach(d => { d.open = open; });
   $("#kOpen").onclick = () => all(true);
   $("#kClose").onclick = () => all(false);
+  if(typeof m.onDraw === "function") m.onDraw($("#doc"));   // 図に動きを付ける本だけ
 }
 
 /* 保存してあるチェックを画面に反映し、まとまりごとの「済/全」と全体の進み具合を出す */
@@ -2753,6 +3114,7 @@ function route(){
   const id = decodeURIComponent(location.hash.slice(1));
   const m = MANUALS.find(x => x.id === id && !x.href);   // 別ページの本は、ここでは開かない
   const back = $("#back");
+  document.body.classList.toggle("wide", !!(m && m.wide));   // PC 向けの本だけ幅を広げる
   if(m){
     if(m.kind === "kaisetsu") drawKaisetsu(m); else drawDoc(m);
     $("#shelf").hidden = true; $("#doc").hidden = false;
