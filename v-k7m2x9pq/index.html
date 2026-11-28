@@ -326,7 +326,12 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     if(max <= 0) max = 1;
     var step = Math.pow(10, Math.floor(Math.log(max)/Math.LN10));
     if(max/step < 2) step /= 2; else if(max/step > 5) step *= 2;
-    max = Math.ceil(max/step)*step;
+    /* 1e-9 を引くのは、0.7/0.1 が 7.0000…01 になるような小数の誤差で
+       目盛りが1つ余分に増えるのを防ぐため */
+    max = Math.ceil(max/step - 1e-9)*step;
+    /* 目盛りの小数の桁。t に直すと 0.5t 刻みのような細かい目盛りになることがあるので、
+       刻みが 1 未満のときだけ、刻みが読める桁まで出す（0.5→1桁、0.05→2桁） */
+    var digits = step >= 1 ? 0 : Math.ceil(-Math.log(step)/Math.LN10 - 1e-9);
 
     var n = D.months.length;
     var slot = (W-L-R) / n;
@@ -339,7 +344,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
       ctx.strokeStyle = "#E8EDE3";
       ctx.beginPath(); ctx.moveTo(L, y(v)); ctx.lineTo(W-R, y(v)); ctx.stroke();
       ctx.fillStyle = "#5C6857";
-      ctx.fillText(fmt(v, 0), L-6, y(v)+3.5);
+      ctx.fillText(fmt(v, digits), L-6, y(v)+3.5);
     }
 
     series.forEach(function(s, si){
@@ -465,10 +470,16 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
   function chartCard(title, field, opt){
     opt = opt || {};
     var use = chartSeasons();
+    /* opt.scale があれば、その数で割った値を描く（kg → t なら 1000）。
+       元の配列は書き換えず、割った新しい配列を作る */
+    var scaled = function(arr){
+      if(!opt.scale) return arr;
+      return arr.map(function(v){ return (v || 0) / opt.scale; });
+    };
     var series = use.map(function(s,i){
       return {
         name: s.label,
-        data: (s.houses[cur] || {})[field] || [],
+        data: scaled((s.houses[cur] || {})[field] || []),
         color: seriesColor(i, use.length),
         thick: i === use.length-1
       };
@@ -730,8 +741,9 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
       var r = (pv && v) ? (v/pv*100) : null;
       var cls = r === null ? "flat" : (r >= 102 ? "up" : (r <= 98 ? "down" : "flat"));
       return '<tr><td>'+m+'</td>' +
-             '<td>'+(v?fmt(v):"")+'</td>' +
-             '<td>'+(h.kg10a[i]?fmt(h.kg10a[i]):"")+'</td>' +
+             /* 収量は kg で持っているので、1000 で割って t にし、0.01t まで出す */
+             '<td>'+(v?fmt(v/1000,2):"")+'</td>' +
+             '<td>'+(h.kg10a[i]?fmt(h.kg10a[i]/1000,2):"")+'</td>' +
              '<td class="'+cls+'">'+(r===null?"":fmt(r,0)+"%")+'</td>' +
              '<td class="n">'+(h.count[i]?fmt(h.count[i]):"")+'</td>' +
              '<td>'+(h.gpf[i]?fmt(h.gpf[i],1):"")+'</td></tr>';
@@ -744,11 +756,11 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
 
     return '<div class="card"><h2>月別の収量（'+season.label+'）</h2>' +
            '<div class="scroll"><table>' +
-           '<tr><th>月</th><th>収量<br>kg</th><th>10a換算<br>kg</th>' +
+           '<tr><th>月</th><th>収量<br>t</th><th>10a換算<br>t</th>' +
            '<th>前年比</th><th>個数</th><th>平均果重<br>g</th></tr>' +
            rows +
-           '<tr class="sum"><td>合計</td><td>'+fmt(tot)+'</td>' +
-           '<td>'+fmt(sum(h.kg10a))+'</td><td>'+tr+'</td>' +
+           '<tr class="sum"><td>合計</td><td>'+fmt(tot/1000,2)+'</td>' +
+           '<td>'+fmt(sum(h.kg10a)/1000,2)+'</td><td>'+tr+'</td>' +
            '<td class="n">'+fmt(cnt)+'</td><td>'+fmt(avg,1)+'</td></tr>' +
            '</table></div>' +
            '<p class="note only-narrow" style="padding:0 12px 12px">' +
@@ -802,11 +814,11 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     host.innerHTML =
       summary() +
       yearSwitch() +
-      chartCard("月別の収量（kg）", "kg", {bar:true}) +
-      chartCard("10aあたりの収量（kg）", "kg10a", {bar:true}) +
+      chartCard("月別の収量（t）", "kg", {bar:true, scale:1000}) +
       chartCard("一果実あたりの重量（g）", "gpf",
                 {floor:100, tick:10, digits:0,
                  note:"変化を見やすくするため、縦軸は100gから始めています。"}) +
+      chartCard("月別の個数（個）", "count", {bar:true}) +
       monthTable() +
       stackCard("等級の構成の推移", "gradesByMonth", D.grades, GRADE_PALETTE,
                 function(k){ return k; }) +
