@@ -512,11 +512,32 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
   var SIZE_PALETTE  = ["#8E2F8E","#3F5BC4","#2E9BD6","#3FA857",
                        "#B7C233","#E8A33D","#DB6A2B","#B32424"];
   var GRADE_PALETTE = ["#2E9BD6","#3FA857","#E8A33D","#C62828"];
+  /* 構成（等級・サイズの推移と年間の円グラフ）を見る年度。
+     null のあいだは実績のある最新の年度。4枚のカードで同じ年度を使う */
   var stackYear = null;
 
-  function stackCard(title, key, keys, palette, labelFn){
+  function compSeason(){
     var yr = stackYear || latestWithData().label;
-    var season = seasons.filter(function(s){ return s.label === yr; })[0] || last;
+    return seasons.filter(function(s){ return s.label === yr; })[0] || last;
+  }
+
+  /** 構成のカードに置く年度ボタン（新しい順・横スライド）。
+      選んでいる年度は塗りつぶして ✓ を付ける。name は「等級の構成」など */
+  function compPicker(yr, name){
+    var picker = seasons.slice().reverse().map(function(s){
+      var on = s.label === yr;
+      return '<button data-year="'+s.label+'" aria-pressed="'+on+'"'+(on?' class="sel"':'')+'>' +
+             (on ? '✓ ' : '') + s.label + '</button>';
+    }).join("");
+    return '<p class="yearhint">' + name + 'を見る年度を選んでください' +
+           '<small>ボタンは左右にスライドできます。等級・サイズの推移と年間の構成が、' +
+           'いっしょに切り替わります</small></p>' +
+           '<div class="yearpick">' + picker + '</div>';
+  }
+
+  function stackCard(title, key, keys, palette, labelFn){
+    var season = compSeason();
+    var yr = season.label;
     var h = season.houses[cur];
 
     /* 古い data.js には月別内訳が入っていない */
@@ -530,15 +551,7 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
     var byMonth = h[key];
     var any = keys.some(function(k){ return sum(byMonth[k]||[]) > 0; });
 
-    /* 年度のボタンは新しい順。選んでいる年度は塗りつぶして ✓ を付ける */
-    var picker = seasons.slice().reverse().map(function(s){
-      var on = s.label === yr;
-      return '<button data-year="'+s.label+'" aria-pressed="'+on+'"'+(on?' class="sel"':'')+'>' +
-             (on ? '✓ ' : '') + s.label + '</button>';
-    }).join("");
-    var pickHtml = '<p class="yearhint">' + title.replace("の推移", "") + 'を見る年度を選んでください' +
-                   '<small>ボタンは左右にスライドできます。等級とサイズの両方が切り替わります</small></p>' +
-                   '<div class="yearpick">' + picker + '</div>';
+    var pickHtml = compPicker(yr, title.replace("の推移", ""));
 
     if(!any){
       return '<div class="card"><h2>'+title+'</h2>' + pickHtml +
@@ -647,13 +660,20 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
   }
 
   /* ---------- 年間の構成（円グラフ＋数値の表） ---------- */
-  function pieCard(title, key, keys, palette, labelFn){
-    var season = latestWithData();
+  /* 年度は構成の推移と同じ（compSeason）。どのカードのボタンで選んでもそろって切り替わる */
+  function pieCard(name, key, keys, palette, labelFn){
+    var season = compSeason();
+    var title = name + "（" + season.label + " 年間）";
+    var pickHtml = compPicker(season.label, name);
     var h = season.houses[cur];
-    if(!h) return "";
-    var obj = h[key] || {};
+    var obj = (h && h[key]) || {};
     var tot = keys.reduce(function(a,k){ return a + (obj[k]||0); }, 0);
-    if(!tot) return "";
+    /* 記録の無い年度（2017年度の中央など）でも、ボタンは残して別の年度を選べるようにする */
+    if(!tot){
+      return '<div class="card"><h2>'+title+'</h2>' + pickHtml +
+             '<div class="body" style="padding-top:0"><p style="margin:0;font-size:14px">' +
+             season.label + 'は記録がありません。</p></div></div>';
+    }
 
     /* 前年の同じ区分。割合を並べて比べられるようにする */
     var pi = seasons.indexOf(season) - 1;
@@ -683,7 +703,8 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
              '<td class="n">'+fmt(it.value)+'</td></tr>';
     }).join("");
 
-    return '<div class="card"><h2>'+title+'</h2><div class="body">' +
+    return '<div class="card"><h2>'+title+'</h2>' + pickHtml +
+           '<div class="body" style="padding-top:0">' +
            '<canvas id="'+id+'" width="660" height="470"></canvas>' +
            '<table style="margin-top:12px">' +
            '<tr><th>区分</th><th>割合</th><th>前年</th><th>個数</th></tr>' +
@@ -824,9 +845,9 @@ footer{text-align:center;font-size:12px;color:var(--muted);padding:18px 16px 0}
                 function(k){ return k; }) +
       stackCard("サイズの構成の推移", "sizesByMonth", D.sizes, SIZE_PALETTE,
                 function(k){ return D.sizeLabel[k] || k; }) +
-      pieCard("サイズの構成（"+latestWithData().label+" 年間）", "sizes", D.sizes, SIZE_PALETTE,
+      pieCard("サイズの構成", "sizes", D.sizes, SIZE_PALETTE,
               function(k){ return D.sizeLabel[k] || k; }) +
-      pieCard("等級の構成（"+latestWithData().label+" 年間）", "grades", D.grades, GRADE_PALETTE,
+      pieCard("等級の構成", "grades", D.grades, GRADE_PALETTE,
               function(k){ return k; }) +
       (area ? '<footer style="padding-top:4px">'+cur+'　'+fmt(area*10,0)+'a</footer>' : "");
 
